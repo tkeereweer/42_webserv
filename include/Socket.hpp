@@ -11,12 +11,13 @@ class	Socket
 
 	public:
 		Socket(void);
-		Socket(std::string port, std::string ip);
+		Socket(std::string port, std::string ip = "127.0.0.1");
 		Socket(Socket const &src);
 		Socket	&operator=(Socket const &rhs);
 		~Socket(void);
 
 		std::string	getPort(void) const;
+		std::string	getIpAddr(void) const;
 };
 
 #endif

@@ -11,6 +11,8 @@ class	Webserv
 		Server					*_servers;
 		std::map<int, Server>	_serverMap;
 
+		int	setupEpoll(void) const;
+
 	public:
 		Webserv(void);
 		Webserv(unsigned int numServers);
@@ -21,6 +23,7 @@ class	Webserv
 		void	setServer(Server server, int pos);
 
 		void	openSockets(void);
+		void	launchServer(void);
 };
 
 #endif

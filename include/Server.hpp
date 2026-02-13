@@ -25,6 +25,8 @@ class	Server
 
 		int		getNumSockets(void) const;
 		Socket	getSocket(int i) const;
+
+		void	setSocket(Socket socket, int pos);
 };
 
 #endif

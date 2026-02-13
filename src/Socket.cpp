@@ -25,3 +25,8 @@ std::string	Socket::getPort(void) const
 {
 	return (this->_port);
 }
+
+std::string	Socket::getIpAddr(void) const
+{
+	return (this->_ipAddr);
+}

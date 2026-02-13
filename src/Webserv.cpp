@@ -7,6 +7,8 @@
 #include <cerrno>
 #include <unistd.h>
 #include <cstring>
+#include <sys/epoll.h>
+#include <iostream>
 
 Webserv::Webserv(void): _numServers(1), _servers(new Server[1]) {}
 
@@ -59,21 +61,23 @@ void	Webserv::openSockets(void)
 	hints.ai_flags = AI_PASSIVE;
 	for (int i = 0; i < this->_numServers; i++)
 	{
-		for (int j = 0; j < this->_servers[i].getNumSockets(); i++)
+		for (int j = 0; j < this->_servers[i].getNumSockets(); j++)
 		{
 			struct	addrinfo	*res;
-			int					sfd;
+			int					gaiError;
+			int					sFd;
 
-			if (getaddrinfo("127.0.0.1", this->_servers[i].getSocket(j).getPort().c_str(), &hints, &res) != 0)
-				throw(std::runtime_error(std::strerror(errno)));
+			if ((gaiError = getaddrinfo(this->_servers[i].getSocket(j).getIpAddr().c_str(),
+					this->_servers[i].getSocket(j).getPort().c_str(), &hints, &res)) != 0)
+				throw(std::runtime_error(gai_strerror(gaiError)));
 			for (ptr = res; ptr != NULL; ptr = ptr->ai_next)
 			{
-				if ((sfd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol)) == -1)
+				if ((sFd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol)) == -1)
 					continue;
-				setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-				if (bind(sfd, ptr->ai_addr, ptr->ai_addrlen) != 0)
+				setsockopt(sFd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+				if (bind(sFd, ptr->ai_addr, ptr->ai_addrlen) != 0)
 				{
-					close(sfd);
+					close(sFd);
 					continue;
 				}
 				break;
@@ -81,9 +85,51 @@ void	Webserv::openSockets(void)
 			freeaddrinfo(res);
 			if (ptr == NULL)
 				throw(std::runtime_error(std::strerror(errno)));
-			if (listen(sfd, 15) == -1)
+			if (listen(sFd, 15) == -1)
 				throw(std::runtime_error(std::strerror(errno)));
-			this->_serverMap.insert(std::pair<int, Server>(sfd, this->_servers[i]));
+			std::cout << sFd << "Listening at " << this->_servers[i].getSocket(j).getIpAddr() << " on port " << this->_servers[i].getSocket(j).getPort() << std::endl;
+			this->_serverMap.insert(std::pair<int, Server>(sFd, this->_servers[i]));
+		}
+	}
+}
+
+int	Webserv::setupEpoll(void) const
+{
+	int	epollFd;
+
+	if ((epollFd = epoll_create(1)) == -1)
+		throw(std::runtime_error(std::strerror(errno)));
+	for (std::map<int, Server>::const_iterator it = this->_serverMap.begin(); it != this->_serverMap.end(); it++)
+	{
+		struct epoll_event	event;
+
+		event.events = EPOLLIN;
+		event.data.fd = it->first;
+		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, it->first, &event) == -1)
+			throw(std::runtime_error(std::strerror(errno)));
+		std::cout << "Added fd: " << it->first << " to the epoll instance" << std::endl;
+	}
+	return (epollFd);
+}
+
+void	Webserv::launchServer(void)
+{
+	int					epollFd;
+	int					readyFds;
+	struct epoll_event	readyEvents[10];
+
+	epollFd = this->setupEpoll();
+	while (1)
+	{
+		std::cout << "Waiting for connections" << std::endl;
+		readyFds = epoll_wait(epollFd, readyEvents, 10, -1);
+		for (int i  = 0; i < readyFds; i++)
+		{
+			struct sockaddr	connAddr;
+			socklen_t		addrSize = sizeof(connAddr);
+			int	connFd = accept(readyEvents[i].data.fd, &connAddr, &addrSize);
+			std::cout << "FD: " << readyEvents[i].data.fd << " is ready for " << readyEvents[i].events << std::endl;
+			std::cout << "New fd for connection is " << connFd << std::endl;
 		}
 	}
 }

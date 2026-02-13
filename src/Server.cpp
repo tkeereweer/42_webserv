@@ -58,3 +58,8 @@ Socket	Server::getSocket(int i) const
 		return (this->_sockets[i]);
 	throw(std::out_of_range("Socket index out of range"));
 }
+
+void	Server::setSocket(Socket socket, int pos)
+{
+	this->_sockets[pos] = socket;
+}
