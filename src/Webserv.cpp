@@ -125,11 +125,12 @@ void	Webserv::launchServer(void)
 		readyFds = epoll_wait(epollFd, readyEvents, 10, -1);
 		for (int i  = 0; i < readyFds; i++)
 		{
-			struct sockaddr	connAddr;
-			socklen_t		addrSize = sizeof(connAddr);
-			int	connFd = accept(readyEvents[i].data.fd, &connAddr, &addrSize);
 			std::cout << "FD: " << readyEvents[i].data.fd << " is ready for " << readyEvents[i].events << std::endl;
-			std::cout << "New fd for connection is " << connFd << std::endl;
+			// struct sockaddr	connAddr;
+			// socklen_t		addrSize = sizeof(connAddr);
+			// int	connFd = accept(readyEvents[i].data.fd, &connAddr, &addrSize);
+			// std::cout << "New fd for connection is " << connFd << std::endl;
+			// next step: give connection correct server (through _serverMap) and handle connection in server (accept, recv, etc.)
 		}
 	}
 }
