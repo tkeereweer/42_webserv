@@ -1,6 +1,10 @@
 #include "../include/Server.hpp"
 #include <stdexcept>
 
+/*******************************************************************************
+*						CTOR/DTOR
+*******************************************************************************/
+
 Server::Server(void):
 	_numSockets(1),
 	_sockets(new Socket[1]),
@@ -26,18 +30,21 @@ Server::Server(Server const &src):
 
 Server	&Server::operator=(Server const &rhs)
 {
-	delete[] this->_sockets;
-	this->_sockets = new Socket[rhs._numSockets];
-	delete[] this->_locations;
-	this->_locations = new Location[rhs._numLocations];
-	this->_name = rhs._name;
-	this->_numSockets = rhs._numSockets;
-	this->_numLocations = rhs._numLocations;
-	this->_root = rhs._root;
-	for (int i = 0; i < rhs._numSockets; i++)
-		this->_sockets[i] = rhs._sockets[i];
-	for (int i = 0; i < rhs._numLocations; i++)
-		this->_locations[i] = rhs._locations[i];
+	if (this != &rhs)
+	{
+		delete[] this->_sockets;
+		this->_sockets = new Socket[rhs._numSockets];
+		delete[] this->_locations;
+		this->_locations = new Location[rhs._numLocations];
+		this->_name = rhs._name;
+		this->_numSockets = rhs._numSockets;
+		this->_numLocations = rhs._numLocations;
+		this->_root = rhs._root;
+		for (int i = 0; i < rhs._numSockets; i++)
+			this->_sockets[i] = rhs._sockets[i];
+		for (int i = 0; i < rhs._numLocations; i++)
+			this->_locations[i] = rhs._locations[i];
+	}
 	return (*this);
 }
 
@@ -46,6 +53,11 @@ Server::~Server(void)
 	delete[] this->_sockets;
 	delete[] this->_locations;
 }
+
+
+/*******************************************************************************
+*						GET/SET
+*******************************************************************************/
 
 int	Server::getNumSockets(void) const
 {

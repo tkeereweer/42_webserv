@@ -9,6 +9,11 @@
 #include <cstring>
 #include <sys/epoll.h>
 #include <iostream>
+#include <fcntl.h>
+
+/*******************************************************************************
+*						CTOR/DTOR
+*******************************************************************************/
 
 Webserv::Webserv(void): _numServers(1), _servers(new Server[1]) {}
 
@@ -30,12 +35,15 @@ Webserv::Webserv(Webserv const &src):
 
 Webserv	&Webserv::operator=(Webserv const &rhs)
 {
-	delete[] this->_servers;
-	this->_servers = new Server[rhs._numServers];
-	this->_numServers = rhs._numServers;
-	for (int i = 0; i < rhs._numServers; i++)
+	if (this != &rhs)
+	{
+		delete[] this->_servers;
+		this->_servers = new Server[rhs._numServers];
+		this->_numServers = rhs._numServers;
+		for (int i = 0; i < rhs._numServers; i++)
 		this->_servers[i] = rhs._servers[i];
-	this->_serverMap = rhs._serverMap;
+		this->_serverMap = rhs._serverMap;
+	}
 	return (*this);
 }
 
@@ -43,6 +51,11 @@ Webserv::~Webserv(void)
 {
 	delete[] this->_servers;
 }
+
+
+/*******************************************************************************
+*						INIT
+*******************************************************************************/
 
 void	Webserv::setServer(Server server, int pos)
 {
@@ -131,6 +144,55 @@ void	Webserv::launchServer(void)
 			// int	connFd = accept(readyEvents[i].data.fd, &connAddr, &addrSize);
 			// std::cout << "New fd for connection is " << connFd << std::endl;
 			// next step: give connection correct server (through _serverMap) and handle connection in server (accept, recv, etc.)
+
+
+			/*
+
+				if (isListenSocket(fd))
+					newClient(fd);
+				else
+				{
+					if EPOLLIN
+						handleRequest(fd);
+					else if EPOLLOUT
+						handleRespoonse(fd);
+					else
+						closeClient(fd)
+				}
+
+			*/
 		}
 	}
+}
+
+
+/*******************************************************************************
+*						CLIENT HELPERS
+*******************************************************************************/
+
+bool	Webserv::isListenSocket(int fd) const
+{
+	if (_serverMap.find(fd) != _serverMap.end())
+		return true;
+	return false;
+}
+
+void	Webserv::newClient(int listenFd)
+{
+
+}
+
+void	Webserv::handleRequest(int clientFd)
+{
+
+}
+
+void	Webserv::handleResponse(int clientFd)
+{
+
+}
+
+void	Webserv::closeClient(int clientFd)
+{
+
 }

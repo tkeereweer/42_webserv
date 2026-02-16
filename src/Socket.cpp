@@ -1,5 +1,10 @@
 #include "../include/Socket.hpp"
 
+
+/*******************************************************************************
+*						CTOR/DTOR
+*******************************************************************************/
+
 Socket::Socket(void) {}
 
 Socket::Socket(std::string port, std::string ip):
@@ -14,12 +19,20 @@ Socket::Socket(Socket const &src):
 
 Socket	&Socket::operator=(Socket const &rhs)
 {
-	this->_port = rhs._port;
-	this->_ipAddr = rhs._ipAddr;
+	if (this != &rhs)
+	{
+		this->_port = rhs._port;
+		this->_ipAddr = rhs._ipAddr;
+	}
 	return (*this);
 }
 
 Socket::~Socket(void) {}
+
+
+/*******************************************************************************
+*						GET
+*******************************************************************************/
 
 std::string	Socket::getPort(void) const
 {
