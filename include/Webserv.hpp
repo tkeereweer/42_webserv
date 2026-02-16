@@ -22,6 +22,8 @@ class	Webserv
 		void	handleResponse(int clientFd);
     	void	closeClient(int clientFd);
 
+		void	testPrint(int clientFd);
+
 	public:
 		Webserv(void);
 		Webserv(Webserv const &src);

@@ -129,12 +129,12 @@ void	Webserv::launchServer(void)
 				newClient(readyEvents[i].data.fd);
 			else
 			{
-				if (readyEvents[i].events & EPOLLIN)
+				if (readyEvents[i].events & (EPOLLERR | EPOLLHUP))
+					closeClient(readyEvents[i].data.fd);
+				else if (readyEvents[i].events & EPOLLIN)
 					handleRequest(readyEvents[i].data.fd);
 				else if (readyEvents[i].events & EPOLLOUT)
 					handleResponse(readyEvents[i].data.fd);
-				else
-					closeClient(readyEvents[i].data.fd);
 			}
 		}
 	}
@@ -184,14 +184,51 @@ void	Webserv::newClient(int listenFd)
 	std::cout << "New client with fd: " << clientFd << std::endl;
 }
 
+void	Webserv::testPrint(int clientFd)
+{
+	std::string request = _clientMap[clientFd]->getRequest();
+	size_t nl = request.find('\n');
+
+	std::string print =request.substr(0, nl);
+	std::string rest = request.substr(nl + 1);
+
+	_clientMap[clientFd]->setRequest(rest);
+	std::cout << print << std::endl;
+}
+
 void	Webserv::handleRequest(int clientFd)
 {
+	char	buffer[1024];
 
+	ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
+
+ 	if (bytesRead > 0)
+    {
+        buffer[bytesRead] = '\0';
+        _clientMap[clientFd]->appendRequest(std::string(buffer, bytesRead));
+
+		if ((_clientMap[clientFd]->getRequest().find('\n')) != std::string::npos)
+			testPrint(clientFd);
+	}
+
+	else if (bytesRead == 0)
+        closeClient(clientFd);
+	
+	else 
+	{
+		if (errno == EAGAIN || errno == EWOULDBLOCK) 
+			return;
+		else
+			closeClient(clientFd);
+	}
 }
 
 void	Webserv::handleResponse(int clientFd)
 {
-
+	(void)clientFd;
+	// load into kernel buffer
+	// track how much went in and store the rest
+	// repeat for whole response
 }
 
 void	Webserv::closeClient(int clientFd)
