@@ -47,8 +47,7 @@ Webserv	&Webserv::operator=(Webserv const &rhs)
 	return (*this);
 }
 
-Webserv::~Webserv(void)
-{}
+Webserv::~Webserv(void){}
 
 
 /*******************************************************************************
