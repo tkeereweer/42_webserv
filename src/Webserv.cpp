@@ -48,10 +48,7 @@ Webserv	&Webserv::operator=(Webserv const &rhs)
 }
 
 Webserv::~Webserv(void)
-{
-	delete[] this->_servers;
-	//delete maps
-}
+{}
 
 
 /*******************************************************************************
