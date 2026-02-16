@@ -50,6 +50,7 @@ Webserv	&Webserv::operator=(Webserv const &rhs)
 Webserv::~Webserv(void)
 {
 	delete[] this->_servers;
+	//delete maps
 }
 
 
@@ -127,40 +128,29 @@ int	Webserv::setupEpoll(void) const
 
 void	Webserv::launchServer(void)
 {
-	int					epollFd;
 	int					readyFds;
 	struct epoll_event	readyEvents[10];
 
-	epollFd = this->setupEpoll();
+	this->_epollFd = this->setupEpoll();
 	while (1)
 	{
 		std::cout << "Waiting for connections" << std::endl;
-		readyFds = epoll_wait(epollFd, readyEvents, 10, -1);
+		readyFds = epoll_wait(_epollFd, readyEvents, 10, -1);
 		for (int i  = 0; i < readyFds; i++)
 		{
 			std::cout << "FD: " << readyEvents[i].data.fd << " is ready for " << readyEvents[i].events << std::endl;
-			// struct sockaddr	connAddr;
-			// socklen_t		addrSize = sizeof(connAddr);
-			// int	connFd = accept(readyEvents[i].data.fd, &connAddr, &addrSize);
-			// std::cout << "New fd for connection is " << connFd << std::endl;
-			// next step: give connection correct server (through _serverMap) and handle connection in server (accept, recv, etc.)
 
-
-			/*
-
-				if (isListenSocket(fd))
-					newClient(fd);
+			if (isListenSocket(readyEvents[i].data.fd))
+				newClient(readyEvents[i].data.fd);
+			else
+			{
+				if (readyEvents[i].events & EPOLLIN)
+					handleRequest(readyEvents[i].data.fd);
+				else if (readyEvents[i].events & EPOLLOUT)
+					handleResponse(readyEvents[i].data.fd);
 				else
-				{
-					if EPOLLIN
-						handleRequest(fd);
-					else if EPOLLOUT
-						handleRespoonse(fd);
-					else
-						closeClient(fd)
-				}
-
-			*/
+					closeClient(readyEvents[i].data.fd);
+			}
 		}
 	}
 }
@@ -179,7 +169,34 @@ bool	Webserv::isListenSocket(int fd) const
 
 void	Webserv::newClient(int listenFd)
 {
+	struct sockaddr	clientAddr;
+	socklen_t		addrSize = sizeof(clientAddr);
 
+	int	clientFd = accept(listenFd, &clientAddr, &addrSize);
+	if (clientFd == -1)
+		throw(std::runtime_error(std::strerror(errno)));
+
+    int flags = fcntl(clientFd, F_GETFL, 0);
+	if (flags == -1 || fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) == -1)
+    {
+        close(clientFd);
+		throw(std::runtime_error(std::strerror(errno)));
+    }
+
+    _clientMap[clientFd] = new Client(clientFd);
+
+	struct epoll_event event;
+    event.events = EPOLLIN;
+    event.data.fd = clientFd;
+	 if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1)
+    {
+        delete _clientMap[clientFd];
+        _clientMap.erase(clientFd);
+        close(clientFd);
+		throw(std::runtime_error(std::strerror(errno)));
+    }
+
+	std::cout << "New client with fd: " << clientFd << std::endl;
 }
 
 void	Webserv::handleRequest(int clientFd)
@@ -194,5 +211,9 @@ void	Webserv::handleResponse(int clientFd)
 
 void	Webserv::closeClient(int clientFd)
 {
-
+	epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
+    close(clientFd);
+    delete _clientMap[clientFd];
+    _clientMap.erase(clientFd);
+    std::cout << "Client disconnected with fd: " << clientFd << std::endl;
 }
