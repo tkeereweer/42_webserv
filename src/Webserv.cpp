@@ -15,48 +15,37 @@
 *						CTOR/DTOR
 *******************************************************************************/
 
-Webserv::Webserv(void): _numServers(1), _servers(new Server[1]) {}
-
-Webserv::Webserv(unsigned int numServers):
-	_numServers(numServers),
-	_servers(new Server[numServers]) 
-{}
+Webserv::Webserv(void) {}
 
 Webserv::Webserv(Webserv const &src):
-	_numServers(src._numServers),
-	_servers(new Server[src._numServers])
-{
-	for (int i = 0; i < src._numServers; i++)
-	{
-		_servers[i] = src._servers[i];
-	}
-	this->_serverMap = src._serverMap;
-}
+	_servers(src._servers),
+	_serverMap(src._serverMap),
+	_clientMap(src._clientMap),
+	_epollFd(src._epollFd)
+{}
 
 Webserv	&Webserv::operator=(Webserv const &rhs)
 {
 	if (this != &rhs)
 	{
-		delete[] this->_servers;
-		this->_servers = new Server[rhs._numServers];
-		this->_numServers = rhs._numServers;
-		for (int i = 0; i < rhs._numServers; i++)
-		this->_servers[i] = rhs._servers[i];
+		this->_servers = rhs._servers;
 		this->_serverMap = rhs._serverMap;
+		this->_clientMap = rhs._clientMap;
+		this->_epollFd = rhs._epollFd; // close old epollFd ??
 	}
 	return (*this);
 }
 
-Webserv::~Webserv(void){}
+Webserv::~Webserv(void) {}
 
 
 /*******************************************************************************
 *						INIT
 *******************************************************************************/
 
-void	Webserv::setServer(Server server, int pos)
+void	Webserv::addServer(Server server)
 {
-	this->_servers[pos] = server;
+	this->_servers.push_back(server);
 }
 
 void	Webserv::openSockets(void)
@@ -69,16 +58,16 @@ void	Webserv::openSockets(void)
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
-	for (int i = 0; i < this->_numServers; i++)
+	for (unsigned long i = 0; i < this->_servers.size(); i++)
 	{
-		for (int j = 0; j < this->_servers[i].getNumSockets(); j++)
+		for (std::vector<t_socket>::iterator it = this->_servers[i].getSockets().begin();
+			it != this->_servers[i].getSockets().end(); ++it)
 		{
 			struct	addrinfo	*res;
 			int					gaiError;
 			int					sFd;
 
-			if ((gaiError = getaddrinfo(this->_servers[i].getSocket(j).getIpAddr().c_str(),
-					this->_servers[i].getSocket(j).getPort().c_str(), &hints, &res)) != 0)
+			if ((gaiError = getaddrinfo(it->ipAddr.c_str(), it->port.c_str(), &hints, &res)) != 0)
 				throw(std::runtime_error(gai_strerror(gaiError)));
 			for (ptr = res; ptr != NULL; ptr = ptr->ai_next)
 			{
@@ -97,8 +86,8 @@ void	Webserv::openSockets(void)
 				throw(std::runtime_error(std::strerror(errno)));
 			if (listen(sFd, 15) == -1)
 				throw(std::runtime_error(std::strerror(errno)));
-			std::cout << sFd << "Listening at " << this->_servers[i].getSocket(j).getIpAddr() << " on port " << this->_servers[i].getSocket(j).getPort() << std::endl;
-			this->_serverMap.insert(std::pair<int, Server>(sFd, this->_servers[i]));
+			std::cout << sFd << "Listening at " << it->ipAddr << " on port " << it->port << std::endl;
+			this->_serverMap.insert(std::pair<int, Server*>(sFd, &(this->_servers[i])));
 		}
 	}
 }
@@ -109,7 +98,7 @@ int	Webserv::setupEpoll(void) const
 
 	if ((epollFd = epoll_create(1)) == -1)
 		throw(std::runtime_error(std::strerror(errno)));
-	for (std::map<int, Server>::const_iterator it = this->_serverMap.begin(); it != this->_serverMap.end(); it++)
+	for (std::map<int, Server*>::const_iterator it = this->_serverMap.begin(); it != this->_serverMap.end(); it++)
 	{
 		struct epoll_event	event;
 

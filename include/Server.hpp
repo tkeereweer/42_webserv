@@ -2,20 +2,25 @@
 # define SERVER_HPP
 
 # include <string>
+# include <vector>
 
-# include "Socket.hpp"
 # include "Location.hpp"
+
+typedef struct s_socket
+{
+	std::string	port;
+	std::string	ipAddr;
+}	t_socket;
+
 
 class	Server
 {
 	private:
-		std::string	_name;
-		int			_numSockets;
-		Socket		*_sockets;
-		int			_maxBodySizeClientReq;
-		int			_numLocations;
-		Location	*_locations;
-		std::string	_root;
+		std::string				_name;
+		std::vector<t_socket>	_sockets;
+		int						_maxBodySizeClientReq;
+		std::vector<Location>	_locations;
+		std::string				_root;
 
 	public:
 		Server(void);
@@ -23,10 +28,9 @@ class	Server
 		Server	&operator=(Server const &rhs);
 		~Server(void);
 
-		int		getNumSockets(void) const;
-		Socket	getSocket(int i) const;
+		std::vector<t_socket>	&getSockets(void);
 
-		void	setSocket(Socket socket, int pos);
+		void	addSocket(t_socket socket);
 };
 
 #endif

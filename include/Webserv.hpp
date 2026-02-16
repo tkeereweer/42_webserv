@@ -4,13 +4,13 @@
 # include "Server.hpp"
 # include "Client.hpp"
 # include <map>
+# include <vector>
 
 class	Webserv
 {
 	private:
-		int						_numServers;
-		Server					*_servers;
-		std::map<int, Server>	_serverMap;
+		std::vector<Server>		_servers;
+		std::map<int, Server*>	_serverMap;
 		std::map<int, Client*>	_clientMap;
 		int						_epollFd;
 
@@ -24,12 +24,11 @@ class	Webserv
 
 	public:
 		Webserv(void);
-		Webserv(unsigned int numServers);
 		Webserv(Webserv const &src);
 		Webserv	&operator=(Webserv const &rhs);
 		~Webserv(void);
 
-		void	setServer(Server server, int pos);
+		void	addServer(Server server);
 
 		void	openSockets(void);
 		void	launchServer(void);
