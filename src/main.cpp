@@ -2,12 +2,14 @@
 
 int	main(void)
 {
-	Webserv	webserv(1);
-	Server	serverA;
-	Socket	socketA("80", "0.0.0.0");
+	Webserv		webserv;
+	Server		serverA;
+	t_socket	socketA;
 
-	serverA.setSocket(socketA, 0);
-	webserv.setServer(serverA, 0);
+	socketA.port = "8080";
+	socketA.ipAddr = "127.0.0.1";
+	serverA.addSocket(socketA);
+	webserv.addServer(serverA);
 	webserv.openSockets();
 	webserv.launchServer();
 	return (0);
