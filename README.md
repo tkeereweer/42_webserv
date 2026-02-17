@@ -12,7 +12,7 @@ Request       	= Simple-Request | Full-Request
 Simple-Request	= "GET" SP Request-URI CRLF
 Full-Request	= Request-Line *( Date | Content-Encoding | Content-Length | Content-Type )
 					CRLF
-                    [ Entity-Body ]
+					[ Entity-Body ]
 
 ###### Request-Line
 Request-Line	= Method SP Request-URI SP HTTP-Version CRLF
@@ -26,10 +26,7 @@ fsegment       	= 1*pchar
 segment        	= *pchar
 params         	= param *( ";" param )
 param          	= *( pchar | "/" )
-scheme         	= 1*( ALPHA | DIGIT | "+" | "-" | "." )
-net_loc        	= *( pchar | ";" | "?" )
 query          	= *( uchar | reserved )
-fragment       	= *( uchar | reserved )
 pchar          	= uchar | ":" | "@" | "&" | "=" | "+"
 uchar          	= unreserved | escape
 unreserved     	= ALPHA | DIGIT | safe | extra | national
@@ -79,7 +76,7 @@ TEXT           = <any OCTET except CTLs, but including LWS>
 word           = token | quoted-string
 token          = 1*<any CHAR except CTLs or tspecials>
 tspecials      = "(" | ")" | "<" | ">" | "@" | "," | ";" | ":" | "\" | <">
-                | "/" | "[" | "]" | "?" | "=" | "{" | "}" | SP | HT
+				| "/" | "[" | "]" | "?" | "=" | "{" | "}" | SP | HT
 
 quoted-string  = ( <"> *(qdtext) <"> )
 
