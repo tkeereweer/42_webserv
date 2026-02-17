@@ -3,11 +3,12 @@ SRC = Client.cpp \
 	Location.cpp \
 	Server.cpp \
 	Webserv.cpp \
+	configFile.cpp \
 	main.cpp
 
 NAME = webserv
 
-CC = c++
+CC = g++
 FLAGS = -Wall -Werror -Wextra -std=c++98 -g
 OBJ_DIR = objects
 OBJS = $(addprefix $(OBJ_DIR)/, $(notdir $(SRC:.cpp=.o)))
