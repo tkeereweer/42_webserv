@@ -7,6 +7,12 @@
 #include <list>
 #include <algorithm>
 #include <cctype>
+#include <fstream>
+#include <dirent.h>
+#include <cstring>
+#include <unistd.h>
+#include <limits>
+#include <stdlib.h>
 
 enum e_reqType
 {
@@ -52,12 +58,13 @@ class Request
 		//session-ID cookie is a value used to mark login and therefore access to certain pages
 		std::string	_cookies;
 
-		std::string	_entityBody;
+		std::string	_bodyFilename;
 
 		std::list<t_reqToken>	_tokenList;
 		//flag to indicate we got to the end of request headers
 		bool					_reqComplete;
 
+		void	_createTempFile(void);
 		void	_lexInput(std::string const &str);
 		int		_requestEval(std::string &data);
 		//takes leftover from parsing, puts it as is in Body and returns body content_length - length

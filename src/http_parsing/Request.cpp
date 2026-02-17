@@ -19,12 +19,16 @@ Request	&Request::operator=(Request const &rhs)
 		this->_contentLength = rhs._contentLength;
 		this->_contentType = rhs._contentType;
 		this->_cookies = rhs._cookies;
-		this->_entityBody = rhs._entityBody;
+		this->_bodyFilename = rhs._bodyFilename;
 	}
 	return (*this);
 }
 
-Request::~Request(void){}
+Request::~Request(void)
+{
+	if (this->_bodyFilename != "")
+		unlink(this->_bodyFilename.c_str());
+}
 
 int		Request::_requestEval(std::string &data)
 {
