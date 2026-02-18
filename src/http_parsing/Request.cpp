@@ -30,36 +30,43 @@ Request::~Request(void)
 		unlink(this->_bodyFilename.c_str());
 }
 
-int		Request::_requestEval(std::string &data)
+long long		Request::_requestEval(std::string &data)
 {
 	std::list<t_reqToken>::const_reverse_iterator it = this->_tokenList.rbegin();
 
 	while (it->type != CRLF && it != this->_tokenList.rend())
 		it++;
 
+	//no CRLF found
 	//insert last token that could have been cut short
 	if (it == this->_tokenList.rend() && (this->_tokenList.rbegin()->type == WORD && this->_tokenList.rbegin()->type == SPACE))
 	{
 		data.insert(data.begin(), this->_tokenList.rbegin()->val.begin(), this->_tokenList.rbegin()->val.end());
 		this->_tokenList.pop_back();
+		return (0);
 	}
 
+	//found a CRLF, checking if next one is also CRLF
 	it++;
-	if (it->type == CRLF) //what if it + 1 is null ?
+	if (it->type == CRLF)
 	{
-		this->_reqComplete = true;
-		_parse();
-		return (_leftToRead());
+		//must mean completed header section in full request therefore parse
+		this->_parse();
+		if (this->_method == "POST" && this->_contentLength > 0)
+			return (this->_contentLength - this->_bytesRead);
+		else
+			return (-1);
 	}
 	it--;
 
+	//if not full request, check if simple request or need to receive further
 	try
 	{
-		_parseSimpleRequest();		
+		this->_parseSimpleRequest(); //check if simple request	
 	}
 	catch(const std::exception& e)
 	{
-		std::cout << "parsing error detected: " << e.what() << std::endl;
+		std::cout << "not a simple request because: " << e.what() << std::endl;
 		if (this->_tokenList.rbegin()->type == WORD && this->_tokenList.rbegin()->type == SPACE)
 		{	
 			data.insert(data.begin(), this->_tokenList.rbegin()->val.begin(), this->_tokenList.rbegin()->val.end());
@@ -67,8 +74,8 @@ int		Request::_requestEval(std::string &data)
 		}
 		return (0);
 	}
+	//we don't care if stuff left after valid simple request
 	return (-1);	
-	//check if stuff left after single CRLF	
 }
 
 
@@ -87,6 +94,7 @@ int	Request::lexRawData(std::string &data)
 		return (_requestEval(data));
 	if (token.type == WORD || token.type == SPACE)
 	{
+		//makes sure we don't have incomplete tokens in our list, we put them back in data
 		data.insert(data.begin(), token.val.begin(), token.val.end());
 		this->_tokenList.pop_back();
 	}

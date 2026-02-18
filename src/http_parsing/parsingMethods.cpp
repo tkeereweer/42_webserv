@@ -2,7 +2,28 @@
 
 void	Request::_parse(void)
 {
-	
+	try
+	{
+		_parseSimpleRequest();
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		try
+		{
+			_parseFullRequest();
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
+			std::cout << "parsing failed" << std::endl;
+			return ;
+		}
+		std::cout << "full request parsing succesful" << std::endl;
+		return ;		
+	}
+	std::cout << "simple request parsing succesful" << std::endl;
+	return ;
 }
 
 bool	isPchar(std::string	&str)
@@ -161,4 +182,301 @@ void    Request::_parseSimpleRequest(void)
 	this->_tokenList.erase(this->_tokenList.begin(), it);
 	this->_reqComplete = true;
 	return;
+}
+
+void	verifyHTTPWord(std::string str)
+{
+	std::string::iterator it = str.begin();
+	advance(it, str.find('.', 0));
+	std::string firstHalf(str.begin(), it);
+	it++;
+	std::string	secondHalf(it, str.end());
+	std::cout << "http version first half: " << firstHalf << std::endl;
+	std::cout << "http version second half: " << secondHalf << std::endl;
+
+	if (firstHalf.size() == 0 || secondHalf.size() == 0)
+		throw (std::runtime_error("wrong HTTP version"));
+	if (firstHalf.find_first_not_of("0123456789") != std::string::npos
+		|| secondHalf.find_first_not_of("0123456789") != std::string::npos)
+		throw (std::runtime_error("one or more char not digit in HTTP version num"));
+	return;
+}
+
+void	Request::_parseHTTPVersion(std::list<t_reqToken>::iterator &it)
+{
+	std::string	res = "";
+	if (it->val != "HTTP")
+		throw (std::runtime_error("wrong HTTP version"));
+	res += it->val;
+	it++;
+	if (it->type != SLASH)
+		throw (std::runtime_error("wrong HTTP version"));
+	res += it->val;
+	it++;
+	if (it->type != WORD)
+		throw (std::runtime_error("wrong HTTP version"));
+	verifyHTTPWord(it->val); //throws exception
+	res += it->val;
+	it++;
+	this->_HTTPVersion = res;
+	return ;
+}
+
+void		Request::_parseRequestLine(std::list<t_reqToken>::iterator &it)
+{
+	std::string	method;
+	if (it->val != "GET" || it->val != "POST" || it->val != "DELETE")
+		throw(std::runtime_error("wrong method"));
+	method = it->val;
+	it++;
+	if (it->type != SPACE)
+		throw(std::runtime_error("not full request"));
+	it++;
+	_parseURI(it); //throws exception
+	if (it->type != SPACE)
+		throw(std::runtime_error("not full request"));
+	it++;
+	_parseHTTPVersion(it); //throws exception
+	if (it->type != CRLF)
+		throw(std::runtime_error("full request not CRLF terminated"));
+	it++;
+	this->_method = method;
+	return ;
+}
+
+
+
+bool	isToken(std::string &str)
+{
+	for (std::string::iterator it = str.begin(); it != str.end(); it++)
+	{
+		if ((*it >= 0 && *it <= 31)
+			|| *it == 127
+			|| isspace(*it)
+			|| *it == 34
+			|| (*it >= 40 && *it <= 41)
+			|| *it == 44
+			|| *it == 47
+			|| (*it >= 58 && *it <= 64)
+			|| (*it >= 91 && *it <= 93)
+			|| *it == 123
+			|| *it == 125)
+			return (false);
+	}
+	return (true);
+}
+
+//throws exception
+std::string	Request::_parseContentCoding(std::list<t_reqToken>::iterator &it)
+{
+	std::string	res = "";
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), [](unsigned char c){return (std::tolower(c));});
+	if (it->val == "x-gzip" | it->val == "x-compress")
+	{
+		res += it->val;
+		it++;
+		return (res);
+	}
+	if (!isToken(it->val))
+		throw (std::runtime_error("wrong char in content-encoding"));
+	res += it->val;
+	it++;
+	return (res);
+}
+
+bool	returnLastCRLF(std::list<t_reqToken>::iterator &it)
+{
+	while (it->type != CRLF)
+			it++;
+		return (false);
+}
+
+//last one wins
+bool	Request::_parseContentEncoding(std::list<t_reqToken>::iterator &it)
+{
+	std::string res = "";
+
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), [](unsigned char c){return (std::tolower(c));});
+	if (it->val != "content-encoding")
+		return (returnLastCRLF(it));
+	it++;
+	if (it->type != COLON)
+		return (returnLastCRLF(it));
+	it++;
+	if (it->type != SPACE)
+		return (returnLastCRLF(it));
+	while (it->type == SPACE)
+		it++;
+	try
+	{
+		res += _parseContentCoding(it);
+	}
+	catch(const std::exception& e)
+	{
+		return (returnLastCRLF(it));
+	}
+	if (it->type != CRLF)
+		return (returnLastCRLF(it));
+	this->_contentEncoding = res;
+	return (true);
+}
+
+//bad request if multiple headers
+bool	Request::_parseContentLength(std::list<t_reqToken>::iterator &it)
+{
+	std::string res = "";
+
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), [](unsigned char c){return (std::tolower(c));});
+	if (it->val != "content-length")
+		return (returnLastCRLF(it));
+	it++;
+	if (it->type != COLON)
+		return (returnLastCRLF(it));
+	it++;
+	if (it->type != SPACE)
+		return (returnLastCRLF(it));
+	while (it->type == SPACE)
+		it++;
+	if (it->type != WORD || it->val.size() == 0)
+		return (returnLastCRLF(it));
+	for (std::string::iterator ite = it->val.begin(); ite != it->val.end(); ite++)
+	{
+		if (!isdigit(*ite))
+			return (returnLastCRLF(it));
+	}
+	res += it->val;
+	it++;
+	if (it->type != CRLF)
+		return (returnLastCRLF(it));
+	if (this->_contentLength != 0)
+		throw(std::runtime_error("more than 1 content-length header !"));
+	this->_contentLength = atoll(res.c_str());
+	return (true);
+}
+
+std::string	Request::_parseMediaType(std::list<t_reqToken>::iterator &it)
+{
+	std::string	res = "";
+
+	if (!isToken(it->val))
+		throw (std::runtime_error("wrong char in media type"));
+	res += it->val;
+	it++;
+	if (it->type != SLASH)
+		throw (std::runtime_error("wrong media type format, expected '/'"));
+	res += it->val;
+	it++;
+	while (it->type == SEMI_COLON)
+	{
+		it++;
+		if (!isToken(it->val))
+			throw (std::runtime_error("expected valid parameter"));
+		res += it->val;
+		it++;
+	}
+	return (res);
+}
+
+//last one wins
+bool	Request::_parseContentType(std::list<t_reqToken>::iterator &it)
+{
+	std::string res = "";
+
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), [](unsigned char c){return (std::tolower(c));});
+	if (it->val != "content-type")
+		return (returnLastCRLF(it));
+	it++;
+	if (it->type != COLON)
+		return (returnLastCRLF(it));
+	it++;
+	if (it->type != SPACE)
+		return (returnLastCRLF(it));
+	while (it->type == SPACE)
+		it++;
+	try
+	{
+		res += _parseMediaType(it);
+	}
+	catch(const std::exception& e)
+	{
+		return (returnLastCRLF(it));
+	}
+	if (it->type != CRLF)
+		return (returnLastCRLF(it));
+	this->_contentType = res;
+	return (true);
+}
+
+bool	isCookie(std::string &str)
+{
+	std::string::iterator it = str.begin();
+	advance(it, str.find('=', 0));
+	std::string firstHalf(str.begin(), it);
+	it++;
+	std::string	secondHalf(it, str.end());
+	if (firstHalf.size() == 0 || secondHalf.size() == 0
+		|| firstHalf.find('=', 0) != std::string::npos
+		|| secondHalf.find('=', 0) != std::string::npos
+		|| !isToken(firstHalf)
+		|| !isToken(secondHalf))
+		return (false);
+	return (true);
+}
+
+
+//concatenate and separate with ';'
+//cookie = token "=" token *(";" token "=" token)
+bool	Request::_parseCookies(std::list<t_reqToken>::iterator &it)
+{
+	std::string res = "";
+
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), [](unsigned char c){return (std::tolower(c));});
+	if (it->val != "cookie")
+		return (returnLastCRLF(it));
+	it++;
+	if (it->type != COLON)
+		return (returnLastCRLF(it));
+	it++;
+	if (it->type != SPACE)
+		return (returnLastCRLF(it));
+	while (it->type == SPACE)
+		it++;
+	if (!isCookie(it->val))
+		return (returnLastCRLF(it));
+	res += it->val;
+	it++;
+	while (it->type == SEMI_COLON)
+	{
+		it++;
+		if (!isCookie(it->val))
+			return (returnLastCRLF(it));
+		res += it->val;
+		it++;
+	}
+	if (this->_cookies != "")
+		this->_cookies += "; ";
+	this->_cookies += res;
+	return (true);
+}	
+
+void	Request::_parseFullRequest(void)
+{
+	std::list<t_reqToken>::iterator it = this->_tokenList.begin();
+	_parseRequestLine(it);
+	while (it->type != CRLF)
+	{
+		//these functions must advance it beyond next CRLF even if they return false
+		//throw exception if header format not respected --> in body overshoots in bad requests handled
+		if (_parseContentEncoding(it)
+			|| _parseContentLength(it)
+			|| _parseContentType(it)
+			|| _parseCookies(it))
+			continue;
+	}
+	it++;
+	if (it != this->_tokenList.end() && this->_method == "POST" && this->_contentLength > 0)
+		_readLeftovers();
+	else
+		this->_reqComplete == true;
+	return ;
 }

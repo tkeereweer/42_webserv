@@ -10,7 +10,7 @@ the following grammar is slightly adapted from HTTP 1.0 depending on our use cas
 ###### Request
 Request       	= Simple-Request | Full-Request
 Simple-Request	= "GET" SP Request-URI CRLF
-Full-Request	= Request-Line *( Date | Content-Encoding | Content-Length | Content-Type )
+Full-Request	= Request-Line *(Content-Encoding | Content-Length | Content-Type | Cookie) ; my own modified version
 					CRLF
 					[ Entity-Body ]
 
@@ -18,6 +18,7 @@ Full-Request	= Request-Line *( Date | Content-Encoding | Content-Length | Conten
 Request-Line	= Method SP Request-URI SP HTTP-Version CRLF
 Method			= "GET" | "POST" | "DELETE"
 Request-URI		= abs_path
+HTTP-Version	= "HTTP" "/" 1*DIGIT "." 1*DIGIT
 
 abs_path       	= "/" rel_path
 rel_path       	= [ path ] [ ";" params ] [ "?" query ]
@@ -37,7 +38,7 @@ safe           	= "$" | "-" | "_" | "."
 unsafe         	= CTL | SP | <"> | "#" | "%" | "<" | ">"
 national       	= <any OCTET excluding ALPHA, DIGIT,reserved, extra, safe, and unsafe>
 
-
+EVERY HEADER IS CRLF TERMINATED
 ###### General-Header
 Date           	= "Date" ":" HTTP-date
 HTTP-Date		= <whole bunch of weird stuff, do not implement unless absolutely required>
@@ -46,7 +47,7 @@ HTTP-Date		= <whole bunch of weird stuff, do not implement unless absolutely req
 Content-Encoding 	= "Content-Encoding" ":" content-coding
 content-coding 		= "x-gzip" | "x-compress" | token
 
-Content-Length 		= "Content-Length" ":" 1*DIGIT
+Content-Length 		= "Content-Length" ":" 1*DIGIT ;
 
 Content-Type   		= "Content-Type" ":" media-type
 media-type     		= type "/" subtype *( ";" parameter )

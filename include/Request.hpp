@@ -50,7 +50,7 @@ class Request
 
 		//entity headers, info about entity-body
 		std::string	_contentEncoding;
-		int         _contentLength;
+		long long	_contentLength;
 		std::string	_contentType;
 
 		//cookies
@@ -63,19 +63,25 @@ class Request
 		std::list<t_reqToken>	_tokenList;
 		//flag to indicate we got to the end of request headers
 		bool					_reqComplete;
+		//body bytes already read such that after body consumed, contentLength - bytesRead == 0
+		long long				_bytesRead;
 
 		
-		void	_lexInput(std::string const &str);
-		int		_requestEval(std::string &data);
+		void			_lexInput(std::string const &str);
+		long long		_requestEval(std::string &data);
 		//takes leftover from parsing, puts it as is in Body and returns body content_length - length
-		int		_leftToRead(void);
-		void	_createTempFile(void);
-		void	_createNextAvailableFile(struct dirent *name, DIR *tmp);
+		long long		_readLeftovers(void);
+		void			_createTempFile(void);
+		void			_createNextAvailableFile(struct dirent *name, DIR *tmp);
 
-		//PARSING METHODS
+		/*
+		~~~~~ PARSING FUNCTIONS ~~~~~
+		*/
+
 		//parses until 2xCRLF. Leftover is still in tokenList
 		void	    _parse(void);
 		void	    _parseSimpleRequest(void);
+		void		_parseFullRequest(void);
 		void        _parseURI(std::list<t_reqToken>::iterator &it);
 		std::string _parseAbsPath(std::list<t_reqToken>::iterator &it);
 		std::string	_parsePath(std::list<t_reqToken>::iterator &it);
@@ -84,6 +90,14 @@ class Request
 		std::string	_parseFSegment(std::list<t_reqToken>::iterator &it);
 		std::string	_parseSegment(std::list<t_reqToken>::iterator &it);
 		std::string	_parseParam(std::list<t_reqToken>::iterator &it);
+		void		_parseRequestLine(std::list<t_reqToken>::iterator &it);
+		void		_parseHTTPVersion(std::list<t_reqToken>::iterator &it);
+		bool		_parseContentEncoding(std::list<t_reqToken>::iterator &it);
+		std::string	_parseContentCoding(std::list<t_reqToken>::iterator &it);
+		bool		_parseContentLength(std::list<t_reqToken>::iterator &it);
+		bool		_parseContentType(std::list<t_reqToken>::iterator &it);
+		std::string	_parseMediaType(std::list<t_reqToken>::iterator &it);
+		bool		_parseCookies(std::list<t_reqToken>::iterator &it);
 
 
 	public:
