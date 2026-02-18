@@ -34,7 +34,8 @@ int		Request::_requestEval(std::string &data)
 {
 	std::list<t_reqToken>::const_reverse_iterator it = this->_tokenList.rbegin();
 
-	for (it; it->type != CRLF && it != this->_tokenList.rbegin(); it++)
+	while (it->type != CRLF && it != this->_tokenList.rbegin())
+		it++;
 
 	//insert last token that could have been cut short
 	if (it == this->_tokenList.rend() && (this->_tokenList.rbegin()->type == WORD && this->_tokenList.rbegin()->type == SPACE))
@@ -43,12 +44,14 @@ int		Request::_requestEval(std::string &data)
 		this->_tokenList.pop_back();
 	}
 
-	if ((it + 1)->type == CRLF) //what if it + 1 is null ?
+	it++;
+	if (it->type == CRLF) //what if it + 1 is null ?
 	{
-		this->_reqComplete == true;
+		this->_reqComplete = true;
 		_parse();
 		return (_leftToRead());
 	}
+	it--;
 
 	try
 	{
@@ -100,18 +103,18 @@ int	Request::lexRawData(std::string &data)
 
 
 
-int main(int argc, char **argv)
-{
-	std::string test(argv[1]);
+// int main(int argc, char **argv)
+// {
+// 	std::string test(argv[1]);
 
-	try
-	{
+// 	try
+// 	{
 		
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-	}
+// 	}
+// 	catch(const std::exception& e)
+// 	{
+// 		std::cerr << e.what() << '\n';
+// 	}
 	
-	return (0);
-}
+// 	return (0);
+// }

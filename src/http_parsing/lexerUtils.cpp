@@ -14,7 +14,7 @@ int	Request::_leftToRead(void)
 		throw (std::runtime_error("leftToRead < 0 !"));
 	if (this->_bodyFilename == "")
 		_createTempFile();
-	std::ofstream	file(this->_bodyFilename);
+	std::ofstream	file(this->_bodyFilename.c_str());
 	file.write(bodyOverflow.c_str(), bodyOverflow.size());
 	return (ret);
 }

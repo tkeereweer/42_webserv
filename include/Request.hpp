@@ -64,11 +64,13 @@ class Request
 		//flag to indicate we got to the end of request headers
 		bool					_reqComplete;
 
-		void	_createTempFile(void);
+		
 		void	_lexInput(std::string const &str);
 		int		_requestEval(std::string &data);
 		//takes leftover from parsing, puts it as is in Body and returns body content_length - length
 		int		_leftToRead(void);
+		void	_createTempFile(void);
+		void	_createNextAvailableFile(struct dirent *name, DIR *tmp);
 
 		//PARSING METHODS
 		//parses until 2xCRLF. Leftover is still in tokenList
@@ -96,9 +98,6 @@ class Request
 
 
 		static bool	isCRLF(std::string::const_iterator	&it);
-		
-
-
 };
 
 
