@@ -28,17 +28,16 @@ class	Server
 		Server	&operator=(Server const &rhs);
 		~Server(void);
 
-		std::string	getName(void) const;
+		std::string				getName(void) const;
 		std::vector<t_socket>	&getSockets(void);
-		unsigned long long	getMaxBody(void) const;
+		unsigned long long		getMaxBody(void) const;
 		std::vector<Location>	&getLocations(void);
-		std::string	getServerRoot(void) const;
+		std::string				getServerRoot(void) const;
 
 
 		void	setName(std::string name);
 		void	setMaxBody(int maxBody);
 		void	setServerRoot(std::string root);
-
 		void	addSocket(t_socket socket);
 		void	addLocation(Location location);
 };

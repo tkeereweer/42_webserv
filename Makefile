@@ -1,5 +1,4 @@
 SRC = Client.cpp \
-	Socket.cpp \
 	Location.cpp \
 	Server.cpp \
 	Webserv.cpp \

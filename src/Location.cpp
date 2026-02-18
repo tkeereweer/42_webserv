@@ -18,8 +18,9 @@ Location::Location(Location const &src):
 	_root(src._root),
 	_autoIndex(src._autoIndex),
 	_index(src._index),
-	_uploadStore(src._uploadStore)
-	
+	_uploadStore(src._uploadStore),
+	_errorPages(src._errorPages),
+	_redirect(src._redirect)
 {}
 
 Location	&Location::operator=(Location const &rhs)
@@ -34,6 +35,8 @@ Location	&Location::operator=(Location const &rhs)
 		this->_autoIndex = rhs._autoIndex;
 		this->_uploadStore = rhs._uploadStore;
 		this->_index = rhs._index;
+		this->_errorPages = rhs._errorPages;
+		this->_redirect = rhs._redirect;
 	}
 	return (*this);
 }
@@ -84,6 +87,16 @@ std::string	Location::getUploadStore(void) const
 	return (this->_uploadStore);
 }
 
+std::map<int, std::string>	&Location::getErrorPages(void)
+{
+	return (this->_errorPages);
+}
+
+std::pair<int, std::string>	Location::getRedir(void) const
+{
+	return (this->_redirect);
+}
+
 void	Location::setPath(std::string path)
 {
 	this->_path = path;
@@ -122,4 +135,14 @@ void	Location::setIndex(std::string file)
 void	Location::setUploadStore(std::string dir)
 {
 	this->_uploadStore = dir;
+}
+
+void	Location::addErrorPage(int code, std::string page)
+{
+	this->_errorPages.insert(std::pair<int, std::string>(code, page));
+}
+
+void	Location::setRedirect(int status, std::string path)
+{
+	this->_redirect = std::pair<int, std::string>(status, path);
 }

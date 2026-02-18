@@ -30,9 +30,25 @@ class	Webserv
 		std::map<int, Client*>	_clientMap;
 		int						_epollFd;
 
-		void	parseConfTokens(std::list<t_conf_token>::iterator &token);
+		void					parseListen(std::list<t_conf_token>::iterator &token, Server &server);
+		void					parseServerName(std::list<t_conf_token>::iterator &token, Server &server);
+		void					parseMaxBodySize(std::list<t_conf_token>::iterator &token, Server &server);
+		void					parseServerRoot(std::list<t_conf_token>::iterator &token, Server &server);
+		void					parseLocRoot(std::list<t_conf_token>::iterator &token, Location &location);
+		void					parseLimitExcept(std::list<t_conf_token>::iterator &token, Location &location);
+		void					parseErrorPage(std::list<t_conf_token>::iterator &token, Location &location);
+		void					parseAutoIndex(std::list<t_conf_token>::iterator &token, Location &location);
+		void					parseIndex(std::list<t_conf_token>::iterator &token, Location &location);
+		void					parseUpload(std::list<t_conf_token>::iterator &token, Location &location);
+		void					parseRedir(std::list<t_conf_token>::iterator &token, Location &location);
+		void					parseLocation(std::list<t_conf_token>::iterator &token, Location &location);
+		void					parseServerBlock(std::list<t_conf_token>::iterator &token, Server &server);
+		std::string				openFile(char const *filepath);
+		std::list<t_conf_token>	lexConfigFile(std::string content);
+		void					printConfTokens(std::list<t_conf_token> lst);
+		void					parseConfTokens(std::list<t_conf_token>::iterator &token);
+		
 		int		setupEpoll(void) const;
-
 		bool	isListenSocket(int fd) const;
 		void	newClient(int listenFd);
     	void	handleRequest(int clientFd);
@@ -49,30 +65,14 @@ class	Webserv
 
 		std::vector<Server>	&getServers(void);
 
-		void	getConfig(char const *filepath);
 		void	addServer(Server server);
 
+		void	getConfig(char const *filepath);
+		
 		void	openSockets(void);
 		void	launchServer(void);
 };
 
 std::ostream	&operator<<(std::ostream &o, Webserv &input);
-
-void					parseListen(std::list<t_conf_token>::iterator &token, Server &server);
-void					parseServerName(std::list<t_conf_token>::iterator &token, Server &server);
-void					parseMaxBodySize(std::list<t_conf_token>::iterator &token, Server &server);
-void					parseServerRoot(std::list<t_conf_token>::iterator &token, Server &server);
-void					parseLocRoot(std::list<t_conf_token>::iterator &token, Location &location);
-void					parseLimitExcept(std::list<t_conf_token>::iterator &token, Location &location);
-void					parseErrorPage(std::list<t_conf_token>::iterator &token, Location &location);
-void					parseAutoIndex(std::list<t_conf_token>::iterator &token, Location &location);
-void					parseIndex(std::list<t_conf_token>::iterator &token, Location &location);
-void					parseUpload(std::list<t_conf_token>::iterator &token, Location &location);
-void					parseRedir(std::list<t_conf_token>::iterator &token, Location &location);
-void					parseLocation(std::list<t_conf_token>::iterator &token, Location &location);
-void					parseServerBlock(std::list<t_conf_token>::iterator &token, Server &server);
-std::string				openFile(char const *filepath);
-std::list<t_conf_token>	lexConfigFile(std::string content);
-void					printConfTokens(std::list<t_conf_token> lst);
 
 #endif

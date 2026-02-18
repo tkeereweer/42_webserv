@@ -47,6 +47,11 @@ std::vector<Server>	&Webserv::getServers(void)
 	return (this->_servers);
 }
 
+void	Webserv::addServer(Server server)
+{
+	this->_servers.push_back(server);
+}
+
 /*******************************************************************************
 *						INIT
 *******************************************************************************/
@@ -56,20 +61,23 @@ std::ostream	&operator<<(std::ostream &o, Webserv &input)
 	for (unsigned int i = 0; i < input.getServers().size(); i++)
 	{
 		o << "server {" << std::endl;
-		o << "server_name " << input.getServers()[i].getName() << ";" << std::endl;
-		o << "client_max_body_size " << input.getServers()[i].getMaxBody() << ";" << std::endl;
-		o << "root " << input.getServers()[i].getServerRoot() << ";" << std::endl;
+		o << "\tserver_name " << input.getServers()[i].getName() << ";" << std::endl;
+		o << "\tclient_max_body_size " << input.getServers()[i].getMaxBody() << ";" << std::endl;
+		o << "\troot " << input.getServers()[i].getServerRoot() << ";" << std::endl;
 		for (unsigned int j = 0; j < input.getServers()[i].getSockets().size(); j++)
-			o << "listen " << input.getServers()[i].getSockets()[j].ipAddr << "/" << input.getServers()[i].getSockets()[j].port << ";" << std::endl;
+			o << "\tlisten " << input.getServers()[i].getSockets()[j].ipAddr << "/" << input.getServers()[i].getSockets()[j].port << ";" << std::endl;
 		for (unsigned int j = 0; j < input.getServers()[i].getLocations().size(); j++)
 		{
-			o << "location " << input.getServers()[i].getLocations()[j].getPath() << " {" << std::endl;
-			o << "root " << input.getServers()[i].getLocations()[j].getLocRoot() << ";" << std::endl;
-			o << "limit_except GET:" << input.getServers()[i].getLocations()[j].getAcceptGET() << " POST:" << input.getServers()[i].getLocations()[j].getAcceptPOST() << "DELETE:" << input.getServers()[i].getLocations()[j].getAcceptDELETE() << ";" << std::endl;
-			o << "autoindex " << input.getServers()[i].getLocations()[j].getAutoIndex() << ";" << std::endl;
-			o << "index " << input.getServers()[i].getLocations()[j].getIndex() << ";" << std::endl;
-			o << "upload_store " << input.getServers()[i].getLocations()[j].getUploadStore() << ";" << std::endl;
-			o << "}" << std::endl;
+			o << "\tlocation " << input.getServers()[i].getLocations()[j].getPath() << " {" << std::endl;
+			o << "\t\troot " << input.getServers()[i].getLocations()[j].getLocRoot() << ";" << std::endl;
+			o << "\t\tlimit_except GET:" << input.getServers()[i].getLocations()[j].getAcceptGET() << " POST:" << input.getServers()[i].getLocations()[j].getAcceptPOST() << " DELETE:" << input.getServers()[i].getLocations()[j].getAcceptDELETE() << ";" << std::endl;
+			o << "\t\tautoindex " << input.getServers()[i].getLocations()[j].getAutoIndex() << ";" << std::endl;
+			o << "\t\tindex " << input.getServers()[i].getLocations()[j].getIndex() << ";" << std::endl;
+			o << "\t\tupload_store " << input.getServers()[i].getLocations()[j].getUploadStore() << ";" << std::endl;
+			for (std::map<int, std::string>::iterator it = input.getServers()[i].getLocations()[j].getErrorPages().begin(); it != input.getServers()[i].getLocations()[j].getErrorPages().end(); ++it)
+				o << "\t\terror_page " << it->first << " " << it->second << ";" << std::endl;
+			o << "\t\treturn " << input.getServers()[i].getLocations()[j].getRedir().first << " " << input.getServers()[i].getLocations()[j].getRedir().second << ";" << std::endl;
+			o << "\t}" << std::endl;
 		}
 		o << "}" << std::endl;
 	}
@@ -103,11 +111,6 @@ void	Webserv::getConfig(char const *filepath)
 	printConfTokens(tokens);
 	std::list<t_conf_token>::iterator	start = tokens.begin();
 	parseConfTokens(start);
-}
-
-void	Webserv::addServer(Server server)
-{
-	this->_servers.push_back(server);
 }
 
 void	Webserv::openSockets(void)

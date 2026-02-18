@@ -4,13 +4,13 @@
 int	main(int argc, char *argv[])
 {
 	Webserv		webserv;
-	std::string	config_file = "./config/default.conf";
+	const char	*config_file = "./config/default.conf";
 
 	if (argc > 1)
 		config_file = argv[1];
 	try
 	{
-		webserv.getConfig(config_file.c_str());
+		webserv.getConfig(config_file);
 		std::cout << "Parsed config file: " << std::endl;
 		std::cout << webserv << std::endl;
 	}
