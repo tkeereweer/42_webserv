@@ -84,33 +84,45 @@ std::ostream	&operator<<(std::ostream &o, Webserv &input)
 	return (o);
 }
 
-void	Webserv::parseConfTokens(std::list<t_conf_token>::iterator &token)
+void	Webserv::parseConfTokens(std::list<t_conf_token> &tokens)
 {
-
-	if (token->type == WORD && token->value == "server")
+	std::list<t_conf_token>::iterator	token = tokens.begin();
+	std::list<t_conf_token>::iterator	end = tokens.end();
+	while (token != end)
 	{
-		Server	server;
-		token++;
-		if (token->type == OPEN_CURLY)
+		if (token->type == WORD && token->value == "server")
 		{
+			Server	server;
+
 			token++;
-			parseServerBlock(token, server);
-			this->addServer(server);
+			if (token != end && token->type == OPEN_CURLY)
+			{
+				token++;
+				parseServerBlock(token, end, server);
+				if (token == end)
+					throw(std::runtime_error("Syntax error in config file"));
+				if (server.getSockets().size() < 1)
+					throw(std::runtime_error("Not enough info for server"));
+				this->addServer(server);
+			}
+			else
+				throw(std::runtime_error("Syntax error in config file"));
 		}
 		else
-			throw(std::runtime_error("Syntax error in config file"));
+			throw(std::runtime_error("Config file does not start with a server block"));
+		token++;
 	}
-	else
-		throw(std::runtime_error("Config file does not start with a server block"));
+	
 }
 
 void	Webserv::getConfig(char const *filepath)
 {
 	std::string	content = openFile(filepath);
-	std::list<t_conf_token> tokens = lexConfigFile(content);
-	printConfTokens(tokens);
-	std::list<t_conf_token>::iterator	start = tokens.begin();
-	parseConfTokens(start);
+	std::list<t_conf_token>	tokens = lexConfigFile(content);
+	// printConfTokens(tokens);
+	parseConfTokens(tokens);
+	if (this->_servers.size() < 1)
+		throw(std::runtime_error("No server in config file"));
 }
 
 void	Webserv::openSockets(void)

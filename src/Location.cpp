@@ -5,9 +5,9 @@
 *******************************************************************************/
 
 Location::Location(void):
-	_acceptGET(false),
-	_acceptPOST(false),
-	_acceptDELETE(false)
+	_acceptGET(true),
+	_acceptPOST(true),
+	_acceptDELETE(true)
 {}
 
 Location::Location(Location const &src):

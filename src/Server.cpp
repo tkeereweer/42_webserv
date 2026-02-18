@@ -5,7 +5,7 @@
 *						CTOR/DTOR
 *******************************************************************************/
 
-Server::Server(void): _maxBodySizeClientReq(256) {}
+Server::Server(void): _maxBodySizeClientReq(1024) {}
 
 Server::Server(Server const &src):
 	_name(src._name),
@@ -45,7 +45,7 @@ std::vector<t_socket>	&Server::getSockets(void)
 	return (this->_sockets);
 }
 
-unsigned long long	Server::getMaxBody(void) const
+long long	Server::getMaxBody(void) const
 {
 	return (this->_maxBodySizeClientReq);
 }
@@ -65,7 +65,7 @@ void	Server::setName(std::string name)
 	this->_name = name;
 }
 
-void	Server::setMaxBody(int maxBody)
+void	Server::setMaxBody(long long maxBody)
 {
 	this->_maxBodySizeClientReq = maxBody;
 }

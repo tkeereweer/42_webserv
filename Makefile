@@ -34,4 +34,20 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+# Test target
+TEST_NAME = test_config
+TEST_OBJS = $(OBJ_DIR)/test_config.o
+
+test: $(TEST_NAME)
+	./$(TEST_NAME)
+
+$(TEST_NAME): $(filter-out $(OBJ_DIR)/main.o, $(OBJS)) $(TEST_OBJS)
+	$(CC) $(FLAGS) $(filter-out $(OBJ_DIR)/main.o, $(OBJS)) $(TEST_OBJS) -o $(TEST_NAME)
+
+$(OBJ_DIR)/test_config.o: tests/test_config.cpp | $(OBJ_DIR)
+	$(CC) $(FLAGS) -Iinclude -c $< -o $@
+
+fclean_test:
+	rm -rf $(TEST_NAME)
+
+.PHONY: all clean fclean re test fclean_test

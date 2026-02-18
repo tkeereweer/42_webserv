@@ -18,7 +18,7 @@ class	Server
 	private:
 		std::string				_name;
 		std::vector<t_socket>	_sockets;
-		unsigned long long		_maxBodySizeClientReq;
+		long long				_maxBodySizeClientReq;
 		std::vector<Location>	_locations;
 		std::string				_root;
 
@@ -30,13 +30,13 @@ class	Server
 
 		std::string				getName(void) const;
 		std::vector<t_socket>	&getSockets(void);
-		unsigned long long		getMaxBody(void) const;
+		long long		getMaxBody(void) const;
 		std::vector<Location>	&getLocations(void);
 		std::string				getServerRoot(void) const;
 
 
 		void	setName(std::string name);
-		void	setMaxBody(int maxBody);
+		void	setMaxBody(long long maxBody);
 		void	setServerRoot(std::string root);
 		void	addSocket(t_socket socket);
 		void	addLocation(Location location);
