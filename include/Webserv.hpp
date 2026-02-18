@@ -30,6 +30,7 @@ class	Webserv
 		std::map<int, Client*>	_clientMap;
 		int						_epollFd;
 
+		// configuration file parsing
 		void					parseListen(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
 		void					parseServerName(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
 		void					parseMaxBodySize(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
@@ -47,7 +48,8 @@ class	Webserv
 		std::list<t_conf_token>	lexConfigFile(std::string content);
 		void					printConfTokens(std::list<t_conf_token> lst);
 		void					parseConfTokens(std::list<t_conf_token> &tokens);
-		
+
+		// socket/connection management
 		int		setupEpoll(void) const;
 		bool	isListenSocket(int fd) const;
 		void	newClient(int listenFd);

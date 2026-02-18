@@ -13,6 +13,8 @@ int	main(int argc, char *argv[])
 		webserv.getConfig(config_file);
 		std::cout << "Parsed config file: " << std::endl;
 		std::cout << webserv << std::endl;
+		webserv.openSockets();
+		webserv.launchServer();
 	}
 	catch(const std::exception& e)
 	{

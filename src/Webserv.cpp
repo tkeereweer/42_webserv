@@ -38,24 +38,6 @@ Webserv	&Webserv::operator=(Webserv const &rhs)
 
 Webserv::~Webserv(void) {}
 
-/*******************************************************************************
-*						GET/SET
-*******************************************************************************/
-
-std::vector<Server>	&Webserv::getServers(void)
-{
-	return (this->_servers);
-}
-
-void	Webserv::addServer(Server server)
-{
-	this->_servers.push_back(server);
-}
-
-/*******************************************************************************
-*						INIT
-*******************************************************************************/
-
 std::ostream	&operator<<(std::ostream &o, Webserv &input)
 {
 	for (unsigned int i = 0; i < input.getServers().size(); i++)
@@ -83,6 +65,24 @@ std::ostream	&operator<<(std::ostream &o, Webserv &input)
 	}
 	return (o);
 }
+
+/*******************************************************************************
+*						GET/SET
+*******************************************************************************/
+
+std::vector<Server>	&Webserv::getServers(void)
+{
+	return (this->_servers);
+}
+
+void	Webserv::addServer(Server server)
+{
+	this->_servers.push_back(server);
+}
+
+/*******************************************************************************
+*						CONFIG PARSING
+*******************************************************************************/
 
 void	Webserv::parseConfTokens(std::list<t_conf_token> &tokens)
 {
@@ -124,6 +124,10 @@ void	Webserv::getConfig(char const *filepath)
 	if (this->_servers.size() < 1)
 		throw(std::runtime_error("No server in config file"));
 }
+
+/*******************************************************************************
+*						INIT
+*******************************************************************************/
 
 void	Webserv::openSockets(void)
 {

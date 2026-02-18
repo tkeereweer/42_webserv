@@ -30,10 +30,9 @@ class	Server
 
 		std::string				getName(void) const;
 		std::vector<t_socket>	&getSockets(void);
-		long long		getMaxBody(void) const;
+		long long				getMaxBody(void) const;
 		std::vector<Location>	&getLocations(void);
 		std::string				getServerRoot(void) const;
-
 
 		void	setName(std::string name);
 		void	setMaxBody(long long maxBody);

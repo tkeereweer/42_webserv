@@ -13,10 +13,8 @@ std::string	Webserv::openFile(char const *filepath)
 
 	if (!ifs.is_open())
 		throw(std::runtime_error("Unable to open file"));
-	std::cout << "File opened" << std::endl;
 	while (std::getline(ifs, line))
 		content.append(line);
-	// std::cout << content << std::endl;
 	return (content);
 }
 
@@ -75,73 +73,9 @@ void	Webserv::printConfTokens(std::list<t_conf_token> lst)
 	}
 }
 
-void	Webserv::parseListen(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
-{
-	t_socket	socket;
-
-	token++;
-	if (token == end || token->type != WORD)
-		throw(std::runtime_error("Error in listen directive config"));
-	if (token->value.find('/') != std::string::npos)
-	{
-		socket.ipAddr = token->value.substr(0, token->value.find('/'));
-		socket.port = token->value.substr(token->value.find('/') + 1);
-	}
-	else
-	{
-		socket.ipAddr = "127.0.0.1";
-		socket.port = token->value;
-	}
-	server.addSocket(socket);
-	token++;
-	if (token == end || token->type != SEMICOLON)
-		throw(std::runtime_error("Error in listen directive config"));
-}
-
-void	Webserv::parseServerName(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
-{
-	token++;
-	if (token == end || token->type != WORD)
-		throw(std::runtime_error("Error in server_name directive config"));
-	server.setName(token->value);
-	token++;
-	if (token == end || token->type != SEMICOLON)
-		throw(std::runtime_error("Error in server_name directive config"));
-}
-
-void	Webserv::parseMaxBodySize(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
-{
-	char		*end_num;
-	long long	max_size;
-
-	token++;
-	if (token == end || token->type != WORD)
-		throw(std::runtime_error("Error in client_max_body_size directive config"));
-	max_size = strtoll(token->value.c_str(), &end_num, 10);
-	if (max_size < 1)
-		throw(std::runtime_error("Error in client_max_body_size directive config"));
-	server.setMaxBody(max_size);
-	if (errno == ERANGE || *end_num != '\0')
-		throw(std::runtime_error("Error in client_max_body_size directive config"));
-	token++;
-	if (token == end || token->type != SEMICOLON)
-		throw(std::runtime_error("Error in client_max_body_size directive config"));
-}
-
-void	Webserv::parseServerRoot(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
-{
-	token++;
-	if (token == end || token->type != WORD)
-		throw(std::runtime_error("Error in root directive config"));
-	if (token->value[0] != '/')
-		throw(std::runtime_error("Error in root directive config"));
-	while (*(token->value.rbegin()) == '/' && token->value.length() > 1)
-		token->value.erase(token->value.length() - 1);
-	server.setServerRoot(token->value);
-	token++;
-	if (token == end || token->type != SEMICOLON)
-		throw(std::runtime_error("Error in root directive config"));
-}
+/*******************************************************************************
+*						LOCATION BLOCK PARSING
+*******************************************************************************/
 
 void	Webserv::parseLocRoot(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
 {	
@@ -256,7 +190,7 @@ void	Webserv::parseRedir(std::list<t_conf_token>::iterator &token, std::list<t_c
 		errno = 0;
 		throw(std::runtime_error("Error in redirection directive config"));
 	}
-	if (errno == ERANGE || *end_num != '\0' || status < 300 || status > 399)
+	if (*end_num != '\0' || status < 300 || status > 399)
 		throw(std::runtime_error("Error in redirection directive config"));
 	token++;
 	if (token == end || token->type != WORD)
@@ -298,6 +232,88 @@ void	Webserv::parseLocation(std::list<t_conf_token>::iterator &token, std::list<
 			throw(std::runtime_error("Unknown directive"));
 		token++;
 	}
+}
+
+/*******************************************************************************
+*						SERVER BLOCK PARSING
+*******************************************************************************/
+
+void	Webserv::parseListen(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
+{
+	t_socket	socket;
+	int			port_num;
+	char		*end_num;
+
+	token++;
+	if (token == end || token->type != WORD)
+		throw(std::runtime_error("Error in listen directive config"));
+	if (token->value.find('/') != std::string::npos)
+	{
+		socket.ipAddr = token->value.substr(0, token->value.find('/'));
+		socket.port = token->value.substr(token->value.find('/') + 1);
+	}
+	else
+	{
+		socket.ipAddr = "127.0.0.1";
+		socket.port = token->value;
+	}
+	port_num = strtol(socket.port.c_str(), &end_num, 10);
+	if (port_num < 1 || port_num > 65535 || *end_num != '\0')
+		throw(std::runtime_error("Error in listen directive config"));
+	server.addSocket(socket);
+	token++;
+	if (token == end || token->type != SEMICOLON)
+		throw(std::runtime_error("Error in listen directive config"));
+}
+
+void	Webserv::parseServerName(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
+{
+	token++;
+	if (token == end || token->type != WORD)
+		throw(std::runtime_error("Error in server_name directive config"));
+	server.setName(token->value);
+	token++;
+	if (token == end || token->type != SEMICOLON)
+		throw(std::runtime_error("Error in server_name directive config"));
+}
+
+void	Webserv::parseMaxBodySize(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
+{
+	char		*end_num;
+	long long	max_size;
+
+	token++;
+	if (token == end || token->type != WORD)
+		throw(std::runtime_error("Error in client_max_body_size directive config"));
+	max_size = strtoll(token->value.c_str(), &end_num, 10);
+	if (max_size < 1)
+		throw(std::runtime_error("Error in client_max_body_size directive config"));
+	server.setMaxBody(max_size);
+	if (errno == ERANGE)
+	{
+		errno = 0;
+		throw(std::runtime_error("Error in client_max_body_size directive config"));
+	}
+	if (*end_num != '\0')
+		throw(std::runtime_error("Error in client_max_body_size directive config"));
+	token++;
+	if (token == end || token->type != SEMICOLON)
+		throw(std::runtime_error("Error in client_max_body_size directive config"));
+}
+
+void	Webserv::parseServerRoot(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
+{
+	token++;
+	if (token == end || token->type != WORD)
+		throw(std::runtime_error("Error in root directive config"));
+	if (token->value[0] != '/')
+		throw(std::runtime_error("Error in root directive config"));
+	while (*(token->value.rbegin()) == '/' && token->value.length() > 1)
+		token->value.erase(token->value.length() - 1);
+	server.setServerRoot(token->value);
+	token++;
+	if (token == end || token->type != SEMICOLON)
+		throw(std::runtime_error("Error in root directive config"));
 }
 
 void	Webserv::parseServerBlock(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
