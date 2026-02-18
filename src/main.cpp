@@ -1,14 +1,16 @@
 #include "../include/Webserv.hpp"
 #include <iostream>
 
-int	main(void)
+int	main(int argc, char *argv[])
 {
 	Webserv		webserv;
-	std::string	file = "test.conf";
+	std::string	config_file = "./config/default.conf";
 
+	if (argc > 1)
+		config_file = argv[1];
 	try
 	{
-		webserv.getConfig(file.c_str());
+		webserv.getConfig(config_file.c_str());
 		std::cout << "Parsed config file: " << std::endl;
 		std::cout << webserv << std::endl;
 	}

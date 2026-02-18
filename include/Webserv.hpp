@@ -30,21 +30,7 @@ class	Webserv
 		std::map<int, Client*>	_clientMap;
 		int						_epollFd;
 
-		void	parseListen(std::list<t_conf_token>::iterator &token, Server &server);
-		void	parseServerName(std::list<t_conf_token>::iterator &token, Server &server);
-		void	parseMaxBodySize(std::list<t_conf_token>::iterator &token, Server &server);
-		void	parseServerRoot(std::list<t_conf_token>::iterator &token, Server &server);
-		void	parseLocRoot(std::list<t_conf_token>::iterator &token, Location &location);
-		void	parseLimitExcept(std::list<t_conf_token>::iterator &token, Location &location);
-		void	parseErrorPage(std::list<t_conf_token>::iterator &token, Location &location);
-		void	parseAutoIndex(std::list<t_conf_token>::iterator &token, Location &location);
-		void	parseIndex(std::list<t_conf_token>::iterator &token, Location &location);
-		void	parseUpload(std::list<t_conf_token>::iterator &token, Location &location);
-		void	parseRedir(std::list<t_conf_token>::iterator &token, Location &location);
-		void	parseLocation(std::list<t_conf_token>::iterator &token, Location &location);
-		void	parseServerBlock(std::list<t_conf_token>::iterator &token, Server &server);
 		void	parseConfTokens(std::list<t_conf_token>::iterator &token);
-
 		int		setupEpoll(void) const;
 
 		bool	isListenSocket(int fd) const;
@@ -72,6 +58,19 @@ class	Webserv
 
 std::ostream	&operator<<(std::ostream &o, Webserv &input);
 
+void					parseListen(std::list<t_conf_token>::iterator &token, Server &server);
+void					parseServerName(std::list<t_conf_token>::iterator &token, Server &server);
+void					parseMaxBodySize(std::list<t_conf_token>::iterator &token, Server &server);
+void					parseServerRoot(std::list<t_conf_token>::iterator &token, Server &server);
+void					parseLocRoot(std::list<t_conf_token>::iterator &token, Location &location);
+void					parseLimitExcept(std::list<t_conf_token>::iterator &token, Location &location);
+void					parseErrorPage(std::list<t_conf_token>::iterator &token, Location &location);
+void					parseAutoIndex(std::list<t_conf_token>::iterator &token, Location &location);
+void					parseIndex(std::list<t_conf_token>::iterator &token, Location &location);
+void					parseUpload(std::list<t_conf_token>::iterator &token, Location &location);
+void					parseRedir(std::list<t_conf_token>::iterator &token, Location &location);
+void					parseLocation(std::list<t_conf_token>::iterator &token, Location &location);
+void					parseServerBlock(std::list<t_conf_token>::iterator &token, Server &server);
 std::string				openFile(char const *filepath);
 std::list<t_conf_token>	lexConfigFile(std::string content);
 void					printConfTokens(std::list<t_conf_token> lst);
