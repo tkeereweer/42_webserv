@@ -34,7 +34,7 @@ int		Request::_requestEval(std::string &data)
 {
 	std::list<t_reqToken>::const_reverse_iterator it = this->_tokenList.rbegin();
 
-	while (it->type != CRLF && it != this->_tokenList.rbegin())
+	while (it->type != CRLF && it != this->_tokenList.rend())
 		it++;
 
 	//insert last token that could have been cut short
@@ -55,11 +55,11 @@ int		Request::_requestEval(std::string &data)
 
 	try
 	{
-		_parseSimpleRequest();
-		
+		_parseSimpleRequest();		
 	}
 	catch(const std::exception& e)
 	{
+		std::cout << "parsing error detected: " << e.what() << std::endl;
 		if (this->_tokenList.rbegin()->type == WORD && this->_tokenList.rbegin()->type == SPACE)
 		{	
 			data.insert(data.begin(), this->_tokenList.rbegin()->val.begin(), this->_tokenList.rbegin()->val.end());
@@ -93,28 +93,12 @@ int	Request::lexRawData(std::string &data)
 	return (_requestEval(data));
 }
 
+std::string const	&Request::getMethod(void) const
+{
+	return (this->_method);
+}
 
-
-
-
-
-
-
-
-
-
-// int main(int argc, char **argv)
-// {
-// 	std::string test(argv[1]);
-
-// 	try
-// 	{
-		
-// 	}
-// 	catch(const std::exception& e)
-// 	{
-// 		std::cerr << e.what() << '\n';
-// 	}
-	
-// 	return (0);
-// }
+std::string const	&Request::getURI(void) const
+{
+	return (this->_URI);
+}

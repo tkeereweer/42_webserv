@@ -155,7 +155,6 @@ void    Request::_parseSimpleRequest(void)
 		throw(std::runtime_error("not simple request"));
 	it++;
 	_parseURI(it); //throws exception
-	it++;
 	if (it->type != CRLF)
 		throw(std::runtime_error("not simple request"));
 	this->_method = "GET";

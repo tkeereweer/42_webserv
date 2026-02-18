@@ -95,7 +95,10 @@ class Request
 		int     	lexRawData(std::string &data);
 		int			fillBody(std::string &data);
 		void		parse(std::list<std::string> &input);
-
+		
+		//getters
+		std::string const	&getMethod(void) const;
+		std::string const	&getURI(void) const;
 
 		static bool	isCRLF(std::string::const_iterator	&it);
 };
