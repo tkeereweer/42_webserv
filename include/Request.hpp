@@ -44,7 +44,6 @@ class Request
 		std::string	_HTTPVersion;
 		
 		//general headers
-		std::string	_date;
 
 		//request headers, info about the client
 
@@ -68,9 +67,11 @@ class Request
 
 		
 		void			_lexInput(std::string const &str);
-		long long		_requestEval(std::string &data);
+		int				_requestEval(std::string &data);
+		int				_trySimpleRequest(std::string &data);
+		int				_tryFullParsing(std::string &data);
 		//takes leftover from parsing, puts it as is in Body and returns body content_length - length
-		long long		_readLeftovers(void);
+		long long		_readLeftovers(std::list<t_reqToken>::iterator &it);
 		void			_createTempFile(void);
 		void			_createNextAvailableFile(struct dirent *name, DIR *tmp);
 
@@ -113,6 +114,12 @@ class Request
 		//getters
 		std::string const	&getMethod(void) const;
 		std::string const	&getURI(void) const;
+		std::string const   &getHTTPVersion(void) const;
+		std::string const   &getContentEncoding(void) const;
+		long long const		&getContentLength(void) const;
+		std::string const   &getContentType(void) const;
+		std::string const	&getCookies(void) const;
+		std::string const	&getBodyFilename(void) const;
 
 		static bool	isCRLF(std::string::const_iterator	&it);
 };

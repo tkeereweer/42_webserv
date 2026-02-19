@@ -191,8 +191,6 @@ void	verifyHTTPWord(std::string str)
 	std::string firstHalf(str.begin(), it);
 	it++;
 	std::string	secondHalf(it, str.end());
-	std::cout << "http version first half: " << firstHalf << std::endl;
-	std::cout << "http version second half: " << secondHalf << std::endl;
 
 	if (firstHalf.size() == 0 || secondHalf.size() == 0)
 		throw (std::runtime_error("wrong HTTP version"));
@@ -225,7 +223,7 @@ void	Request::_parseHTTPVersion(std::list<t_reqToken>::iterator &it)
 void		Request::_parseRequestLine(std::list<t_reqToken>::iterator &it)
 {
 	std::string	method;
-	if (it->val != "GET" || it->val != "POST" || it->val != "DELETE")
+	if (it->val != "GET" && it->val != "POST" && it->val != "DELETE")
 		throw(std::runtime_error("wrong method"));
 	method = it->val;
 	it++;
@@ -270,8 +268,8 @@ bool	isToken(std::string &str)
 std::string	Request::_parseContentCoding(std::list<t_reqToken>::iterator &it)
 {
 	std::string	res = "";
-	std::transform(it->val.begin(), it->val.end(), it->val.begin(), [](unsigned char c){return (std::tolower(c));});
-	if (it->val == "x-gzip" | it->val == "x-compress")
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), tolower);
+	if (it->val == "x-gzip" || it->val == "x-compress")
 	{
 		res += it->val;
 		it++;
@@ -284,39 +282,25 @@ std::string	Request::_parseContentCoding(std::list<t_reqToken>::iterator &it)
 	return (res);
 }
 
-bool	returnLastCRLF(std::list<t_reqToken>::iterator &it)
-{
-	while (it->type != CRLF)
-			it++;
-		return (false);
-}
-
 //last one wins
 bool	Request::_parseContentEncoding(std::list<t_reqToken>::iterator &it)
 {
 	std::string res = "";
 
-	std::transform(it->val.begin(), it->val.end(), it->val.begin(), [](unsigned char c){return (std::tolower(c));});
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), tolower);
 	if (it->val != "content-encoding")
-		return (returnLastCRLF(it));
+		return (false);
 	it++;
 	if (it->type != COLON)
-		return (returnLastCRLF(it));
+		throw(std::runtime_error("invalid header: content-encoding"));
 	it++;
-	if (it->type != SPACE)
-		return (returnLastCRLF(it));
+	// if (it->type != SPACE)
+	// 	throw(std::runtime_error("invalid header: content-encoding")); //whitespace optional in header ?
 	while (it->type == SPACE)
 		it++;
-	try
-	{
-		res += _parseContentCoding(it);
-	}
-	catch(const std::exception& e)
-	{
-		return (returnLastCRLF(it));
-	}
+	res += _parseContentCoding(it);
 	if (it->type != CRLF)
-		return (returnLastCRLF(it));
+		throw(std::runtime_error("invalid header: content-encoding"));
 	this->_contentEncoding = res;
 	return (true);
 }
@@ -326,28 +310,28 @@ bool	Request::_parseContentLength(std::list<t_reqToken>::iterator &it)
 {
 	std::string res = "";
 
-	std::transform(it->val.begin(), it->val.end(), it->val.begin(), [](unsigned char c){return (std::tolower(c));});
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), tolower);
 	if (it->val != "content-length")
-		return (returnLastCRLF(it));
+		return (false);
 	it++;
 	if (it->type != COLON)
-		return (returnLastCRLF(it));
+		throw(std::runtime_error("invalid header: content-length"));
 	it++;
-	if (it->type != SPACE)
-		return (returnLastCRLF(it));
+	// if (it->type != SPACE)
+	// 	throw(std::runtime_error("invalid header: content-length"));
 	while (it->type == SPACE)
 		it++;
 	if (it->type != WORD || it->val.size() == 0)
-		return (returnLastCRLF(it));
+		throw(std::runtime_error("invalid header: content-length"));
 	for (std::string::iterator ite = it->val.begin(); ite != it->val.end(); ite++)
 	{
 		if (!isdigit(*ite))
-			return (returnLastCRLF(it));
+			throw(std::runtime_error("invalid header: content-length"));
 	}
 	res += it->val;
 	it++;
 	if (it->type != CRLF)
-		return (returnLastCRLF(it));
+		throw(std::runtime_error("invalid header: content-length"));
 	if (this->_contentLength != 0)
 		throw(std::runtime_error("more than 1 content-length header !"));
 	this->_contentLength = atoll(res.c_str());
@@ -366,6 +350,10 @@ std::string	Request::_parseMediaType(std::list<t_reqToken>::iterator &it)
 		throw (std::runtime_error("wrong media type format, expected '/'"));
 	res += it->val;
 	it++;
+	if (!isToken(it->val))
+			throw (std::runtime_error("expected valid parameter"));
+	res += it->val;
+	it++;
 	while (it->type == SEMI_COLON)
 	{
 		it++;
@@ -382,27 +370,20 @@ bool	Request::_parseContentType(std::list<t_reqToken>::iterator &it)
 {
 	std::string res = "";
 
-	std::transform(it->val.begin(), it->val.end(), it->val.begin(), [](unsigned char c){return (std::tolower(c));});
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), tolower);
 	if (it->val != "content-type")
-		return (returnLastCRLF(it));
+		return (false);
 	it++;
 	if (it->type != COLON)
-		return (returnLastCRLF(it));
+		throw(std::runtime_error("invalid header: content-type"));
 	it++;
-	if (it->type != SPACE)
-		return (returnLastCRLF(it));
+	// if (it->type != SPACE)
+	// 	throw(std::runtime_error("invalid header: content-type"));
 	while (it->type == SPACE)
 		it++;
-	try
-	{
-		res += _parseMediaType(it);
-	}
-	catch(const std::exception& e)
-	{
-		return (returnLastCRLF(it));
-	}
+	res += _parseMediaType(it);
 	if (it->type != CRLF)
-		return (returnLastCRLF(it));
+		throw(std::runtime_error("invalid header: content-type"));
 	this->_contentType = res;
 	return (true);
 }
@@ -430,26 +411,26 @@ bool	Request::_parseCookies(std::list<t_reqToken>::iterator &it)
 {
 	std::string res = "";
 
-	std::transform(it->val.begin(), it->val.end(), it->val.begin(), [](unsigned char c){return (std::tolower(c));});
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), tolower);
 	if (it->val != "cookie")
-		return (returnLastCRLF(it));
+		return (false);
 	it++;
 	if (it->type != COLON)
-		return (returnLastCRLF(it));
+		throw(std::runtime_error("invalid header: cookies"));
 	it++;
 	if (it->type != SPACE)
-		return (returnLastCRLF(it));
+		throw(std::runtime_error("invalid header: cookies"));
 	while (it->type == SPACE)
 		it++;
 	if (!isCookie(it->val))
-		return (returnLastCRLF(it));
+		throw(std::runtime_error("invalid header: cookies"));
 	res += it->val;
 	it++;
 	while (it->type == SEMI_COLON)
 	{
 		it++;
 		if (!isCookie(it->val))
-			return (returnLastCRLF(it));
+			throw(std::runtime_error("invalid header: cookies"));
 		res += it->val;
 		it++;
 	}
@@ -459,6 +440,22 @@ bool	Request::_parseCookies(std::list<t_reqToken>::iterator &it)
 	return (true);
 }	
 
+bool	isHeader(std::list<t_reqToken>::iterator &it)
+{
+	if (it->type != WORD)
+		return (false);
+	it++;
+	if (it->type != SEMI_COLON)
+		return (false);
+	it++;
+	if (isToken(it->val))
+		return (false);
+	it++;
+	if (it->type != CRLF)
+		return (false);
+	return (true);
+}
+
 void	Request::_parseFullRequest(void)
 {
 	std::list<t_reqToken>::iterator it = this->_tokenList.begin();
@@ -467,16 +464,22 @@ void	Request::_parseFullRequest(void)
 	{
 		//these functions must advance it beyond next CRLF even if they return false
 		//throw exception if header format not respected --> in body overshoots in bad requests handled
-		if (_parseContentEncoding(it)
+		if (!(_parseContentEncoding(it)
 			|| _parseContentLength(it)
 			|| _parseContentType(it)
-			|| _parseCookies(it))
-			continue;
+			|| _parseCookies(it)))
+		{
+			if (!isHeader(it)) //makes a copy
+				throw(std::runtime_error("not header in header part"));
+			while (it->type != CRLF)
+				it++;
+		}
+		it++;
 	}
 	it++;
 	if (it != this->_tokenList.end() && this->_method == "POST" && this->_contentLength > 0)
-		_readLeftovers();
+		_readLeftovers(it);
 	else
-		this->_reqComplete == true;
+		this->_reqComplete = true;
 	return ;
 }

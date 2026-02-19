@@ -28,10 +28,10 @@ void	Request::_createNextAvailableFile(struct dirent *name, DIR *tmp)
 	//create available file found
 	std::string	filename("/tmp/");
 	filename += nameToFind;
-	this->_bodyFilename = filename;
 	std::ofstream file(filename.c_str());
 	if (!file)
 			throw(std::runtime_error("can't open file"));
+    this->_bodyFilename = filename;
 	return ;	
 }
 
@@ -57,6 +57,7 @@ void    Request::_createTempFile(void)
 		std::ofstream file("/tmp/wbsrv_rqst_0");
 		if (!file)
 			throw(std::runtime_error("can't open file"));
+        this->_bodyFilename = "/tmp/wbsrv_rqst_0";
 		return ;
 	}
 
