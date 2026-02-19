@@ -3,6 +3,11 @@ SRC = Client.cpp \
 	Server.cpp \
 	Webserv.cpp \
 	configFile.cpp \
+	http_parsing/createTempFile.cpp \
+	http_parsing/httpLexer.cpp \
+	http_parsing/lexerUtils.cpp \
+	http_parsing/parsingMethods.cpp \
+	http_parsing/Request.cpp \
 	main.cpp
 
 NAME = webserv
