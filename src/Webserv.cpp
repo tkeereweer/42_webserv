@@ -40,15 +40,101 @@ Webserv	&Webserv::operator=(Webserv const &rhs)
 
 Webserv::~Webserv(void) {}
 
+std::ostream	&operator<<(std::ostream &o, Webserv &input)
+{
+	for (unsigned int i = 0; i < input.getServers().size(); i++)
+	{
+		o << "server {" << std::endl;
+		o << "\tserver_name " << input.getServers()[i].getName() << ";" << std::endl;
+		o << "\tclient_max_body_size " << input.getServers()[i].getMaxBody() << ";" << std::endl;
+		o << "\troot " << input.getServers()[i].getServerRoot() << ";" << std::endl;
+		for (unsigned int j = 0; j < input.getServers()[i].getSockets().size(); j++)
+			o << "\tlisten " << input.getServers()[i].getSockets()[j].ipAddr << "/" << input.getServers()[i].getSockets()[j].port << ";" << std::endl;
+		for (unsigned int j = 0; j < input.getServers()[i].getLocations().size(); j++)
+		{
+			o << "\tlocation " << input.getServers()[i].getLocations()[j].getPath() << " {" << std::endl;
+			o << "\t\troot " << input.getServers()[i].getLocations()[j].getLocRoot() << ";" << std::endl;
+			o << "\t\tlimit_except GET:" << input.getServers()[i].getLocations()[j].getAcceptGET() << " POST:" << input.getServers()[i].getLocations()[j].getAcceptPOST() << " DELETE:" << input.getServers()[i].getLocations()[j].getAcceptDELETE() << ";" << std::endl;
+			o << "\t\tautoindex " << input.getServers()[i].getLocations()[j].getAutoIndex() << ";" << std::endl;
+			o << "\t\tindex " << input.getServers()[i].getLocations()[j].getIndex() << ";" << std::endl;
+			o << "\t\tupload_store " << input.getServers()[i].getLocations()[j].getUploadStore() << ";" << std::endl;
+			for (std::map<int, std::string>::iterator it = input.getServers()[i].getLocations()[j].getErrorPages().begin(); it != input.getServers()[i].getLocations()[j].getErrorPages().end(); ++it)
+				o << "\t\terror_page " << it->first << " " << it->second << ";" << std::endl;
+			o << "\t\treturn " << input.getServers()[i].getLocations()[j].getRedir().first << " " << input.getServers()[i].getLocations()[j].getRedir().second << ";" << std::endl;
+			o << "\t}" << std::endl;
+		}
+		o << "}" << std::endl;
+	}
+	return (o);
+}
 
 /*******************************************************************************
-*						INIT
+*						GET/SET
 *******************************************************************************/
+
+std::vector<Server>	&Webserv::getServers(void)
+{
+	return (this->_servers);
+}
+
+std::map<int, Server*>	&Webserv::getServerMap(void)
+{
+	return (this->_serverMap);
+}
 
 void	Webserv::addServer(Server server)
 {
 	this->_servers.push_back(server);
 }
+
+/*******************************************************************************
+*						CONFIG PARSING
+*******************************************************************************/
+
+void	Webserv::parseConfTokens(std::list<t_conf_token> &tokens)
+{
+	std::list<t_conf_token>::iterator	token = tokens.begin();
+	std::list<t_conf_token>::iterator	end = tokens.end();
+	while (token != end)
+	{
+		if (token->type == WORD && token->value == "server")
+		{
+			Server	server;
+
+			token++;
+			if (token != end && token->type == OPEN_CURLY)
+			{
+				token++;
+				parseServerBlock(token, end, server);
+				if (token == end)
+					throw(std::runtime_error("Syntax error in config file"));
+				if (server.getSockets().size() < 1)
+					throw(std::runtime_error("Not enough info for server"));
+				this->addServer(server);
+			}
+			else
+				throw(std::runtime_error("Syntax error in config file"));
+		}
+		else
+			throw(std::runtime_error("Config file does not start with a server block"));
+		token++;
+	}
+	
+}
+
+void	Webserv::getConfig(char const *filepath)
+{
+	std::string	content = openFile(filepath);
+	std::list<t_conf_token>	tokens = lexConfigFile(content);
+	// printConfTokens(tokens);
+	parseConfTokens(tokens);
+	if (this->_servers.size() < 1)
+		throw(std::runtime_error("No server in config file"));
+}
+
+/*******************************************************************************
+*						INIT
+*******************************************************************************/
 
 void	Webserv::openSockets(void)
 {
