@@ -75,6 +75,11 @@ std::vector<Server>	&Webserv::getServers(void)
 	return (this->_servers);
 }
 
+std::map<int, Server*>	&Webserv::getServerMap(void)
+{
+	return (this->_serverMap);
+}
+
 void	Webserv::addServer(Server server)
 {
 	this->_servers.push_back(server);

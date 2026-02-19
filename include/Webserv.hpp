@@ -65,7 +65,8 @@ class	Webserv
 		Webserv	&operator=(Webserv const &rhs);
 		~Webserv(void);
 
-		std::vector<Server>	&getServers(void);
+		std::vector<Server>		&getServers(void);
+		std::map<int, Server*>	&getServerMap(void);
 
 		void	addServer(Server server);
 

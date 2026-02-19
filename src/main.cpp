@@ -1,5 +1,6 @@
 #include "../include/Webserv.hpp"
 #include <iostream>
+#include <unistd.h>
 
 int	main(int argc, char *argv[])
 {
@@ -19,6 +20,8 @@ int	main(int argc, char *argv[])
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
+		for (std::map<int, Server*>::iterator it = webserv.getServerMap().begin(); it != webserv.getServerMap().end(); it++)
+			close(it->first);
 	}
 	
 	// Server		serverA;
