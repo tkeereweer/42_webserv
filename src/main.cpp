@@ -23,15 +23,5 @@ int	main(int argc, char *argv[])
 		for (std::map<int, Server*>::iterator it = webserv.getServerMap().begin(); it != webserv.getServerMap().end(); it++)
 			close(it->first);
 	}
-	
-	// Server		serverA;
-	// t_socket	socketA;
-
-	// socketA.port = "8080";
-	// socketA.ipAddr = "127.0.0.1";
-	// serverA.addSocket(socketA);
-	// webserv.addServer(serverA);
-	// webserv.openSockets();
-	// webserv.launchServer();
 	return (0);
 }
