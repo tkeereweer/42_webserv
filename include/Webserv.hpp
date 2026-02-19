@@ -6,13 +6,19 @@
 # include <map>
 # include <vector>
 
+typedef struct	s_connection
+{
+	Client	client;
+	Server*	server;
+}	t_connection;
+
 class	Webserv
 {
 	private:
-		std::vector<Server>		_servers;
-		std::map<int, Server*>	_serverMap;
-		std::map<int, Client*>	_clientMap;
-		int						_epollFd;
+		std::vector<Server>			_servers;
+		std::map<int, Server*>		_serverMap;
+		std::map<int, t_connection>	_clientMap;
+		int							_epollFd;
 
 		int		setupEpoll(void) const;
 

@@ -86,7 +86,7 @@ void	Webserv::openSockets(void)
 				throw(std::runtime_error(std::strerror(errno)));
 			if (listen(sFd, 15) == -1)
 				throw(std::runtime_error(std::strerror(errno)));
-			std::cout << sFd << "Listening at " << it->ipAddr << " on port " << it->port << std::endl;
+			std::cout << "Listening Socket with fd: "<< sFd << " is listening at " << it->ipAddr << " on port " << it->port << std::endl;
 			this->_serverMap.insert(std::pair<int, Server*>(sFd, &(this->_servers[i])));
 		}
 	}
@@ -106,7 +106,7 @@ int	Webserv::setupEpoll(void) const
 		event.data.fd = it->first;
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, it->first, &event) == -1)
 			throw(std::runtime_error(std::strerror(errno)));
-		std::cout << "Added fd: " << it->first << " to the epoll instance" << std::endl;
+		std::cout << "Listening Socket with fd: " << it->first << " added to the epoll" << std::endl;
 	}
 	return (epollFd);
 }
@@ -119,22 +119,23 @@ void	Webserv::launchServer(void)
 	this->_epollFd = this->setupEpoll();
 	while (1)
 	{
-		std::cout << "Waiting for connections" << std::endl;
+		std::cout << "\nWaiting for connections" << std::endl;
 		readyFds = epoll_wait(_epollFd, readyEvents, 10, -1);
 		for (int i  = 0; i < readyFds; i++)
 		{
-			std::cout << "FD: " << readyEvents[i].data.fd << " is ready for " << readyEvents[i].events << std::endl;
+			// std::cout << "fd: " << readyEvents[i].data.fd << " is ready for event " << readyEvents[i].events << std::endl;
+			std::cout << "fd: " << readyEvents[i].data.fd << " has activity!" << std::endl;
 
 			if (isListenSocket(readyEvents[i].data.fd))
 				newClient(readyEvents[i].data.fd);
 			else
 			{
-				if (readyEvents[i].events & (EPOLLERR | EPOLLHUP))
-					closeClient(readyEvents[i].data.fd);
-				else if (readyEvents[i].events & EPOLLIN)
+				if (readyEvents[i].events & EPOLLIN)
 					handleRequest(readyEvents[i].data.fd);
 				else if (readyEvents[i].events & EPOLLOUT)
 					handleResponse(readyEvents[i].data.fd);
+				else
+					closeClient(readyEvents[i].data.fd);
 			}
 		}
 	}
@@ -168,14 +169,14 @@ void	Webserv::newClient(int listenFd)
 		throw(std::runtime_error(std::strerror(errno)));
     }
 
-    _clientMap[clientFd] = new Client(clientFd);
+    _clientMap[clientFd].client = Client(clientFd);
+	_clientMap[clientFd].server = _serverMap[listenFd];
 
 	struct epoll_event event;
     event.events = EPOLLIN;
     event.data.fd = clientFd;
 	 if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1)
     {
-        delete _clientMap[clientFd];
         _clientMap.erase(clientFd);
         close(clientFd);
 		throw(std::runtime_error(std::strerror(errno)));
@@ -186,14 +187,8 @@ void	Webserv::newClient(int listenFd)
 
 void	Webserv::testPrint(int clientFd)
 {
-	std::string request = _clientMap[clientFd]->getRequest();
-	size_t nl = request.find('\n');
-
-	std::string print =request.substr(0, nl);
-	std::string rest = request.substr(nl + 1);
-
-	_clientMap[clientFd]->setRequest(rest);
-	std::cout << print << std::endl;
+	std::cout << _clientMap[clientFd].client.getRequest() << std::endl;
+	_clientMap[clientFd].client.clearRequest();
 }
 
 void	Webserv::handleRequest(int clientFd)
@@ -205,22 +200,17 @@ void	Webserv::handleRequest(int clientFd)
  	if (bytesRead > 0)
     {
         buffer[bytesRead] = '\0';
-        _clientMap[clientFd]->appendRequest(std::string(buffer, bytesRead));
+        _clientMap[clientFd].client.appendRequest(std::string(buffer, bytesRead));
 
-		if ((_clientMap[clientFd]->getRequest().find('\n')) != std::string::npos)
-			testPrint(clientFd);
+		if ((_clientMap[clientFd].client.getRequest().find("FIN")) != std::string::npos)
+		{
+			testPrint(clientFd);	
+			// closeClient(cientFd);
+		}
 	}
 
-	else if (bytesRead == 0)
+	else
         closeClient(clientFd);
-	
-	else 
-	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK) 
-			return;
-		else
-			closeClient(clientFd);
-	}
 }
 
 void	Webserv::handleResponse(int clientFd)
@@ -235,7 +225,6 @@ void	Webserv::closeClient(int clientFd)
 {
 	epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
     close(clientFd);
-    delete _clientMap[clientFd];
     _clientMap.erase(clientFd);
     std::cout << "Client disconnected with fd: " << clientFd << std::endl;
 }
