@@ -9,6 +9,7 @@ class	Client
 		int			_fd;
 		std::string	_request; //later: class
 		std::string	_response; // same
+		size_t		_bytesSent;
 
 	public:
 		Client(void);
@@ -17,16 +18,19 @@ class	Client
 		Client	&operator=(Client const &rhs);
 		~Client(void);
 
-		int			getFd(void) const;
-		std::string	getRequest(void) const;
-		std::string	getResponse(void) const;
+		int					getFd(void) const;
+		const std::string&	getRequest(void) const;
+		const std::string&	getResponse(void) const;
+		size_t				getBytesSent(void) const;
 
-		void		setRequest(const std::string& request);
-		void		setResponse(const std::string& response);
-		void		appendRequest(const std::string& appendix);
+		void				setRequest(const std::string& request);
+		void				setResponse(const std::string& response);
+		void				appendRequest(const std::string& appendix);
+		void				addBytesSent(size_t bytesSent);
 
-		void		clearRequest(void);
-		void		clearResponse(void);
+		void				clearRequest(void);
+		void				clearResponse(void);
+		void				clearBytesSent(void);
 };
 
 #endif

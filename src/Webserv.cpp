@@ -10,6 +10,8 @@
 #include <sys/epoll.h>
 #include <iostream>
 #include <fcntl.h>
+#include <fstream>
+#include <sstream>
 
 /*******************************************************************************
 *						CTOR/DTOR
@@ -175,7 +177,7 @@ void	Webserv::newClient(int listenFd)
 	struct epoll_event event;
     event.events = EPOLLIN;
     event.data.fd = clientFd;
-	 if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1)
+	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1)
     {
         _clientMap.erase(clientFd);
         close(clientFd);
@@ -187,25 +189,40 @@ void	Webserv::newClient(int listenFd)
 
 void	Webserv::testPrint(int clientFd)
 {
-	std::cout << _clientMap[clientFd].client.getRequest() << std::endl;
+	// std::ifstream file("../loremLIL.txt");
+    // std::ostringstream ss;
+    // ss << file.rdbuf();
+    // std::string response = ss.str();
+	// _clientMap[clientFd].client.setResponse(response);
+
+	_clientMap[clientFd].client.setResponse("This is a Response");
 	_clientMap[clientFd].client.clearRequest();
 }
 
 void	Webserv::handleRequest(int clientFd)
 {
-	char	buffer[1024];
+	Client&		client = _clientMap[clientFd].client;
+	char		buffer[1024];
 
 	ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
 
  	if (bytesRead > 0)
     {
         buffer[bytesRead] = '\0';
-        _clientMap[clientFd].client.appendRequest(std::string(buffer, bytesRead));
+        client.appendRequest(std::string(buffer, bytesRead));
 
-		if ((_clientMap[clientFd].client.getRequest().find("FIN")) != std::string::npos)
+		if ((client.getRequest().find("FIN")) != std::string::npos) 
 		{
-			testPrint(clientFd);	
-			// closeClient(cientFd);
+			testPrint(clientFd);
+			struct epoll_event event;
+			event.events = EPOLLOUT;
+    		event.data.fd = clientFd;
+			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientFd, &event) == -1)
+			{
+				_clientMap.erase(clientFd);
+				close(clientFd);
+				throw(std::runtime_error(std::strerror(errno)));
+			}
 		}
 	}
 
@@ -215,16 +232,26 @@ void	Webserv::handleRequest(int clientFd)
 
 void	Webserv::handleResponse(int clientFd)
 {
-	(void)clientFd;
-	// load into kernel buffer
-	// track how much went in and store the rest
-	// repeat for whole response
+	Client&		client = _clientMap[clientFd].client;
+	const char*	ptr = client.getResponse().c_str() + client.getBytesSent();
+	size_t		remaining = client.getResponse().size() - client.getBytesSent();
+
+	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
+
+	if (bytesSentNow > 0)
+	{
+		client.addBytesSent(bytesSentNow);
+		if (client.getBytesSent() == client.getResponse().size() )
+			closeClient(clientFd);
+	}
+	else
+		closeClient(clientFd);
 }
 
 void	Webserv::closeClient(int clientFd)
 {
 	epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
-    close(clientFd);
     _clientMap.erase(clientFd);
+	close(clientFd);
     std::cout << "Client disconnected with fd: " << clientFd << std::endl;
 }
