@@ -123,30 +123,30 @@ void	Server::dispatchRequest(Client &client)
 	}
 	if (req.getMethod() == GET)
 		handleGET(client, loc);
-	else if (req.getMethod() == GET)
-		handlePOST(client, loc);
-	else
-		handleDELETE(client, loc);
+	// else if (req.getMethod() == GET)
+	// 	handlePOST(client, loc);
+	// else
+	// 	handleDELETE(client, loc);
 }
 
-void	Server::handleError(Client &client, Location &loc, short code) const
-{
-	std::map<int, std::string>::const_iterator	it;
-	Response									&resp = client.getResponse();
+// void	Server::handleError(Client &client, Location &loc, short code) const
+// {
+// 	std::map<int, std::string>::const_iterator	it;
+// 	// Response	&resp = client.getResponse();
 
-	if ((it = loc.getErrorPages().find(code)) != loc.getErrorPages().end())
-	{
-		// return custom error page (it->second)
-	}
-	else if ((it = this->_errorPages.find(code)) != this->_errorPages.end())
-	{
-		// return custom error page (it->second)
-	}
-	else
-	{
-		resp.
-	}
-}
+// 	if ((it = loc.getErrorPages().find(code)) != loc.getErrorPages().end())
+// 	{
+// 		// return custom error page (it->second)
+// 	}
+// 	else if ((it = this->_errorPages.find(code)) != this->_errorPages.end())
+// 	{
+// 		// return custom error page (it->second)
+// 	}
+// 	else
+// 	{
+// 		resp.
+// 	}
+// }
 
 /*******************************************************************************
 *						HANDLE GET/POST/DELETE
@@ -194,6 +194,7 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir) const
 	}
 	else
 	{
+        (void)client;
 		// return index.html file
 	}
 }

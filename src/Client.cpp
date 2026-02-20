@@ -4,11 +4,12 @@
 *						CTOR/DTOR
 *******************************************************************************/
 
-Client::Client(void) : _bytesSent(0)
+Client::Client(void) : _request(), _bytesSent(0)
 {}
 
 Client::Client(int fd) : 
 	_fd(fd),
+    _request(),
 	_bytesSent(0)
 {}
 
@@ -44,9 +45,9 @@ int			Client::getFd(void) const
 	return (_fd);
 }
 
-const std::string&	Client::getRequest(void) const
+std::string&	Client::getReadBuffer(void)
 {
-	return (_request);
+	return (_readBuffer);
 }
 
 const std::string&	Client::getResponse(void) const
@@ -61,9 +62,9 @@ size_t		Client::getBytesSent(void) const
 
 
 
-void		Client::setRequest(const std::string& request)
+void		Client::setReadBuffer(const std::string& readBuffer)
 {
-	this->_request = request;
+	this->_readBuffer = readBuffer;
 }
 
 void		Client::setResponse(const std::string& response)
@@ -71,9 +72,9 @@ void		Client::setResponse(const std::string& response)
 	this->_response = response;
 }
 
-void		Client::appendRequest(const std::string& appendix)
+void		Client::appendReadBuffer(const std::string& appendix)
 {
-	_request += appendix;
+	_readBuffer += appendix;
 }
 
 void		Client::addBytesSent(size_t bytesSent)
@@ -82,9 +83,9 @@ void		Client::addBytesSent(size_t bytesSent)
 }
 
 
-void		Client::clearRequest(void)
+void		Client::clearReadBuffer(void)
 {
-	_request.clear();
+	_readBuffer.clear();
 }
 
 void		Client::clearResponse(void)
@@ -95,4 +96,9 @@ void		Client::clearResponse(void)
 void		Client::clearBytesSent(void)
 {
 	_bytesSent = 0;
+}
+
+Request &Client::getRequest(void)
+{
+    return (this->_request);
 }

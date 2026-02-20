@@ -32,13 +32,6 @@ enum e_reqType	whichType(std::string word)
 
 void	Request::_lexInput(std::string const &str)
 {
-	// std::cout << "data string: ";
-	// for (size_t i = 0; i < str.size(); ++i)
-	// {
-	// 	std::cout << (int)(unsigned char)str[i] << " ";
-	// }
-	// std::cout << std::endl;
-	
 	std::string::const_iterator	start = str.begin() + str.find_first_not_of("\n\r\t\b ");
 	std::string	word = "";
 	bool	inQuotes = false;

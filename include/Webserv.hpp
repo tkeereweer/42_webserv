@@ -63,7 +63,7 @@ class	Webserv
 		void	handleResponse(int clientFd);
     	void	closeClient(int clientFd);
 
-		void	testPrint(int clientFd);
+		void	testPrint(int clientFd, Client &client);
 
 	public:
 		Webserv(void);

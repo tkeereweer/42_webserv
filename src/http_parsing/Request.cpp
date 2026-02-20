@@ -1,10 +1,32 @@
 #include "../../include/Request.hpp"
 
-Request::Request(void): _method(EMPTY), _contentLength(0), _reqComplete(false){}
+Request::Request(void): _method(EMPTY), _contentLength(0), _reqComplete(false), _reqLineValid(false), _reqHeadersValid(false){}
 
 Request::Request(Request const &src)
 {
 	*this = src;
+}
+
+std::ostream    &operator<<(std::ostream &stream, Request const &rhs)
+{
+  	stream << rhs.getMethod() << std::endl;
+	stream << rhs.getURI() << std::endl;
+	stream << rhs.getHTTPVersion() << std::endl;
+	stream << rhs.getContentEncoding() << std::endl;
+	stream << rhs.getContentLength() << std::endl;
+	stream << rhs.getContentType() << std::endl;
+	stream << rhs.getCookies() << std::endl;
+	if (rhs.getBodyFilename() != "")
+	{
+		stream << rhs.getBodyFilename() << std::endl;
+		std::ifstream file(rhs.getBodyFilename().c_str());
+		stream << "file content: '";
+		std::string buf;
+		while (getline(file, buf))
+			stream << buf;
+		stream << "'" << std::endl;
+	} 
+	return (stream);
 }
 
 Request	&Request::operator=(Request const &rhs)
@@ -19,6 +41,10 @@ Request	&Request::operator=(Request const &rhs)
 		this->_contentType = rhs._contentType;
 		this->_cookies = rhs._cookies;
 		this->_bodyFilename = rhs._bodyFilename;
+        this->_reqComplete = rhs._reqComplete;
+        this->_reqHeadersValid = rhs._reqHeadersValid;
+        this->_reqLineValid = rhs._reqLineValid;
+        this->_tokenList = rhs._tokenList;
 	}
 	return (*this);
 }
@@ -38,8 +64,37 @@ int	Request::lexRawData(std::string &data)
 		throw(std::runtime_error("empty data field"));
 
 	this->_lexInput(data);
+
+	std::list<t_reqToken>::reverse_iterator	rit = this->_tokenList.rbegin();
+	while (rit->type != CRLF && rit != this->_tokenList.rend())
+		rit++;
+	if (rit == this->_tokenList.rend())
+		return (0);
+	//throw exception only if parsing interupted on bad grammar
+	try
+	{   
+		_parse();
+	}
+	catch(std::exception const &e)
+	{
+		throw(std::runtime_error(e.what()));
+	}
+
+	if (this->_reqComplete)
+		return (-1);
 	data.clear();
-	return (_requestEval(data));
+
+	//pop back in data last potentially unread token then pop_back()
+	if (!this->_tokenList.empty() && (this->_tokenList.back().type == WORD || this->_tokenList.back().type == SPACE))
+	{
+		data.append(this->_tokenList.back().val.begin(), this->_tokenList.back().val.end());
+		this->_tokenList.pop_back();
+	}
+
+	if (!(this->_reqHeadersValid && this->_reqLineValid))
+		return (0);
+	else
+		return (this->_contentLength - this->_bytesRead);
 }
 
 t_method const	&Request::getMethod(void) const

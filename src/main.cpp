@@ -5,7 +5,8 @@
 int	main(int argc, char *argv[])
 {
 	Webserv		webserv;
-	const char	*config_file = "./config/default.conf";
+	// const char	*config_file = "./config/default.conf";
+    const char *config_file = "/home/mturgeon/rank5/webserv/config/default.conf";
 
 	if (argc > 1)
 		config_file = argv[1];
