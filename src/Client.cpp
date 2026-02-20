@@ -9,6 +9,7 @@ Client::Client(void) : _request(), _bytesSent(0)
 
 Client::Client(int fd) : 
 	_fd(fd),
+    _request(),
 	_bytesSent(0)
 {}
 

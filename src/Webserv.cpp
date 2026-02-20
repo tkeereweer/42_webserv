@@ -226,6 +226,7 @@ void	Webserv::launchServer(void)
 					closeClient(readyEvents[i].data.fd);
 			}
 		}
+        // check for timeouts
 	}
 }
 
@@ -275,23 +276,7 @@ void	Webserv::newClient(int listenFd)
 
 void	Webserv::testPrint(int clientFd, Client &client)
 {
-	std::cout << client.getRequest().getMethod() << std::endl;
-	std::cout << client.getRequest().getURI() << std::endl;
-	std::cout << client.getRequest().getHTTPVersion() << std::endl;
-	std::cout << client.getRequest().getContentEncoding() << std::endl;
-	std::cout << client.getRequest().getContentLength() << std::endl;
-	std::cout << client.getRequest().getContentType() << std::endl;
-	std::cout << client.getRequest().getCookies() << std::endl;
-	if (client.getRequest().getBodyFilename() != "")
-	{
-		std::cout << client.getRequest().getBodyFilename() << std::endl;
-		std::ifstream file(client.getRequest().getBodyFilename().c_str());
-		std::cout << "file content: '";
-		std::string buf;
-		while (getline(file, buf))
-			std::cout << buf;
-		std::cout << "'" << std::endl;
-	}
+	std::cout << client.getRequest() << std::endl;
 	std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
 	_clientMap[clientFd].client.setResponse("HTTP/1.0 200 OK");
 	_clientMap[clientFd].client.clearReadBuffer();
@@ -316,8 +301,6 @@ void	Webserv::handleRequest(int clientFd)
 		catch(const std::exception& e)
 		{
 			std::cerr << e.what() << '\n';
-			std::cout << "error: bad request" << std::endl;
-			//send 400 bad request response
 			return (closeClient(clientFd));
 		}
 		if (lexReturn > 0) //write in tempfile logic
@@ -327,7 +310,7 @@ void	Webserv::handleRequest(int clientFd)
 			if (lexReturn - client.getReadBuffer().size() <= 0)
 				lexReturn = -1;
 		}
-		if (lexReturn == -1)// put my stop condition in there 
+		if (lexReturn == -1)
 		{
 			std::cout << "~~~~~ request successfully received ! content: ~~~~~~" << std::endl;
 			testPrint(clientFd, client); //put request dipsatcher here, build body here

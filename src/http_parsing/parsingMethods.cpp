@@ -2,22 +2,23 @@
 
 void	Request::_parse(void)
 {
+	std::list<t_reqToken>::iterator it = this->_tokenList.begin();
 	try
 	{
 		_parseSimpleRequest();
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << e.what() << '\n';
 		try
 		{
-			_parseFullRequest();
+			_parseFullRequest(it);
 		}
 		catch(const std::exception& e)
 		{
-			std::cerr << e.what() << '\n';
-			std::cout << "parsing failed" << std::endl;
-            throw (std::runtime_error("baaaad request bruv"));
+			std::string errorMsg = "BAD REQUEST: ";
+			errorMsg += e.what();
+			if (it != this->_tokenList.end())
+				throw (std::runtime_error(errorMsg.c_str()));
 			return ;
 		}
 		std::cout << "full request parsing succesful" << std::endl;
@@ -95,7 +96,7 @@ std::string	Request::_parsePath(std::list<t_reqToken>::iterator &it)
 		res += _parseSegment(it);
 	}
 	if (res == "")
-		throw (std::runtime_error("invalid path"));
+		throw (std::runtime_error("path: empty or invalid char in path"));
 	return (res);
 }
 
@@ -160,7 +161,7 @@ std::string	Request::_parseAbsPath(std::list<t_reqToken>::iterator &it)
 void    Request::_parseURI(std::list<t_reqToken>::iterator &it)
 {
 	if (it->type != SLASH)
-		throw(std::runtime_error("bad URI"));
+		throw(std::runtime_error("URI: doesn't start with SLASH"));
 	it++;
 	this->_URI += "/";
 	this->_URI += _parseAbsPath(it);
@@ -229,7 +230,7 @@ void		Request::_parseRequestLine(std::list<t_reqToken>::iterator &it)
 	method = it->val;
 	it++;
 	if (it->type != SPACE)
-		throw(std::runtime_error("not full request"));
+		throw(std::runtime_error("request line: no space after method"));
 	it++;
 	_parseURI(it); //throws exception
 	if (it->type != SPACE)
@@ -239,7 +240,9 @@ void		Request::_parseRequestLine(std::list<t_reqToken>::iterator &it)
 	if (it->type != CRLF)
 		throw(std::runtime_error("full request not CRLF terminated"));
 	it++;
+	this->_tokenList.erase(this->_tokenList.begin(), it);
 	this->_method = method;
+	this->_reqLineValid = true;
 	return ;
 }
 
@@ -441,50 +444,79 @@ bool	Request::_parseCookies(std::list<t_reqToken>::iterator &it)
 	return (true);
 }	
 
+bool	isValidForHeaders(std::string &str)
+{
+	for (std::string::iterator it = str.begin(); it != str.end(); it++)
+	{
+		if ((*it >= 0 && *it <= 32)
+			|| *it > 126)
+			throw(std::runtime_error("invalid char in some header body"));
+	}
+	return (true);
+}
+
 bool	isHeader(std::list<t_reqToken>::iterator &it)
 {
 	if (it->type != WORD)
 		return (false);
 	it++;
-	if (it->type != SEMI_COLON)
+	if (it->type != COLON)
 		return (false);
 	it++;
-	if (isToken(it->val))
-		return (false);
-	it++;
-	if (it->type != CRLF)
-		return (false);
+	while (it->type == SPACE)
+		it++;
+	while (it->type != CRLF && isValidForHeaders(it->val)) //type check before function important
+		it++;
 	return (true);
 }
 
-void	Request::_parseFullRequest(void)
+void	Request::_parseFullRequest(std::list<t_reqToken>::iterator &it)
 {
-	std::list<t_reqToken>::iterator it = this->_tokenList.begin();
-    // if (!this->_reqLineValid)
-	_parseRequestLine(it);
-	while (it->type != CRLF)
+	//throws exception when request line not full
+	//empties token list
+	if (!this->_reqLineValid)
+		_parseRequestLine(it); 
+	while (it->type != CRLF && it != this->_tokenList.end())
 	{
-		//these functions must advance it beyond next CRLF even if they return false
+		//these functions must advance it beyond next CRLFwhen succesful
 		//throw exception if header format not respected --> in body overshoots in bad requests handled
 		if (!(_parseContentEncoding(it)
 			|| _parseContentLength(it)
 			|| _parseContentType(it)
 			|| _parseCookies(it)))
 		{
-			if (!isHeader(it)) //makes a copy
+			try
+			{
+				isHeader(it);// makes a copy
+			}
+			catch(const std::exception& e)
+			{
 				throw(std::runtime_error("not header in header part"));
+			}
+			if (it == this->_tokenList.end())
+				break;
 			while (it->type != CRLF)
 				it++;
 		}
 		it++;
+		this->_tokenList.erase(this->_tokenList.begin(), it);
+	}
+	if (it == this->_tokenList.end()) //if we get to end of list w/o 2xCRLF
+	{
+		while (it->type != CRLF && it != this->_tokenList.begin())
+			it--;
+		it++;
+		this->_tokenList.erase(this->_tokenList.begin(), it);
+		//end up here with tokenlist containing non parsed content
+		//will be parsed next call
+		return ;
 	}
 	it++;
-	if (it != this->_tokenList.end() && this->_method == "POST" && this->_contentLength > 0)
-    {
+	this->_reqHeadersValid = true;
+	if (this->_method == "POST" && this->_contentLength > 0)
 		_readLeftovers(it);
-        return ;
-    }
 	else
 		this->_reqComplete = true;
 	return ;
 }
+
