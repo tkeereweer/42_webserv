@@ -2,6 +2,7 @@ SRC = Client.cpp \
 	Location.cpp \
 	Server.cpp \
 	Webserv.cpp \
+	Config.cpp \
 	configFile.cpp \
 	http_parsing/createTempFile.cpp \
 	http_parsing/httpLexer.cpp \
@@ -26,6 +27,9 @@ $(OBJ_DIR)/%.o: %.cpp | $(OBJ_DIR) #for main.c
 	$(CC) $(FLAGS) -Iinclude -c $< -o $@
 
 $(OBJ_DIR)/%.o: src/%.cpp | $(OBJ_DIR)
+	$(CC) $(FLAGS) -Iinclude -c $< -o $@
+
+$(OBJ_DIR)/%.o: src/http_parsing/%.cpp | $(OBJ_DIR)
 	$(CC) $(FLAGS) -Iinclude -c $< -o $@
 
 $(OBJ_DIR):

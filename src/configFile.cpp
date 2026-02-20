@@ -73,26 +73,42 @@ void	Webserv::printConfTokens(std::list<t_conf_token> lst)
 	}
 }
 
-/*******************************************************************************
-*						LOCATION BLOCK PARSING
-*******************************************************************************/
+void	Webserv::parseConfTokens(std::list<t_conf_token> &tokens)
+{
+	std::list<t_conf_token>::iterator	token = tokens.begin();
+	std::list<t_conf_token>::iterator	end = tokens.end();
+	while (token != end)
+	{
+		if (token->type == WORD && token->value == "server")
+		{
+			Server	server;
 
-void	Webserv::parseLocRoot(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
-{	
-	token++;
-	if (token == end || token->type != WORD)
-		throw(std::runtime_error("Error in root directive config"));
-	if (token->value[0] != '/')
-		throw(std::runtime_error("Error in root directive config"));
-	while (*(token->value.rbegin()) == '/' && token->value.length() > 1)
-		token->value.erase(token->value.length() - 1);
-	location.setLocRoot(token->value);
-	token++;
-	if (token == end || token->type != SEMICOLON)
-		throw(std::runtime_error("Error in root directive config"));
+			token++;
+			if (token != end && token->type == OPEN_CURLY)
+			{
+				token++;
+				parseServerBlock(token, end, server);
+				if (token == end)
+					throw(std::runtime_error("Syntax error in config file"));
+				if (server.getSockets().size() < 1)
+					throw(std::runtime_error("Not enough info for server"));
+				this->addServer(server);
+			}
+			else
+				throw(std::runtime_error("Syntax error in config file"));
+		}
+		else
+			throw(std::runtime_error("Config file does not start with a server block"));
+		token++;
+	}
+	
 }
 
-void	Webserv::parseLimitExcept(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
+/*******************************************************************************
+*						CONFIG PARSING
+*******************************************************************************/
+
+void	Webserv::parseLimitExcept(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	token++;
 	if (token == end || token->type != WORD)
@@ -102,18 +118,57 @@ void	Webserv::parseLimitExcept(std::list<t_conf_token>::iterator &token, std::li
 		if (token->type != WORD)
 			throw(std::runtime_error("Error in limit_except directive config"));
 		else if (token->value == "GET" || token->value == "GET,")
-			location.setAcceptGET(true);
+			config.setAcceptGET(true);
 		else if (token->value == "POST" || token->value == "POST,")
-			location.setAcceptPOST(true);
+			config.setAcceptPOST(true);
 		else if (token->value == "DELETE" || token->value == "DELETE,")
-			location.setAcceptDELETE(true);
+			config.setAcceptDELETE(true);
 		else
 			throw(std::runtime_error("Unknown method"));
 		token++;
 	}
 }
 
-void	Webserv::parseErrorPage(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
+void	Webserv::parseMaxBodySize(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
+{
+	char		*end_num;
+	long long	max_size;
+
+	token++;
+	if (token == end || token->type != WORD)
+		throw(std::runtime_error("Error in client_max_body_size directive config"));
+	max_size = strtoll(token->value.c_str(), &end_num, 10);
+	if (max_size < 1)
+		throw(std::runtime_error("Error in client_max_body_size directive config"));
+	config.setMaxBody(max_size);
+	if (errno == ERANGE)
+	{
+		errno = 0;
+		throw(std::runtime_error("Error in client_max_body_size directive config"));
+	}
+	if (*end_num != '\0')
+		throw(std::runtime_error("Error in client_max_body_size directive config"));
+	token++;
+	if (token == end || token->type != SEMICOLON)
+		throw(std::runtime_error("Error in client_max_body_size directive config"));
+}
+
+void	Webserv::parseRoot(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
+{
+	token++;
+	if (token == end || token->type != WORD)
+		throw(std::runtime_error("Error in root directive config"));
+	if (token->value[0] != '/')
+		throw(std::runtime_error("Error in root directive config"));
+	while (*(token->value.rbegin()) == '/' && token->value.length() > 1)
+		token->value.erase(token->value.length() - 1);
+	config.setRoot(token->value);
+	token++;
+	if (token == end || token->type != SEMICOLON)
+		throw(std::runtime_error("Error in root directive config"));
+}
+
+void	Webserv::parseErrorPage(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	char		*end_num;
 	int			code;
@@ -132,13 +187,13 @@ void	Webserv::parseErrorPage(std::list<t_conf_token>::iterator &token, std::list
 	token++;
 	if (token == end || token->type != WORD)
 		throw(std::runtime_error("Error in error_page directive config"));
-	location.addErrorPage(code, token->value);
+	config.addErrorPage(code, token->value);
 	token++;
 	if (token == end || token->type != SEMICOLON)
 		throw(std::runtime_error("Error in error_page directive config"));
 }
 
-void	Webserv::parseAutoIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
+void	Webserv::parseAutoIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	token++;
 	if (token == end || token->type != WORD)
@@ -146,37 +201,26 @@ void	Webserv::parseAutoIndex(std::list<t_conf_token>::iterator &token, std::list
 	if (token->value != "on" && token->value != "off")
 		throw(std::runtime_error("Error in autoindex directive config"));
 	if (token->value == "on")
-		location.setAutoIndex(true);
+		config.setAutoIndex(true);
 	if (token->value == "off")
-		location.setAutoIndex(false);
+		config.setAutoIndex(false);
 	token++;
 	if (token == end || token->type != SEMICOLON)
 		throw(std::runtime_error("Error in autoindex directive config"));
 }
 
-void	Webserv::parseIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
+void	Webserv::parseIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	token++;
 	if (token == end || token->type != WORD)
 		throw(std::runtime_error("Error in index directive config"));
-	location.setIndex(token->value);
+	config.setIndex(token->value);
 	token++;
 	if (token == end || token->type != SEMICOLON)
 		throw(std::runtime_error("Error in index directive config"));
 }
 
-void	Webserv::parseUpload(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
-{
-	token++;
-	if (token == end || token->type != WORD)
-		throw(std::runtime_error("Error in upload_store directive config"));
-	location.setUploadStore(token->value);
-	token++;
-	if (token == end || token->type != SEMICOLON)
-		throw(std::runtime_error("Error in upload_store directive config"));
-}
-
-void	Webserv::parseRedir(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
+void	Webserv::parseRedir(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	char		*end_num;
 	int			status;
@@ -195,10 +239,25 @@ void	Webserv::parseRedir(std::list<t_conf_token>::iterator &token, std::list<t_c
 	token++;
 	if (token == end || token->type != WORD)
 		throw(std::runtime_error("Error in redirection directive config"));
-	location.setRedirect(status, token->value);
+	config.setRedirect(status, token->value);
 	token++;
 	if (token == end || token->type != SEMICOLON)
 		throw(std::runtime_error("Error in redirection directive config"));
+}
+
+/*******************************************************************************
+*						LOCATION BLOCK PARSING
+*******************************************************************************/
+
+void	Webserv::parseUpload(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
+{
+	token++;
+	if (token == end || token->type != WORD)
+		throw(std::runtime_error("Error in upload_store directive config"));
+	location.setUploadStore(token->value);
+	token++;
+	if (token == end || token->type != SEMICOLON)
+		throw(std::runtime_error("Error in upload_store directive config"));
 }
 
 void	Webserv::parseLocation(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
@@ -215,13 +274,15 @@ void	Webserv::parseLocation(std::list<t_conf_token>::iterator &token, std::list<
 	while (token != end && token->type != CLOSE_CURLY)
 	{
 		if (token->type == WORD && token->value == "root")
-			parseLocRoot(token, end, location);
+			parseRoot(token, end, location);
 		else if (token->type == WORD && token->value == "limit_except")
 			parseLimitExcept(token, end, location);
 		else if (token->type == WORD && token->value == "autoindex")
 			parseAutoIndex(token, end, location);
 		else if (token->type == WORD && token->value == "index")
 			parseIndex(token, end, location);
+		else if (token->type == WORD && token->value == "client_max_body_size")
+			parseMaxBodySize(token, end, location);
 		else if (token->type == WORD && token->value == "upload_store")
 			parseUpload(token, end, location);
 		else if (token->type == WORD && token->value == "error_page")
@@ -277,45 +338,6 @@ void	Webserv::parseServerName(std::list<t_conf_token>::iterator &token, std::lis
 		throw(std::runtime_error("Error in server_name directive config"));
 }
 
-void	Webserv::parseMaxBodySize(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
-{
-	char		*end_num;
-	long long	max_size;
-
-	token++;
-	if (token == end || token->type != WORD)
-		throw(std::runtime_error("Error in client_max_body_size directive config"));
-	max_size = strtoll(token->value.c_str(), &end_num, 10);
-	if (max_size < 1)
-		throw(std::runtime_error("Error in client_max_body_size directive config"));
-	server.setMaxBody(max_size);
-	if (errno == ERANGE)
-	{
-		errno = 0;
-		throw(std::runtime_error("Error in client_max_body_size directive config"));
-	}
-	if (*end_num != '\0')
-		throw(std::runtime_error("Error in client_max_body_size directive config"));
-	token++;
-	if (token == end || token->type != SEMICOLON)
-		throw(std::runtime_error("Error in client_max_body_size directive config"));
-}
-
-void	Webserv::parseServerRoot(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
-{
-	token++;
-	if (token == end || token->type != WORD)
-		throw(std::runtime_error("Error in root directive config"));
-	if (token->value[0] != '/')
-		throw(std::runtime_error("Error in root directive config"));
-	while (*(token->value.rbegin()) == '/' && token->value.length() > 1)
-		token->value.erase(token->value.length() - 1);
-	server.setServerRoot(token->value);
-	token++;
-	if (token == end || token->type != SEMICOLON)
-		throw(std::runtime_error("Error in root directive config"));
-}
-
 void	Webserv::parseServerBlock(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
 {
 	while (token != end && token->type != CLOSE_CURLY)
@@ -336,7 +358,17 @@ void	Webserv::parseServerBlock(std::list<t_conf_token>::iterator &token, std::li
 		else if (token->type == WORD && token->value == "client_max_body_size")
 			parseMaxBodySize(token, end, server);
 		else if (token->type == WORD && token->value == "root")
-			parseServerRoot(token, end, server);
+			parseRoot(token, end, server);
+		else if (token->type == WORD && token->value == "limit_except")
+			parseLimitExcept(token, end, server);
+		else if (token->type == WORD && token->value == "error_page")
+			parseErrorPage(token, end, server);
+		else if (token->type == WORD && token->value == "autoindex")
+			parseAutoIndex(token, end, server);
+		else if (token->type == WORD && token->value == "index")
+			parseIndex(token, end, server);
+		else if (token->type == WORD && token->value == "return")
+			parseRedir(token, end, server);
 		else
 			throw(std::runtime_error("Unknown directive"));
 		token++;

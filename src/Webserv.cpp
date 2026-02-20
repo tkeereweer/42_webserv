@@ -46,17 +46,24 @@ std::ostream	&operator<<(std::ostream &o, Webserv &input)
 	{
 		o << "server {" << std::endl;
 		o << "\tserver_name " << input.getServers()[i].getName() << ";" << std::endl;
+		o << "\troot " << input.getServers()[i].getRoot() << ";" << std::endl;
+		o << "\tlimit_except GET:" << input.getServers()[i].getAcceptGET() << " POST:" << input.getServers()[i].getAcceptPOST() << " DELETE:" << input.getServers()[i].getAcceptDELETE() << ";" << std::endl;
+		o << "\tautoindex " << input.getServers()[i].getAutoIndex() << ";" << std::endl;
+		o << "\tindex " << input.getServers()[i].getIndex() << ";" << std::endl;
 		o << "\tclient_max_body_size " << input.getServers()[i].getMaxBody() << ";" << std::endl;
-		o << "\troot " << input.getServers()[i].getServerRoot() << ";" << std::endl;
 		for (unsigned int j = 0; j < input.getServers()[i].getSockets().size(); j++)
 			o << "\tlisten " << input.getServers()[i].getSockets()[j].ipAddr << "/" << input.getServers()[i].getSockets()[j].port << ";" << std::endl;
+		for (std::map<int, std::string>::iterator it = input.getServers()[i].getErrorPages().begin(); it != input.getServers()[i].getErrorPages().end(); ++it)
+				o << "\t\terror_page " << it->first << " " << it->second << ";" << std::endl;
+			o << "\treturn " << input.getServers()[i].getRedir().first << " " << input.getServers()[i].getRedir().second << ";" << std::endl;
 		for (unsigned int j = 0; j < input.getServers()[i].getLocations().size(); j++)
 		{
 			o << "\tlocation " << input.getServers()[i].getLocations()[j].getPath() << " {" << std::endl;
-			o << "\t\troot " << input.getServers()[i].getLocations()[j].getLocRoot() << ";" << std::endl;
+			o << "\t\troot " << input.getServers()[i].getLocations()[j].getRoot() << ";" << std::endl;
 			o << "\t\tlimit_except GET:" << input.getServers()[i].getLocations()[j].getAcceptGET() << " POST:" << input.getServers()[i].getLocations()[j].getAcceptPOST() << " DELETE:" << input.getServers()[i].getLocations()[j].getAcceptDELETE() << ";" << std::endl;
 			o << "\t\tautoindex " << input.getServers()[i].getLocations()[j].getAutoIndex() << ";" << std::endl;
 			o << "\t\tindex " << input.getServers()[i].getLocations()[j].getIndex() << ";" << std::endl;
+			o << "\t\tclient_max_body_size " << input.getServers()[i].getLocations()[j].getMaxBody() << ";" << std::endl;
 			o << "\t\tupload_store " << input.getServers()[i].getLocations()[j].getUploadStore() << ";" << std::endl;
 			for (std::map<int, std::string>::iterator it = input.getServers()[i].getLocations()[j].getErrorPages().begin(); it != input.getServers()[i].getLocations()[j].getErrorPages().end(); ++it)
 				o << "\t\terror_page " << it->first << " " << it->second << ";" << std::endl;
@@ -90,37 +97,6 @@ void	Webserv::addServer(Server server)
 /*******************************************************************************
 *						CONFIG PARSING
 *******************************************************************************/
-
-void	Webserv::parseConfTokens(std::list<t_conf_token> &tokens)
-{
-	std::list<t_conf_token>::iterator	token = tokens.begin();
-	std::list<t_conf_token>::iterator	end = tokens.end();
-	while (token != end)
-	{
-		if (token->type == WORD && token->value == "server")
-		{
-			Server	server;
-
-			token++;
-			if (token != end && token->type == OPEN_CURLY)
-			{
-				token++;
-				parseServerBlock(token, end, server);
-				if (token == end)
-					throw(std::runtime_error("Syntax error in config file"));
-				if (server.getSockets().size() < 1)
-					throw(std::runtime_error("Not enough info for server"));
-				this->addServer(server);
-			}
-			else
-				throw(std::runtime_error("Syntax error in config file"));
-		}
-		else
-			throw(std::runtime_error("Config file does not start with a server block"));
-		token++;
-	}
-	
-}
 
 void	Webserv::getConfig(char const *filepath)
 {

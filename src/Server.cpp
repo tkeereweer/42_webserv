@@ -5,14 +5,13 @@
 *						CTOR/DTOR
 *******************************************************************************/
 
-Server::Server(void): _maxBodySizeClientReq(1024) {}
+Server::Server(void): Config() {}
 
 Server::Server(Server const &src):
+	Config(src),
 	_name(src._name),
 	_sockets(src._sockets),
-	_maxBodySizeClientReq(src._maxBodySizeClientReq),
-	_locations(src._locations),
-	_root(src._root)
+	_locations(src._locations)
 {}
 
 Server	&Server::operator=(Server const &rhs)
@@ -22,8 +21,15 @@ Server	&Server::operator=(Server const &rhs)
 		this->_sockets = rhs._sockets;
 		this->_locations = rhs._locations;
 		this->_name = rhs._name;
-		this->_maxBodySizeClientReq = rhs._maxBodySizeClientReq;
+		this->_acceptGET = rhs._acceptGET;
+		this->_acceptPOST = rhs._acceptPOST;
+		this->_acceptDELETE = rhs._acceptDELETE;
 		this->_root = rhs._root;
+		this->_autoIndex = rhs._autoIndex;
+		this->_index = rhs._index;
+		this->_maxBodySizeClientReq = rhs._maxBodySizeClientReq;
+		this->_errorPages = rhs._errorPages;
+		this->_redirect = rhs._redirect;
 	}
 	return (*this);
 }
@@ -45,34 +51,14 @@ std::vector<t_socket>	&Server::getSockets(void)
 	return (this->_sockets);
 }
 
-long long	Server::getMaxBody(void) const
-{
-	return (this->_maxBodySizeClientReq);
-}
-
 std::vector<Location>	&Server::getLocations(void)
 {
 	return (this->_locations);
 }
 
-std::string	Server::getServerRoot(void) const
-{
-	return (this->_root);
-}
-
 void	Server::setName(std::string name)
 {
 	this->_name = name;
-}
-
-void	Server::setMaxBody(long long maxBody)
-{
-	this->_maxBodySizeClientReq = maxBody;
-}
-
-void	Server::setServerRoot(std::string root)
-{
-	this->_root = root;
 }
 
 void	Server::addSocket(t_socket socket)
