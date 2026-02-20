@@ -97,7 +97,7 @@ void	Webserv::parseConfTokens(std::list<t_conf_token> &tokens)
 	std::list<t_conf_token>::iterator	end = tokens.end();
 	while (token != end)
 	{
-		if (token->type == WORD && token->value == "server")
+		if (token->type == CONF_WORD && token->value == "server")
 		{
 			Server	server;
 
@@ -273,16 +273,28 @@ void	Webserv::newClient(int listenFd)
 	std::cout << "New client with fd: " << clientFd << std::endl;
 }
 
-void	Webserv::testPrint(int clientFd)
+void	Webserv::testPrint(int clientFd, Client &client)
 {
-	// std::ifstream file("../loremLIL.txt");
-    // std::ostringstream ss;
-    // ss << file.rdbuf();
-    // std::string response = ss.str();
-	// _clientMap[clientFd].client.setResponse(response);
-
-	_clientMap[clientFd].client.setResponse("This is a Response");
-	_clientMap[clientFd].client.clearRequest();
+	std::cout << client.getRequest().getMethod() << std::endl;
+	std::cout << client.getRequest().getURI() << std::endl;
+	std::cout << client.getRequest().getHTTPVersion() << std::endl;
+	std::cout << client.getRequest().getContentEncoding() << std::endl;
+	std::cout << client.getRequest().getContentLength() << std::endl;
+	std::cout << client.getRequest().getContentType() << std::endl;
+	std::cout << client.getRequest().getCookies() << std::endl;
+	if (client.getRequest().getBodyFilename() != "")
+	{
+		std::cout << client.getRequest().getBodyFilename() << std::endl;
+		std::ifstream file(client.getRequest().getBodyFilename().c_str());
+		std::cout << "file content: '";
+		std::string buf;
+		while (getline(file, buf))
+			std::cout << buf;
+		std::cout << "'" << std::endl;
+	}
+	std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
+	_clientMap[clientFd].client.setResponse("HTTP/1.0 200 OK");
+	_clientMap[clientFd].client.clearReadBuffer();
 }
 
 void	Webserv::handleRequest(int clientFd)
@@ -291,15 +303,34 @@ void	Webserv::handleRequest(int clientFd)
 	char		buffer[1024];
 
 	ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
+	int	lexReturn = -2;
 
  	if (bytesRead > 0)
     {
         buffer[bytesRead] = '\0';
-        client.appendRequest(std::string(buffer, bytesRead));
-
-		if ((client.getRequest().find("FIN")) != std::string::npos) 
+        client.appendReadBuffer(std::string(buffer, bytesRead));//data string
+		try
 		{
-			testPrint(clientFd);
+			lexReturn = client.getRequest().lexRawData(client.getReadBuffer());
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
+			std::cout << "error: bad request" << std::endl;
+			//send 400 bad request response
+			return (closeClient(clientFd));
+		}
+		if (lexReturn > 0) //write in tempfile logic
+		{
+			std::ofstream tmpFile(client.getRequest().getBodyFilename().c_str());
+			tmpFile.write(client.getReadBuffer().c_str(), client.getReadBuffer().size());
+			if (lexReturn - client.getReadBuffer().size() <= 0)
+				lexReturn = -1;
+		}
+		if (lexReturn == -1)// put my stop condition in there 
+		{
+			std::cout << "~~~~~ request successfully received ! content: ~~~~~~" << std::endl;
+			testPrint(clientFd, client); //put request dipsatcher here, build body here
 			struct epoll_event event;
 			event.events = EPOLLOUT;
     		event.data.fd = clientFd;
@@ -311,7 +342,6 @@ void	Webserv::handleRequest(int clientFd)
 			}
 		}
 	}
-
 	else
         closeClient(clientFd);
 }

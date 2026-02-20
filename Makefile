@@ -1,13 +1,13 @@
-SRC = Client.cpp \
-	Location.cpp \
-	Server.cpp \
-	Webserv.cpp \
-	configFile.cpp \
-	http_parsing/createTempFile.cpp \
-	http_parsing/httpLexer.cpp \
-	http_parsing/lexerUtils.cpp \
-	http_parsing/parsingMethods.cpp \
-	http_parsing/Request.cpp \
+SRC = src/Client.cpp \
+	src/Location.cpp \
+	src/Server.cpp \
+	src/Webserv.cpp \
+	src/configFile.cpp \
+	src/http_parsing/httpLexer.cpp \
+	src/http_parsing/createTempFile.cpp \
+	src/http_parsing/lexerUtils.cpp \
+	src/http_parsing/parsingMethods.cpp \
+	src/http_parsing/Request.cpp \
 	main.cpp
 
 NAME = webserv
@@ -26,6 +26,9 @@ $(OBJ_DIR)/%.o: %.cpp | $(OBJ_DIR) #for main.c
 	$(CC) $(FLAGS) -Iinclude -c $< -o $@
 
 $(OBJ_DIR)/%.o: src/%.cpp | $(OBJ_DIR)
+	$(CC) $(FLAGS) -Iinclude -c $< -o $@
+
+$(OBJ_DIR)/%.o: src/http_parsing/%.cpp | $(OBJ_DIR)
 	$(CC) $(FLAGS) -Iinclude -c $< -o $@
 
 $(OBJ_DIR):

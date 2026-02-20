@@ -10,7 +10,7 @@
 
 typedef enum	e_conf_type
 {
-	WORD,
+	CONF_WORD,
 	OPEN_CURLY,
 	CLOSE_CURLY,
 	SEMICOLON
@@ -63,7 +63,7 @@ class	Webserv
 		void	handleResponse(int clientFd);
     	void	closeClient(int clientFd);
 
-		void	testPrint(int clientFd);
+		void	testPrint(int clientFd, Client &client);
 
 	public:
 		Webserv(void);

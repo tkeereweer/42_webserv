@@ -17,6 +17,7 @@ void	Request::_parse(void)
 		{
 			std::cerr << e.what() << '\n';
 			std::cout << "parsing failed" << std::endl;
+            throw (std::runtime_error("baaaad request bruv"));
 			return ;
 		}
 		std::cout << "full request parsing succesful" << std::endl;
@@ -175,7 +176,7 @@ void    Request::_parseSimpleRequest(void)
 	if (it->type != SPACE)
 		throw(std::runtime_error("not simple request"));
 	it++;
-	_parseURI(it); //throws exception
+	_parseURI(it);
 	if (it->type != CRLF)
 		throw(std::runtime_error("not simple request"));
 	this->_method = "GET";
@@ -459,6 +460,7 @@ bool	isHeader(std::list<t_reqToken>::iterator &it)
 void	Request::_parseFullRequest(void)
 {
 	std::list<t_reqToken>::iterator it = this->_tokenList.begin();
+    // if (!this->_reqLineValid)
 	_parseRequestLine(it);
 	while (it->type != CRLF)
 	{
@@ -478,7 +480,10 @@ void	Request::_parseFullRequest(void)
 	}
 	it++;
 	if (it != this->_tokenList.end() && this->_method == "POST" && this->_contentLength > 0)
+    {
 		_readLeftovers(it);
+        return ;
+    }
 	else
 		this->_reqComplete = true;
 	return ;

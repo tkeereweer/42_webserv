@@ -2,12 +2,14 @@
 #define CLIENT_HPP
 
 #include <string>
+#include "Request.hpp"
 
 class	Client
 {
 	private:
 		int			_fd;
-		std::string	_request; //later: class
+		std::string _readBuffer;
+		Request     _request;
 		std::string	_response; // same
 		size_t		_bytesSent;
 
@@ -19,16 +21,17 @@ class	Client
 		~Client(void);
 
 		int					getFd(void) const;
-		const std::string&	getRequest(void) const;
+		std::string&		getReadBuffer(void);
 		const std::string&	getResponse(void) const;
 		size_t				getBytesSent(void) const;
+		Request             &getRequest(void);
 
-		void				setRequest(const std::string& request);
+		void				setReadBuffer(const std::string& readBuffer);
 		void				setResponse(const std::string& response);
-		void				appendRequest(const std::string& appendix);
+		void				appendReadBuffer(const std::string& appendix);
 		void				addBytesSent(size_t bytesSent);
 
-		void				clearRequest(void);
+		void				clearReadBuffer(void);
 		void				clearResponse(void);
 		void				clearBytesSent(void);
 };
