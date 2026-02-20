@@ -54,7 +54,7 @@ std::ostream	&operator<<(std::ostream &o, Webserv &input)
 		for (unsigned int j = 0; j < input.getServers()[i].getSockets().size(); j++)
 			o << "\tlisten " << input.getServers()[i].getSockets()[j].ipAddr << "/" << input.getServers()[i].getSockets()[j].port << ";" << std::endl;
 		for (std::map<int, std::string>::iterator it = input.getServers()[i].getErrorPages().begin(); it != input.getServers()[i].getErrorPages().end(); ++it)
-				o << "\t\terror_page " << it->first << " " << it->second << ";" << std::endl;
+				o << "\terror_page " << it->first << " " << it->second << ";" << std::endl;
 			o << "\treturn " << input.getServers()[i].getRedir().first << " " << input.getServers()[i].getRedir().second << ";" << std::endl;
 		for (unsigned int j = 0; j < input.getServers()[i].getLocations().size(); j++)
 		{
