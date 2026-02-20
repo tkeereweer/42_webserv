@@ -17,7 +17,7 @@ class	Location: public Config
 		Location(void);
 		Location(Location const &src);
 		Location	&operator=(Location const &rhs);
-		~Location(void);
+		virtual ~Location(void);
 
 		std::string					getPath(void) const;
 		std::string					getUploadStore(void) const;

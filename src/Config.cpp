@@ -6,9 +6,9 @@
 
 Config::Config(void):
 	_acceptGET(true),
-	_acceptPOST(false),
-	_acceptDELETE(false),
-	_autoIndex(false),
+	_acceptPOST(true),
+	_acceptDELETE(true),
+	_autoIndex(2),
 	_maxBodySizeClientReq(1024)
 {}
 

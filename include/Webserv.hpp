@@ -11,7 +11,7 @@
 
 typedef enum	e_conf_type
 {
-	WORD,
+	CONF_WORD,
 	OPEN_CURLY,
 	CLOSE_CURLY,
 	SEMICOLON

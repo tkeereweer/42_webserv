@@ -1,6 +1,6 @@
 #include "../../include/Request.hpp"
 
-Request::Request(void): _contentLength(0), _reqComplete(false){}
+Request::Request(void): _method(EMPTY), _contentLength(0), _reqComplete(false){}
 
 Request::Request(Request const &src)
 {
@@ -42,7 +42,7 @@ int	Request::lexRawData(std::string &data)
 	return (_requestEval(data));
 }
 
-std::string const	&Request::getMethod(void) const
+t_method const	&Request::getMethod(void) const
 {
 	return (this->_method);
 }

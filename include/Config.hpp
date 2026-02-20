@@ -5,13 +5,6 @@
 # include <map>
 # include <utility>
 
-typedef enum	e_method
-{
-	GET,
-	POST,
-	DELETE
-}	t_method;
-
 class	Config
 {
 	protected:
@@ -19,7 +12,7 @@ class	Config
 		bool						_acceptPOST;
 		bool						_acceptDELETE;
 		std::string					_root;
-		bool						_autoIndex;
+		int							_autoIndex;
 		std::string					_index;
 		long long					_maxBodySizeClientReq;
 		std::map<int, std::string>	_errorPages;
@@ -29,7 +22,7 @@ class	Config
 		Config(void);
 		Config(Config const &src);
 		Config	&operator=(Config const &rhs);
-		~Config(void);
+		virtual ~Config(void);
 
 		bool						getAcceptGET(void) const;
 		bool						getAcceptPOST(void) const;

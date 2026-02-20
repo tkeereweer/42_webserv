@@ -178,7 +178,7 @@ void    Request::_parseSimpleRequest(void)
 	_parseURI(it); //throws exception
 	if (it->type != CRLF)
 		throw(std::runtime_error("not simple request"));
-	this->_method = "GET";
+	this->_method = GET;
 	this->_tokenList.erase(this->_tokenList.begin(), it);
 	this->_reqComplete = true;
 	return;
@@ -238,7 +238,12 @@ void		Request::_parseRequestLine(std::list<t_reqToken>::iterator &it)
 	if (it->type != CRLF)
 		throw(std::runtime_error("full request not CRLF terminated"));
 	it++;
-	this->_method = method;
+	if (method == "GET")
+		this->_method = GET;
+	else if (method == "POST")
+		this->_method = POST;
+	else if (method == "DELETE")
+		this->_method = DELETE;
 	return ;
 }
 
@@ -477,7 +482,7 @@ void	Request::_parseFullRequest(void)
 		it++;
 	}
 	it++;
-	if (it != this->_tokenList.end() && this->_method == "POST" && this->_contentLength > 0)
+	if (it != this->_tokenList.end() && this->_method == POST && this->_contentLength > 0)
 		_readLeftovers(it);
 	else
 		this->_reqComplete = true;

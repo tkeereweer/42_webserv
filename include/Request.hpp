@@ -14,6 +14,14 @@
 #include <limits>
 #include <stdlib.h>
 
+typedef enum	e_method
+{
+	EMPTY,
+	GET,
+	POST,
+	DELETE
+}	t_method;
+
 enum e_reqType
 {
 	WORD,
@@ -39,7 +47,7 @@ class Request
 {
 	private:
 		//request line
-		std::string	_method;
+		t_method	_method;
 		std::string	_URI;
 		std::string	_HTTPVersion;
 		
@@ -112,12 +120,12 @@ class Request
 		void		parse(std::list<std::string> &input);
 		
 		//getters
-		std::string const	&getMethod(void) const;
+		t_method const		&getMethod(void) const;
 		std::string const	&getURI(void) const;
-		std::string const   &getHTTPVersion(void) const;
-		std::string const   &getContentEncoding(void) const;
+		std::string const	&getHTTPVersion(void) const;
+		std::string const	&getContentEncoding(void) const;
 		long long const		&getContentLength(void) const;
-		std::string const   &getContentType(void) const;
+		std::string const	&getContentType(void) const;
 		std::string const	&getCookies(void) const;
 		std::string const	&getBodyFilename(void) const;
 

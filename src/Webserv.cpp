@@ -202,6 +202,7 @@ void	Webserv::launchServer(void)
 					closeClient(readyEvents[i].data.fd);
 			}
 		}
+
 	}
 }
 
@@ -233,7 +234,7 @@ void	Webserv::newClient(int listenFd)
 		throw(std::runtime_error(std::strerror(errno)));
     }
 
-    _clientMap[clientFd].client = Client(clientFd);
+    _clientMap[clientFd].client = Client(clientFd); // operator [] adds new entry if key does not exist yet
 	_clientMap[clientFd].server = _serverMap[listenFd];
 
 	struct epoll_event event;
@@ -276,6 +277,7 @@ void	Webserv::handleRequest(int clientFd)
 		if ((client.getRequest().find("FIN")) != std::string::npos) 
 		{
 			testPrint(clientFd);
+			// _clientMap[clientFd].server->dispatch();
 			struct epoll_event event;
 			event.events = EPOLLOUT;
     		event.data.fd = clientFd;
