@@ -4,12 +4,18 @@
 *						CTOR/DTOR
 *******************************************************************************/
 
-Client::Client(void) : _request(), _bytesSent(0), _requestDone(false), _responseDone(false)
+Client::Client(void) : 
+    _request(),
+    _response(), 
+    _bytesSent(0), 
+    _requestDone(false), 
+    _responseDone(false)
 {}
 
 Client::Client(int fd) : 
 	_fd(fd),
     _request(),
+    _response(),
 	_bytesSent(0)
 {}
 
@@ -54,7 +60,7 @@ std::string&	Client::getReadBuffer(void)
 	return (_readBuffer);
 }
 
-const std::string&	Client::getResponse(void) const
+Response&	Client::getResponse(void)
 {
 	return (_response);
 }
@@ -65,13 +71,12 @@ size_t		Client::getBytesSent(void) const
 }
 
 
-
 void		Client::setReadBuffer(const std::string& readBuffer)
 {
 	this->_readBuffer = readBuffer;
 }
 
-void		Client::setResponse(const std::string& response)
+void		Client::setResponse(const Response& response)
 {
 	this->_response = response;
 }
@@ -92,10 +97,6 @@ void		Client::clearReadBuffer(void)
 	_readBuffer.clear();
 }
 
-void		Client::clearResponse(void)
-{
-	_response.clear();
-}
 
 void		Client::clearBytesSent(void)
 {

@@ -67,7 +67,7 @@ std::string	Config::getRoot(void) const
 	return (this->_root);
 }
 
-bool		Config::getAutoIndex(void) const
+bool    Config::getAutoIndex(void) const
 {
 	return (this->_autoIndex);
 }
