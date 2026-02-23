@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <limits>
 #include <stdlib.h>
+#include <sys/time.h>
 
 typedef enum	e_method
 {
@@ -62,9 +63,11 @@ class Request
 		//flag to indicate we got to the end of request headers
 		bool    _reqComplete;
 		bool    _reqLineValid;      
-		bool    _reqHeadersValid;          
+		bool    _reqHeadersValid;         
 		//body bytes already read such that after body consumed, contentLength - bytesRead == 0
-		long long				_bytesRead;
+		long long	    _bytesRead;
+		struct timeval	_recvTimestamp;
+
 
 		void	_lexInput(std::string const &str);
 		//takes leftover from parsing, puts it as is in Body and returns body content_length - length
@@ -117,8 +120,11 @@ class Request
 		std::string const	&getContentType(void) const;
 		std::string const	&getCookies(void) const;
 		std::string const	&getBodyFilename(void) const;
+		struct timeval		getRecvTimestamp(void) const;
+		bool				getReqFlag(void) const;
 
-		static bool	isCRLF(std::string::const_iterator	&it);
+		//setters
+		void				setRecvTimestamp(struct timeval time);
 };
 
 std::ostream    &operator<<(std::ostream &stream, Request const &rhs);

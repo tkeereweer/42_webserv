@@ -4,7 +4,7 @@
 *						CTOR/DTOR
 *******************************************************************************/
 
-Client::Client(void) : _request(), _bytesSent(0)
+Client::Client(void) : _request(), _bytesSent(0), _requestDone(false), _responseDone(false)
 {}
 
 Client::Client(int fd) : 
@@ -17,8 +17,10 @@ Client::Client(Client const &src) :
 	_fd(src._fd),
 	_request(src._request),
 	_response(src._response),
-	_bytesSent(src._bytesSent)
-{}
+	_bytesSent(src._bytesSent),
+    _requestDone(false),
+    _responseDone(false)
+    {}
 
 Client&	Client::operator=(Client const &rhs)
 {
@@ -28,6 +30,8 @@ Client&	Client::operator=(Client const &rhs)
 		_request = rhs._request;
 		_response = rhs._response;
 		_bytesSent = rhs._bytesSent;
+        _requestDone = rhs._requestDone;
+        _responseDone = rhs._responseDone;
 	}
 	return (*this);
 }

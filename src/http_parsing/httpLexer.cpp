@@ -1,6 +1,6 @@
 #include "../../include/Request.hpp"
 
-bool	Request::isCRLF(std::string::const_iterator	&it)
+bool	isCRLF(std::string::const_iterator	&it)
 {
 	return ((*it == '\r') && (*(it + 1) == '\n'));
 }
@@ -57,7 +57,7 @@ void	Request::_lexInput(std::string const &str)
 				this->_tokenList.push_back(token(word, WORD));
 				word.clear();
 			}
-			if (Request::isCRLF(it))
+			if (isCRLF(it))
 			{
 				this->_tokenList.push_back(token(std::string("\r\n"), CRLF));
 				it++;

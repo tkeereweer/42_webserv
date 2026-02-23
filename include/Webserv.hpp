@@ -4,10 +4,14 @@
 # include "Config.hpp"
 # include "Server.hpp"
 # include "Client.hpp"
+# include "Request.hpp"
 # include <map>
 # include <vector>
 # include <list>
 # include <ostream>
+# include <ctime>
+
+# define QUERY_TIMEOUT 3000 //30s == 30000ms between 2 reads and write is the standard on firefox. If lower, test value for debugging quicker
 
 typedef enum	e_conf_type
 {
@@ -61,6 +65,7 @@ class	Webserv
 		void	newClient(int listenFd);
     	void	handleRequest(int clientFd);
 		void	handleResponse(int clientFd);
+        void    handleTimeouts(void);
     	void	closeClient(int clientFd);
 
 		void	testPrint(int clientFd, Client &client);

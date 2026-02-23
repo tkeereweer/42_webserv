@@ -187,7 +187,6 @@ void	Webserv::launchServer(void)
 		readyFds = epoll_wait(_epollFd, readyEvents, 10, -1);
 		for (int i  = 0; i < readyFds; i++)
 		{
-			// std::cout << "fd: " << readyEvents[i].data.fd << " is ready for event " << readyEvents[i].events << std::endl;
 			std::cout << "fd: " << readyEvents[i].data.fd << " has activity!" << std::endl;
 
 			if (isListenSocket(readyEvents[i].data.fd))
@@ -202,8 +201,9 @@ void	Webserv::launchServer(void)
 					closeClient(readyEvents[i].data.fd);
 			}
 		}
-        // check for timeouts
+		handleTimeouts();
 	}
+	handleTimeouts(); //for the case where epoll_wait times out but still hanging requests
 }
 
 
@@ -227,25 +227,25 @@ void	Webserv::newClient(int listenFd)
 	if (clientFd == -1)
 		throw(std::runtime_error(std::strerror(errno)));
 
-    int flags = fcntl(clientFd, F_GETFL, 0);
+	int flags = fcntl(clientFd, F_GETFL, 0);
 	if (flags == -1 || fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) == -1)
-    {
-        close(clientFd);
+	{
+		close(clientFd);
 		throw(std::runtime_error(std::strerror(errno)));
-    }
+	}
 
-    _clientMap[clientFd].client = Client(clientFd); // operator [] adds new entry if key does not exist yet
+	_clientMap[clientFd].client = Client(clientFd); // operator [] adds new entry if key does not exist yet
 	_clientMap[clientFd].server = _serverMap[listenFd];
 
 	struct epoll_event event;
-    event.events = EPOLLIN;
-    event.data.fd = clientFd;
+	event.events = EPOLLIN;
+	event.data.fd = clientFd;
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1)
-    {
-        _clientMap.erase(clientFd);
-        close(clientFd);
+	{
+		_clientMap.erase(clientFd);
+		close(clientFd);
 		throw(std::runtime_error(std::strerror(errno)));
-    }
+	}
 
 	std::cout << "New client with fd: " << clientFd << std::endl;
 }
@@ -260,16 +260,19 @@ void	Webserv::testPrint(int clientFd, Client &client)
 
 void	Webserv::handleRequest(int clientFd)
 {
-	Client&		client = _clientMap[clientFd].client;
-	char		buffer[1024];
+	Client&		    client = _clientMap[clientFd].client;
+	char		    buffer[1024];
+	struct timeval	now;
 
 	ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
+	gettimeofday(&now, NULL);
+	client.getRequest().setRecvTimestamp(now);
 	int	lexReturn = -2;
 
  	if (bytesRead > 0)
-    {
-        buffer[bytesRead] = '\0';
-        client.appendReadBuffer(std::string(buffer, bytesRead));//data string
+	{
+		buffer[bytesRead] = '\0';
+		client.appendReadBuffer(std::string(buffer, bytesRead));//data string
 		try
 		{
 			lexReturn = client.getRequest().lexRawData(client.getReadBuffer());
@@ -292,7 +295,7 @@ void	Webserv::handleRequest(int clientFd)
 			testPrint(clientFd, client); //put request dipsatcher here, build body here
 			struct epoll_event event;
 			event.events = EPOLLOUT;
-    		event.data.fd = clientFd;
+			event.data.fd = clientFd;
 			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientFd, &event) == -1)
 			{
 				_clientMap.erase(clientFd);
@@ -302,7 +305,7 @@ void	Webserv::handleRequest(int clientFd)
 		}
 	}
 	else
-        closeClient(clientFd);
+		closeClient(clientFd);
 }
 
 void	Webserv::handleResponse(int clientFd)
@@ -326,7 +329,46 @@ void	Webserv::handleResponse(int clientFd)
 void	Webserv::closeClient(int clientFd)
 {
 	epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
-    _clientMap.erase(clientFd);
+	_clientMap.erase(clientFd);
 	close(clientFd);
-    std::cout << "Client disconnected with fd: " << clientFd << std::endl;
+	std::cout << "Client disconnected with fd: " << clientFd << std::endl;
+}
+
+//t2 - t1
+int	getTimeDiff(timeval t1, timeval t2)
+{
+    long dSeconds = t2.tv_sec  - t1.tv_sec;
+    long dUseconds = t2.tv_usec - t1.tv_usec;
+
+    return ((dSeconds) * 1000 + dUseconds / 1000.0) + 0.5; //+0.5 is a rounding technique to be sure we round the nearest integer.
+}
+
+void    Webserv::handleTimeouts(void)
+{
+	struct timeval	now;
+	struct timeval	recvStamp;
+	// struct timeval	sendStamp;
+	bool			reqFlag;
+	// bool			responseFlag;
+	
+	gettimeofday(&now, NULL);
+	for (std::map<int, t_connection>::iterator it = this->_clientMap.begin(); it != this->_clientMap.end(); it++)
+	{
+		recvStamp = it->second.client.getRequest().getRecvTimestamp();
+		// sendStamp = it->second.client.getRequest().getSendTimestamp();
+		reqFlag = it->second.client.getRequest().getReqFlag();
+		// responseFlag = it->client.getResponse().getRespFlag();
+
+		//check if 1) request/response complete 2) timestamp initialized === first receive/send happend 3) timeout status
+		if (!reqFlag && (recvStamp.tv_sec != 0 || recvStamp.tv_usec != 0) && getTimeDiff(recvStamp, now) > QUERY_TIMEOUT)
+		{
+			std::cout << "error 411 on client " << it->second.client.getFd() << ": request timeout" << std::endl;
+			closeClient(it->second.client.getFd());
+		}
+		// if (!responseFlag && (sendStamp.tv_sec != 0 || sendStamp.tv_usec != 0) && getTimeDiff(sendStamp, now) > QUERY_TIMEOUT)
+		// {
+		// 	std::cout << "error 411 on client " << it->second.client.getFd() << ": response timeout" << std::endl;
+		// 	closeClient(it->second.client.getFd());
+		// }
+	}
 }

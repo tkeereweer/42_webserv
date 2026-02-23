@@ -12,6 +12,8 @@ class	Client
 		Request     _request;
 		std::string	_response; // same
 		size_t		_bytesSent;
+        bool        _requestDone;
+        bool        _responseDone;
 
 	public:
 		Client(void);
