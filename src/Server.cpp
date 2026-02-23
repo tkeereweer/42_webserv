@@ -109,21 +109,18 @@ bool	Server::isMethodAllowed(t_method method, Location &loc) const
 
 void	Server::dispatchRequest(Client &client)
 {
-	Request	&req = client.getRequest();
+	Request	    &req = client.getRequest();
+	Response    &resp = client.getResponse();
 	int	locIdx = matchLocation(req.getURI());
 
 	if (locIdx == -1)
-	{
-		// return 404 Not Found
-	}
+		return (resp.buildErrorResponse(404));
 	Location	&loc = this->_locations[locIdx];
 	if (!isMethodAllowed(req.getMethod(), loc))
-	{
-		// return 405 Method Not Allowed
-	}
+		return (resp.build405Response(loc.getAcceptGET(), loc.getAcceptPOST(), loc.getAcceptDELETE()));
 	if (req.getMethod() == GET)
 		handleGET(client, loc);
-	// else if (req.getMethod() == GET)
+	// else if (req.getMethod() == POST)
 	// 	handlePOST(client, loc);
 	// else
 	// 	handleDELETE(client, loc);
@@ -156,7 +153,7 @@ static int	isDir(char const *path)
 {
    struct stat	statbuf;
    if (stat(path, &statbuf) != 0)
-       return 0;
+	   return 0;
    return S_ISDIR(statbuf.st_mode);
 }
 
@@ -180,23 +177,16 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir) const
 	else if (!this->_index.empty())
 		path = buildPath(this->_index, loc);
 	if (!path.empty())
-	{
-		// return index file
-	}
+		return (client.getResponse().buildRouteResponse("/index.html"));
 	else if (loc.getAutoIndex() == 1 || (loc.getAutoIndex() != 0 && this->_autoIndex == 1))
 	{
 		// return directory listing
 	}
 	dir.append("index.html");
 	if (access(dir.c_str(), R_OK) == -1)
-	{
-		// return 403 Forbidden
-	}
+		return (client.getResponse().buildErrorResponse(403));
 	else
-	{
-        (void)client;
-		// return index.html file
-	}
+		return (client.getResponse().buildRouteResponse("/index.html")); //is that what's supposed to happen ? I don't think I understood the right path...
 }
 
 void	Server::handleGET(Client &client, Location &loc) const
@@ -208,13 +198,14 @@ void	Server::handleGET(Client &client, Location &loc) const
 	}
 	std::string	path = buildPath(req.getURI(), loc);
 	if (isDir(path.c_str()))
-		handleDir(client, loc, path);
+		return (handleDir(client, loc, path));
 	if (access(path.c_str(), R_OK) == -1)
-	{
-		// return 404 Not Found
-	}
-	else
-	{
-		// return 200 OK and requested resource in body
-	}
+		return (client.getResponse().buildErrorResponse(404));
+	return (client.getResponse().buildRouteResponse(loc.getPath()));
+}
+
+
+void	Server::handlePOST(Client &client, Location &loc) const
+{
+	
 }

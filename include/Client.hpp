@@ -3,6 +3,7 @@
 
 #include <string>
 #include "Request.hpp"
+#include "Response.hpp"
 
 class	Client
 {
@@ -10,7 +11,7 @@ class	Client
 		int			_fd;
 		std::string _readBuffer;
 		Request     _request;
-		std::string	_response; // same
+		Response	_response; // same
 		size_t		_bytesSent;
         bool        _requestDone;
         bool        _responseDone;
@@ -24,17 +25,16 @@ class	Client
 
 		int					getFd(void) const;
 		std::string&		getReadBuffer(void);
-		const std::string&	getResponse(void) const;
+		Response&           getResponse(void);
 		size_t				getBytesSent(void) const;
 		Request             &getRequest(void);
 
 		void				setReadBuffer(const std::string& readBuffer);
-		void				setResponse(const std::string& response);
+		void				setResponse(const Response& response);
 		void				appendReadBuffer(const std::string& appendix);
 		void				addBytesSent(size_t bytesSent);
 
 		void				clearReadBuffer(void);
-		void				clearResponse(void);
 		void				clearBytesSent(void);
 };
 
