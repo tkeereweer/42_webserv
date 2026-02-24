@@ -156,6 +156,7 @@ void	Webserv::openSockets(void)
 	}
 }
 
+
 int	Webserv::setupEpoll(void) const
 {
 	int	epollFd;
@@ -175,6 +176,25 @@ int	Webserv::setupEpoll(void) const
 	return (epollFd);
 }
 
+
+void	Webserv::activityNotif(struct epoll_event	readyEvent)
+{
+	if (isListenSocket(readyEvent.data.fd))
+		std::cout << "ListenSocket (" << readyEvent.data.fd << ") is ready for ";
+	else if (isCgiFd(readyEvent.data.fd))
+		std::cout << "Pipe (" << readyEvent.data.fd << ") is ready for ";
+	else
+		std::cout << "Client (" << readyEvent.data.fd << ") is ready for ";
+	
+	if (readyEvent.events == 1)
+		std::cout << "EPOLLIN" << std::endl;
+	else if (readyEvent.events == 4)
+		std::cout << "EPOLLOUT" << std::endl;
+	else
+		std::cout << readyEvent.events << std::endl;
+}
+
+
 void	Webserv::launchServer(void)
 {
 	int					readyFds;
@@ -187,11 +207,17 @@ void	Webserv::launchServer(void)
 		readyFds = epoll_wait(_epollFd, readyEvents, 10, -1);
 		for (int i  = 0; i < readyFds; i++)
 		{
-			// std::cout << "fd: " << readyEvents[i].data.fd << " is ready for event " << readyEvents[i].events << std::endl;
-			std::cout << "fd: " << readyEvents[i].data.fd << " has activity!" << std::endl;
+			activityNotif(readyEvents[i]);
 
 			if (isListenSocket(readyEvents[i].data.fd))
 				newClient(readyEvents[i].data.fd);
+			else if (isCgiFd(readyEvents[i].data.fd))
+			{
+				if (readyEvents[i].events & EPOLLOUT)
+					handleCgiInput(readyEvents[i].data.fd);
+				else
+					handleCgiOutput(readyEvents[i].data.fd);
+			}
 			else
 			{
 				if (readyEvents[i].events & EPOLLIN)
@@ -210,13 +236,6 @@ void	Webserv::launchServer(void)
 /*******************************************************************************
 *						CLIENT HELPERS
 *******************************************************************************/
-
-bool	Webserv::isListenSocket(int fd) const
-{
-	if (_serverMap.find(fd) != _serverMap.end())
-		return true;
-	return false;
-}
 
 void	Webserv::newClient(int listenFd)
 {
@@ -250,6 +269,7 @@ void	Webserv::newClient(int listenFd)
 	std::cout << "New client with fd: " << clientFd << std::endl;
 }
 
+
 void	Webserv::testPrint(int clientFd, Client &client)
 {
 	std::cout << client.getRequest() << std::endl;
@@ -257,6 +277,7 @@ void	Webserv::testPrint(int clientFd, Client &client)
 	_clientMap[clientFd].client.setResponse("HTTP/1.0 200 OK");
 	_clientMap[clientFd].client.clearReadBuffer();
 }
+
 
 void	Webserv::handleRequest(int clientFd)
 {
@@ -288,6 +309,19 @@ void	Webserv::handleRequest(int clientFd)
 		}
 		if (lexReturn == -1)
 		{
+			/*
+				when using CGI, it's better to remove fd from epoll 
+				and re-add it in EPOLLOUT mode once response is build
+
+					epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
+
+				otherwise switch to EPOLLOUT once response has been build 
+				(i.e remove it from down here)
+
+				IMPORTANT:
+					unlink temp file in which cgi writes response once used (maybe in Response Dtor?)
+			*/
+
 			std::cout << "~~~~~ request successfully received ! content: ~~~~~~" << std::endl;
 			testPrint(clientFd, client); //put request dipsatcher here, build body here
 			struct epoll_event event;
@@ -304,6 +338,7 @@ void	Webserv::handleRequest(int clientFd)
 	else
         closeClient(clientFd);
 }
+
 
 void	Webserv::handleResponse(int clientFd)
 {
@@ -323,10 +358,31 @@ void	Webserv::handleResponse(int clientFd)
 		closeClient(clientFd);
 }
 
+
 void	Webserv::closeClient(int clientFd)
 {
 	epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
     _clientMap.erase(clientFd);
 	close(clientFd);
     std::cout << "Client disconnected with fd: " << clientFd << std::endl;
+}
+
+
+/*******************************************************************************
+*						BOOL FD IS
+*******************************************************************************/
+
+bool	Webserv::isListenSocket(int fd) const
+{
+	if (_serverMap.find(fd) != _serverMap.end())
+		return true;
+	return false;
+}
+
+
+bool	Webserv::isCgiFd(int fd)
+{
+	if (_cgiMap.find(fd) != _cgiMap.end())
+		return (true);
+	return (false);
 }

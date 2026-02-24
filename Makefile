@@ -9,7 +9,8 @@ SRC = Client.cpp \
 	http_parsing/lexerUtils.cpp \
 	http_parsing/parsingMethods.cpp \
 	http_parsing/Request.cpp \
-	main.cpp
+	main.cpp \
+	cgi.cpp
 
 NAME = webserv
 
