@@ -254,7 +254,7 @@ void	Webserv::testPrint(int clientFd, Client &client)
 {
 	std::cout << client.getRequest() << std::endl;
 	std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
-	_clientMap[clientFd].client.setResponse("HTTP/1.0 200 OK");
+	// _clientMap[clientFd].client.setResponse("HTTP/1.0 200 OK");
 	_clientMap[clientFd].client.clearReadBuffer();
 }
 
@@ -280,7 +280,9 @@ void	Webserv::handleRequest(int clientFd)
 		catch(const std::exception& e)
 		{
 			std::cerr << e.what() << '\n';
-			return (closeClient(clientFd));
+			client.getResponse().buildErrorResponse(400);
+			// return (closeClient(clientFd));
+            lexReturn = -1; //to get into write response logic
 		}
 		if (lexReturn > 0) //write in tempfile logic
 		{
@@ -293,6 +295,7 @@ void	Webserv::handleRequest(int clientFd)
 		{
 			std::cout << "~~~~~ request successfully received ! content: ~~~~~~" << std::endl;
 			testPrint(clientFd, client); //put request dipsatcher here, build body here
+			this->_clientMap[clientFd].server->dispatchRequest(client);
 			struct epoll_event event;
 			event.events = EPOLLOUT;
 			event.data.fd = clientFd;
@@ -310,16 +313,19 @@ void	Webserv::handleRequest(int clientFd)
 
 void	Webserv::handleResponse(int clientFd)
 {
-	Client&		client = _clientMap[clientFd].client;
-	const char*	ptr = client.getResponse().c_str() + client.getBytesSent();
-	size_t		remaining = client.getResponse().size() - client.getBytesSent();
+	Client&		    client = _clientMap[clientFd].client;
+	const char*		ptr = client.getResponse().getRawResponse().c_str() + client.getBytesSent();
+	size_t			remaining = client.getResponse().getToRead() - (client.getBytesSent());
+	struct timeval  now;
 
 	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
+	gettimeofday(&now, NULL);
+	client.getResponse().setSendTimestamp(now);
 
 	if (bytesSentNow > 0)
 	{
 		client.addBytesSent(bytesSentNow);
-		if (client.getBytesSent() == client.getResponse().size() )
+		if ((client.getBytesSent()) == client.getResponse().getToRead())
 			closeClient(clientFd);
 	}
 	else
@@ -337,38 +343,41 @@ void	Webserv::closeClient(int clientFd)
 //t2 - t1
 int	getTimeDiff(timeval t1, timeval t2)
 {
-    long dSeconds = t2.tv_sec  - t1.tv_sec;
-    long dUseconds = t2.tv_usec - t1.tv_usec;
+	long dSeconds = t2.tv_sec  - t1.tv_sec;
+	long dUseconds = t2.tv_usec - t1.tv_usec;
 
-    return ((dSeconds) * 1000 + dUseconds / 1000.0) + 0.5; //+0.5 is a rounding technique to be sure we round the nearest integer.
+	return ((dSeconds) * 1000 + dUseconds / 1000.0) + 0.5; //+0.5 is a rounding technique to be sure we round the nearest integer.
 }
 
 void    Webserv::handleTimeouts(void)
 {
 	struct timeval	now;
 	struct timeval	recvStamp;
-	// struct timeval	sendStamp;
+	struct timeval	sendStamp;
 	bool			reqFlag;
-	// bool			responseFlag;
+	bool			responseFlag;
 	
 	gettimeofday(&now, NULL);
 	for (std::map<int, t_connection>::iterator it = this->_clientMap.begin(); it != this->_clientMap.end(); it++)
 	{
-		recvStamp = it->second.client.getRequest().getRecvTimestamp();
-		// sendStamp = it->second.client.getRequest().getSendTimestamp();
-		reqFlag = it->second.client.getRequest().getReqFlag();
-		// responseFlag = it->client.getResponse().getRespFlag();
+		Client	&client = it->second.client;
+		recvStamp = client.getRequest().getRecvTimestamp();
+		sendStamp = client.getResponse().getSendTimestamp();
+		reqFlag = client.getRequest().getReqFlag();
+		responseFlag = client.getResponse().getRespFlag();
 
 		//check if 1) request/response complete 2) timestamp initialized === first receive/send happend 3) timeout status
 		if (!reqFlag && (recvStamp.tv_sec != 0 || recvStamp.tv_usec != 0) && getTimeDiff(recvStamp, now) > QUERY_TIMEOUT)
 		{
-			std::cout << "error 411 on client " << it->second.client.getFd() << ": request timeout" << std::endl;
-			closeClient(it->second.client.getFd());
+			std::cout << "error 408 on client " << client.getFd() << ": request timeout" << std::endl;
+			client.getResponse().buildErrorResponse(408);
+			closeClient(client.getFd());
 		}
-		// if (!responseFlag && (sendStamp.tv_sec != 0 || sendStamp.tv_usec != 0) && getTimeDiff(sendStamp, now) > QUERY_TIMEOUT)
-		// {
-		// 	std::cout << "error 411 on client " << it->second.client.getFd() << ": response timeout" << std::endl;
-		// 	closeClient(it->second.client.getFd());
-		// }
+		if (!responseFlag && (sendStamp.tv_sec != 0 || sendStamp.tv_usec != 0) && getTimeDiff(sendStamp, now) > QUERY_TIMEOUT)
+		{
+			std::cout << "error 408 on client " << client.getFd() << ": response timeout" << std::endl;
+			client.getResponse().buildErrorResponse(408);
+			closeClient(client.getFd());
+		}
 	}
 }

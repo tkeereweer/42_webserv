@@ -9,6 +9,7 @@ void	Request::_parse(void)
 	}
 	catch(const std::exception& e)
 	{
+        this->_URI.clear(); //in case simple request fails after parseURI completed
 		try
 		{
 			_parseFullRequest(it);
@@ -203,6 +204,13 @@ void	verifyHTTPWord(std::string str)
 void	Request::_parseHTTPVersion(std::list<t_reqToken>::iterator &it)
 {
 	std::string	res = "";
+    if (it->val == "undefined")
+    {
+        res += it->val;
+        it++;
+        this->_HTTPVersion = res;
+        return;
+    }
 	if (it->val != "HTTP")
 		throw (std::runtime_error("wrong HTTP version"));
 	res += it->val;
@@ -451,7 +459,7 @@ bool	isValidForHeaders(std::string &str)
 {
 	for (std::string::iterator it = str.begin(); it != str.end(); it++)
 	{
-		if ((*it >= 0 && *it <= 32)
+		if ((*it >= 0 && *it < 32)
 			|| *it > 126)
 			throw(std::runtime_error("invalid char in some header body"));
 	}

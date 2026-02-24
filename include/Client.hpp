@@ -11,7 +11,7 @@ class	Client
 		int			_fd;
 		std::string _readBuffer;
 		Request     _request;
-		Response	_response; // same
+		Response	_response;
 		size_t		_bytesSent;
         bool        _requestDone;
         bool        _responseDone;

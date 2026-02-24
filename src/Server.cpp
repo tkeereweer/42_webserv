@@ -159,7 +159,7 @@ static int	isDir(char const *path)
 
 std::string	Server::buildPath(std::string URI, Location &loc) const
 {
-	std::string	path = ".";
+	std::string	path = "/home/mturgeon/rank5/webserv"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
 	if (!loc.getRoot().empty())
 		path.append(loc.getRoot());
 	else if (!this->_root.empty())
@@ -193,17 +193,24 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir) const
 
 void	Server::handleGET(Client &client, Location &loc) const
 {
-	Request	&req = client.getRequest();
-	if (!loc.getRedir().second.empty())
-		return (client.getResponse().buildRedirResponse(loc.getRedir().second));
-	else if (!this->_redirect.second.empty())
-		return (client.getResponse().buildRedirResponse(this->_redirect.second));
-	std::string	path = buildPath(req.getURI(), loc);
-	if (isDir(path.c_str()))
-		return (handleDir(client, loc, path));
-	if (access(path.c_str(), R_OK) == -1)
-		return (client.getResponse().buildErrorResponse(404));
-	return (client.getResponse().buildRouteResponse(loc.getPath()));
+	try 
+	{	
+		Request	&req = client.getRequest();
+		if (!loc.getRedir().second.empty())
+			return (client.getResponse().buildRedirResponse(loc.getRedir().second));
+		else if (!this->_redirect.second.empty())
+			return (client.getResponse().buildRedirResponse(this->_redirect.second));
+		std::string	path = buildPath(req.getURI(), loc);
+		if (isDir(path.c_str()))
+			return (handleDir(client, loc, path));
+		if (access(path.c_str(), R_OK) == -1)
+			return (client.getResponse().buildErrorResponse(404));
+		return (client.getResponse().buildRouteResponse(path));
+	}
+	catch (std::exception const &e)
+	{
+		return (client.getResponse().buildErrorResponse(500));
+	}
 }
 
 
