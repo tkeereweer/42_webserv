@@ -7,8 +7,8 @@ Request::Request(void):
     _reqLineValid(false), 
     _reqHeadersValid(false)
     {
-        this->_recvTimestamp.tv_sec = this->_sendTimestamp.tv_sec = 0;
-        this->_recvTimestamp.tv_usec = this->_sendTimestamp.tv_usec = 0;
+        this->_recvTimestamp.tv_sec = 0;
+        this->_recvTimestamp.tv_usec = 0;
     }
 
 Request::Request(Request const &src)
@@ -55,7 +55,6 @@ Request	&Request::operator=(Request const &rhs)
         this->_reqLineValid = rhs._reqLineValid;
         this->_tokenList = rhs._tokenList;
         this->_recvTimestamp = rhs._recvTimestamp;
-        this->_sendTimestamp = rhs._sendTimestamp;
 	}
 	return (*this);
 }
@@ -153,22 +152,12 @@ struct timeval Request::getRecvTimestamp(void) const
     return (this->_recvTimestamp);
 }
 
-struct timeval Request::getSendTimestamp(void) const
-{
-    return (this->_sendTimestamp);
-}
-
 //setters
-
 void    Request::setRecvTimestamp(struct timeval time)
 {
     this->_recvTimestamp = time;
 }
 
-void    Request::setSendTimestamp(struct timeval time)
-{
-    this->_sendTimestamp = time;
-}
 bool  Request::getReqFlag(void) const
 {
     return (this->_reqComplete);

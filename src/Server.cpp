@@ -153,7 +153,7 @@ static int	isDir(char const *path)
 {
    struct stat	statbuf;
    if (stat(path, &statbuf) != 0)
-	   return 0;
+	   return (0);
    return S_ISDIR(statbuf.st_mode);
 }
 
@@ -172,14 +172,16 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir) const
 {
 	std::string	path;
 
-	if (!loc.getIndex().empty())
-		path = buildPath(loc.getIndex(), loc);
-	else if (!this->_index.empty())
-		path = buildPath(this->_index, loc);
+	if (!loc.getIndex().empty()) //build location path first if it exists
+		return (client.getResponse().buildRouteResponse(buildPath(loc.getIndex(), loc)));
+	else if (!this->_index.empty()) //else, build default location path for server
+		return (client.getResponse().buildRouteResponse(buildPath(this->_index, loc)));
 	if (!path.empty())
-		return (client.getResponse().buildRouteResponse("/index.html"));
+		return (client.getResponse().buildRouteResponse("/index.html")); //if failed, return homepage
 	else if (loc.getAutoIndex() == 1 || (loc.getAutoIndex() != 0 && this->_autoIndex == 1))
 	{
+		std::cout << "directory listing, for now just /index.html" << std::endl;
+		return (client.getResponse().buildRouteResponse("/index.html"));
 		// return directory listing
 	}
 	dir.append("index.html");
@@ -192,10 +194,10 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir) const
 void	Server::handleGET(Client &client, Location &loc) const
 {
 	Request	&req = client.getRequest();
-	if (!loc.getRedir().second.empty() || !this->_redirect.second.empty())
-	{
-		// return 302 Moved Temporarily with Location header set
-	}
+	if (!loc.getRedir().second.empty())
+		return (client.getResponse().buildRedirResponse(loc.getRedir().second));
+	else if (!this->_redirect.second.empty())
+		return (client.getResponse().buildRedirResponse(this->_redirect.second));
 	std::string	path = buildPath(req.getURI(), loc);
 	if (isDir(path.c_str()))
 		return (handleDir(client, loc, path));
@@ -205,7 +207,7 @@ void	Server::handleGET(Client &client, Location &loc) const
 }
 
 
-void	Server::handlePOST(Client &client, Location &loc) const
-{
+// void	Server::handlePOST(Client &client, Location &loc) const
+// {
 	
-}
+// }

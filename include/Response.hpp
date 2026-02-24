@@ -11,7 +11,7 @@ class Response
 	private:
 		//start-line
 		std::string _protocol;
-		short		_errorCode;
+		short		_returnCode;
 		std::string	_reasonPhrase;
         std::string _allow; //only for error405
 
@@ -19,6 +19,7 @@ class Response
 		std::string	_contentEncoding;
 		std::string _contentLength;
 		std::string	_contentType;
+        std::string _location; //for redirections
 
 		//cookies
 		//there can be multiple values
@@ -44,6 +45,7 @@ class Response
         void    buildErrorResponse(short code);
         void    build405Response(bool getAllowed, bool postAllowed, bool deleteAllowed);
         void    buildRouteResponse(std::string localPath);
+        void    buildRedirResponse(std::string redirPath);
 };
 
 #endif
