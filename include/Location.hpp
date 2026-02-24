@@ -22,8 +22,8 @@ class	Location: public Config
 		std::string					getPath(void) const;
 		std::string					getUploadStore(void) const;
 
-		void	setPath(std::string path);
-		void	setUploadStore(std::string dir);
+		void	                    setPath(std::string path);
+		void	                    setUploadStore(std::string dir);
 };
 
 #endif

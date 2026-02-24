@@ -228,8 +228,9 @@ void	Webserv::launchServer(void)
 					closeClient(readyEvents[i].data.fd);
 			}
 		}
-        // check for timeouts
+		handleTimeouts();
 	}
+	handleTimeouts(); //for the case where epoll_wait times out but still hanging requests
 }
 
 
@@ -246,25 +247,25 @@ void	Webserv::newClient(int listenFd)
 	if (clientFd == -1)
 		throw(std::runtime_error(std::strerror(errno)));
 
-    int flags = fcntl(clientFd, F_GETFL, 0);
+	int flags = fcntl(clientFd, F_GETFL, 0);
 	if (flags == -1 || fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) == -1)
-    {
-        close(clientFd);
+	{
+		close(clientFd);
 		throw(std::runtime_error(std::strerror(errno)));
-    }
+	}
 
-    _clientMap[clientFd].client = Client(clientFd); // operator [] adds new entry if key does not exist yet
+	_clientMap[clientFd].client = Client(clientFd); // operator [] adds new entry if key does not exist yet
 	_clientMap[clientFd].server = _serverMap[listenFd];
 
 	struct epoll_event event;
-    event.events = EPOLLIN;
-    event.data.fd = clientFd;
+	event.events = EPOLLIN;
+	event.data.fd = clientFd;
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1)
-    {
-        _clientMap.erase(clientFd);
-        close(clientFd);
+	{
+		_clientMap.erase(clientFd);
+		close(clientFd);
 		throw(std::runtime_error(std::strerror(errno)));
-    }
+	}
 
 	std::cout << "New client with fd: " << clientFd << std::endl;
 }
@@ -281,16 +282,19 @@ void	Webserv::testPrint(int clientFd, Client &client)
 
 void	Webserv::handleRequest(int clientFd)
 {
-	Client&		client = _clientMap[clientFd].client;
-	char		buffer[1024];
+	Client&		    client = _clientMap[clientFd].client;
+	char		    buffer[1024];
+	struct timeval	now;
 
 	ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
+	gettimeofday(&now, NULL);
+	client.getRequest().setRecvTimestamp(now);
 	int	lexReturn = -2;
 
  	if (bytesRead > 0)
-    {
-        buffer[bytesRead] = '\0';
-        client.appendReadBuffer(std::string(buffer, bytesRead));//data string
+	{
+		buffer[bytesRead] = '\0';
+		client.appendReadBuffer(std::string(buffer, bytesRead));//data string
 		try
 		{
 			lexReturn = client.getRequest().lexRawData(client.getReadBuffer());
@@ -326,7 +330,7 @@ void	Webserv::handleRequest(int clientFd)
 			testPrint(clientFd, client); //put request dipsatcher here, build body here
 			struct epoll_event event;
 			event.events = EPOLLOUT;
-    		event.data.fd = clientFd;
+			event.data.fd = clientFd;
 			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientFd, &event) == -1)
 			{
 				_clientMap.erase(clientFd);
@@ -336,7 +340,7 @@ void	Webserv::handleRequest(int clientFd)
 		}
 	}
 	else
-        closeClient(clientFd);
+		closeClient(clientFd);
 }
 
 
@@ -362,9 +366,9 @@ void	Webserv::handleResponse(int clientFd)
 void	Webserv::closeClient(int clientFd)
 {
 	epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
-    _clientMap.erase(clientFd);
+	_clientMap.erase(clientFd);
 	close(clientFd);
-    std::cout << "Client disconnected with fd: " << clientFd << std::endl;
+	std::cout << "Client disconnected with fd: " << clientFd << std::endl;
 }
 
 

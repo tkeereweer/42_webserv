@@ -1,6 +1,15 @@
 #include "../../include/Request.hpp"
 
-Request::Request(void): _method(EMPTY), _contentLength(0), _reqComplete(false), _reqLineValid(false), _reqHeadersValid(false){}
+Request::Request(void):
+    _method(EMPTY),
+    _contentLength(0),
+    _reqComplete(false),
+    _reqLineValid(false), 
+    _reqHeadersValid(false)
+    {
+        this->_recvTimestamp.tv_sec = this->_sendTimestamp.tv_sec = 0;
+        this->_recvTimestamp.tv_usec = this->_sendTimestamp.tv_usec = 0;
+    }
 
 Request::Request(Request const &src)
 {
@@ -45,6 +54,8 @@ Request	&Request::operator=(Request const &rhs)
         this->_reqHeadersValid = rhs._reqHeadersValid;
         this->_reqLineValid = rhs._reqLineValid;
         this->_tokenList = rhs._tokenList;
+        this->_recvTimestamp = rhs._recvTimestamp;
+        this->_sendTimestamp = rhs._sendTimestamp;
 	}
 	return (*this);
 }
@@ -82,7 +93,7 @@ int	Request::lexRawData(std::string &data)
 
 	if (this->_reqComplete)
 		return (-1);
-	data.clear();
+	data.clear(); //issue here where we have deleted token list and we then clear data, losing info
 
 	//pop back in data last potentially unread token then pop_back()
 	if (!this->_tokenList.empty() && (this->_tokenList.back().type == WORD || this->_tokenList.back().type == SPACE))
@@ -135,4 +146,30 @@ std::string const	&Request::getCookies(void) const
 std::string const	&Request::getBodyFilename(void) const
 {
 	return (this->_bodyFilename);
+}
+
+struct timeval Request::getRecvTimestamp(void) const
+{
+    return (this->_recvTimestamp);
+}
+
+struct timeval Request::getSendTimestamp(void) const
+{
+    return (this->_sendTimestamp);
+}
+
+//setters
+
+void    Request::setRecvTimestamp(struct timeval time)
+{
+    this->_recvTimestamp = time;
+}
+
+void    Request::setSendTimestamp(struct timeval time)
+{
+    this->_sendTimestamp = time;
+}
+bool  Request::getReqFlag(void) const
+{
+    return (this->_reqComplete);
 }

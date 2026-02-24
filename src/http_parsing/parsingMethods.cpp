@@ -21,10 +21,8 @@ void	Request::_parse(void)
 				throw (std::runtime_error(errorMsg.c_str()));
 			return ;
 		}
-		std::cout << "full request parsing succesful" << std::endl;
 		return ;		
 	}
-	std::cout << "simple request parsing succesful" << std::endl;
 	return ;
 }
 
