@@ -9,6 +9,7 @@
 # include "Config.hpp"
 # include "Location.hpp"
 # include "Client.hpp"
+# include "CGI.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
 
@@ -22,9 +23,11 @@ typedef struct s_socket
 class	Server: public Config
 {
 	private:
-		std::string					_name;
-		std::vector<t_socket>		_sockets;
-		std::vector<Location>		_locations;
+		std::string				_name;
+		std::vector<t_socket>	_sockets;
+		std::vector<Location>	_locations;
+		std::map<int, CGI>		_cgiMap; //more logical here as you can choose to have some virtual hosts have access to some CGIs or not.
+		char					**_parentEnv;
 
 		int			matchLocation(std::string URI) const;
 		bool		isMethodAllowed(t_method method, Location &loc) const;
@@ -32,11 +35,12 @@ class	Server: public Config
 		void		handleError(Client &client, Location &loc, short code) const;
 		void		handleDir(Client &client, Location &loc, std::string dir) const;
 		void		handleGET(Client &client, Location &loc) const;
-		void		handlePOST(Client &client, Location &loc) const;
+		void		handlePOST(Client &client, Location &loc, std::map<int, CGI> &cgiMap, char **serverEnv) const;
 		void		handleDELETE(Client &client, Location &loc) const;
 
-	public:
 		Server(void);
+	public:
+		Server(char **envp);
 		Server(Server const &src);
 		Server	&operator=(Server const &rhs);
 		virtual ~Server(void);

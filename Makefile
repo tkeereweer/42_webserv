@@ -9,7 +9,7 @@ SRC = Client.cpp \
 	http_parsing/lexerUtils.cpp \
 	http_parsing/parsingMethods.cpp \
 	http_parsing/Request.cpp \
-	cgi.cpp \
+	CGI.cpp \
 	Response.cpp \
 	main.cpp
 

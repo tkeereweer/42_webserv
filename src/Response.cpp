@@ -83,54 +83,54 @@ void    Response::buildErrorResponse(short code)
 		case (400):
 			this->_returnCode = 400;
 			this->_reasonPhrase = "Bad Request";
-			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/400.html"; //filepath temporary cuz I suck and can't make relative path work...
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/400.html"; //filepath temporary cuz I suck and can't make relative path work...
 			break ;
 		case (403):
 			this->_returnCode = 403;
 			this->_reasonPhrase = "Forbidden";
-			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/403.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/403.html";
 			break ;
 		case (404):
 			this->_returnCode = 404;
 			this->_reasonPhrase = "Not Found";
-			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/404.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/404.html";
 			break ;
 		case (408):
 			this->_returnCode = 408;
 			this->_reasonPhrase = "Request Timeout";
-			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/408.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/408.html";
 			break ;
 		case (411):
 			this->_returnCode = 411;
 			this->_reasonPhrase = "Length Required";
-			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/411.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/411.html";
 			break ;
 		case (413):
 			this->_returnCode = 413;
 			this->_reasonPhrase = "Payload Too Large";
-			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/413.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/413.html";
 			break ;
 		case (500):
 			this->_returnCode = 500;
 			this->_reasonPhrase = "Internal Server Error";
 			struct stat buf;
-			if (stat("/home/mturgeon/rank5/webserv/www/pages/errors/500.html", &buf) == 0)
+			if (stat("/home/mturgeon/rank5/webserv/data/www/pages/errors/500.html", &buf) == 0)
 			{
 				std::cout << "500 error page file doesnt exist\n"; 
 				this->_bodyFilepath = "";
 				break;
 			} //get out of infinite loop if error page doesn't exist
-			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/500.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/500.html";
 			break ;
-        case (502):
-            this->_returnCode = 502;
-            this->_reasonPhrase = "Bad Gateway";
-            this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/502.html";
-            break ;
+		case (502):
+			this->_returnCode = 502;
+			this->_reasonPhrase = "Bad Gateway";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/502.html";
+			break ;
 		case (503):
 			this->_returnCode = 503;
 			this->_reasonPhrase = "Service Unavailable";
-			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/503.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/503.html";
 			break ;
 		default:
 			throw (std::runtime_error("no matching error code handled"));
@@ -182,7 +182,7 @@ void	Response::_buildRawResponse(void)
 		this->_rawResponse += "\r\n";
 	}
 	this->_rawResponse += "\r\n";
-    this->_toRead += this->_rawResponse.size();
+	this->_toRead += this->_rawResponse.size();
 	if (this->_entityBody != "")
 		this->_rawResponse += this->_entityBody;
 	this->_responseComplete = true;
@@ -243,6 +243,12 @@ void    Response::buildRedirResponse(std::string redirPath)
 	this->_reasonPhrase = "Found";
 	this->_location = redirPath;
 	return (_buildRawResponse());
+}
+
+void    Response::buildGetCGIResponse(std::string cgiPath)
+{
+	//logic
+	//separate query params from actual URI and try matchLocation() here
 }
 
 //getters

@@ -81,7 +81,7 @@ void	Webserv::parseConfTokens(std::list<t_conf_token> &tokens)
 	{
 		if (token->type == CONF_WORD && token->value == "server")
 		{
-			Server	server;
+			Server	server(this->_parentEnv);
 
 			token++;
 			if (token != end && token->type == OPEN_CURLY)

@@ -17,7 +17,7 @@
 *						CTOR/DTOR
 *******************************************************************************/
 
-Webserv::Webserv(void) {}
+Webserv::Webserv(char **envp): _parentEnv(envp) {}
 
 Webserv::Webserv(Webserv const &src):
 	_servers(src._servers),
@@ -34,6 +34,7 @@ Webserv	&Webserv::operator=(Webserv const &rhs)
 		this->_serverMap = rhs._serverMap;
 		this->_clientMap = rhs._clientMap;
 		this->_epollFd = rhs._epollFd; // close old epollFd ??
+        this->_parentEnv = rhs._parentEnv;
 	}
 	return (*this);
 }
@@ -275,7 +276,6 @@ void	Webserv::testPrint(int clientFd, Client &client)
 {
 	std::cout << client.getRequest() << std::endl;
 	std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
-	// _clientMap[clientFd].client.setResponse("HTTP/1.0 200 OK");
 	_clientMap[clientFd].client.clearReadBuffer();
 }
 
@@ -287,6 +287,7 @@ void	Webserv::handleRequest(int clientFd)
 	struct timeval	now;
 
 	ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
+    //logic for timeout handling
 	gettimeofday(&now, NULL);
 	client.getRequest().setRecvTimestamp(now);
 	int	lexReturn = -2;
@@ -303,7 +304,6 @@ void	Webserv::handleRequest(int clientFd)
 		{
 			std::cerr << e.what() << '\n';
 			client.getResponse().buildErrorResponse(400);
-			// return (closeClient(clientFd));
             lexReturn = -1; //to get into write response logic
 		}
 		if (lexReturn > 0) //write in tempfile logic
@@ -324,12 +324,10 @@ void	Webserv::handleRequest(int clientFd)
 				otherwise switch to EPOLLOUT once response has been build 
 				(i.e remove it from down here)
 
-				IMPORTANT:
-					unlink temp file in which cgi writes response once used (maybe in Response Dtor?)
 			*/
 
-			std::cout << "~~~~~ request successfully received ! content: ~~~~~~" << std::endl;
-			testPrint(clientFd, client); //put request dipsatcher here, build body here
+			// std::cout << "~~~~~ request successfully received ! content: ~~~~~~" << std::endl;
+			// testPrint(clientFd, client); //put request dipsatcher here, build body here
 			this->_clientMap[clientFd].server->dispatchRequest(client);
 			struct epoll_event event;
 			event.events = EPOLLOUT;
@@ -352,7 +350,6 @@ void	Webserv::handleResponse(int clientFd)
 	Client&		    client = _clientMap[clientFd].client;
 	const char*		ptr = client.getResponse().getRawResponse().c_str() + client.getBytesSent();
 	size_t			remaining = client.getResponse().getToRead() - (client.getBytesSent());
-    std::cout << "in handleResponse, remaining: " << remaining << std::endl;
 	struct timeval  now;
 
 	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
@@ -361,8 +358,6 @@ void	Webserv::handleResponse(int clientFd)
 
 	if (bytesSentNow > 0)
 	{
-        std::cout << "bytesSent: " <<bytesSentNow<<std::endl;
-        std::cout << "toRead: " << client.getResponse().getToRead() << std::endl;
 		client.addBytesSent(bytesSentNow);
 		if ((client.getBytesSent()) == client.getResponse().getToRead())
 			closeClient(clientFd);
@@ -428,13 +423,11 @@ void    Webserv::handleTimeouts(void)
 		//check if 1) request/response complete 2) timestamp initialized === first receive/send happend 3) timeout status
 		if (!reqFlag && (recvStamp.tv_sec != 0 || recvStamp.tv_usec != 0) && getTimeDiff(recvStamp, now) > QUERY_TIMEOUT)
 		{
-			std::cout << "error 408 on client " << client.getFd() << ": request timeout" << std::endl;
 			client.getResponse().buildErrorResponse(408);
 			closeClient(client.getFd());
 		}
 		if (!responseFlag && (sendStamp.tv_sec != 0 || sendStamp.tv_usec != 0) && getTimeDiff(sendStamp, now) > QUERY_TIMEOUT)
 		{
-			std::cout << "error 408 on client " << client.getFd() << ": response timeout" << std::endl;
 			client.getResponse().buildErrorResponse(408);
 			closeClient(client.getFd());
 		}

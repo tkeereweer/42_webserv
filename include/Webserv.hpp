@@ -33,26 +33,14 @@ typedef struct	s_connection
 	Server*	server;
 }	t_connection;
 
-typedef	struct s_cgi
-{
-	int			clientFd;
-	int			pid;
-	int			writeFd;
-	int 		readFd;
-	int			inFileFd;
-	int			outFileFd;
-	std::string	outFile;
-	ssize_t		bytesSent;
-}	t_cgi;
-
 class	Webserv
 {
 	private:
 		std::vector<Server>			_servers;
 		std::map<int, Server*>		_serverMap;
-		std::map<int, t_cgi>		_cgiMap;
 		std::map<int, t_connection>	_clientMap; //int: fd of connection
 		int							_epollFd;
+        char                        **_parentEnv;
 
 		// configuration file parsing
 		void					parseListen(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
@@ -86,24 +74,22 @@ class	Webserv
 		bool		isCgiFd(int fd);
 		void		launchCgi(int clientFd);
 		void		createPipes(int inPipe[], int outPipe[]);
-		t_cgi		populateCgiStruct(int clientFd, pid_t pid, int *inPipe, int *outPipe, std::map<int, t_cgi>& _cgiMap);
+		CGI		    &populateCgiStruct(int clientFd, pid_t pid, int *inPipe, int *outPipe, std::map<int, CGI>& _cgiMap);
 		void		childProcessCgi(int *inPipe, int *outPipe, int clientFd);
 		char**		setupEnv(int clientFd);
 		void		freeEnv(char **env);
-		void		addCgiToEpoll(t_cgi cgi);
+		void		addCgiToEpoll(CGI &cgi);
 		void		handleCgiInput(int writeFd);
 		void		handleCgiOutput(int readFd);
 		void		closeCgi(int readFd);
-		void    	_createTempFile(t_cgi& cgi);
-		void		_createNextAvailableFile(struct dirent *name, DIR *tmp, t_cgi& cgi);
-		std::string	getScriptPath(int clientFd);
-		std::string	getProgPath(std::string scriptPath);
+		void		_createNextAvailableFile(struct dirent *name, DIR *tmp, CGI& cgi);
 
 
 		void	testPrint(int clientFd, Client &client);
+        Webserv(void);
 
 	public:
-		Webserv(void);
+		Webserv(char **envp);
 		Webserv(Webserv const &src);
 		Webserv	&operator=(Webserv const &rhs);
 		~Webserv(void);

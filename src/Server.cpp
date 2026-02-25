@@ -6,13 +6,16 @@
 *						CTOR/DTOR
 *******************************************************************************/
 
-Server::Server(void): Config() {}
+Server::Server(void): Config(){}
+
+Server::Server(char **envp): Config(), _parentEnv(envp){}
 
 Server::Server(Server const &src):
 	Config(src),
 	_name(src._name),
 	_sockets(src._sockets),
-	_locations(src._locations)
+	_locations(src._locations),
+    _parentEnv(src._parentEnv)
 {}
 
 Server	&Server::operator=(Server const &rhs)
@@ -31,6 +34,8 @@ Server	&Server::operator=(Server const &rhs)
 		this->_maxBodySizeClientReq = rhs._maxBodySizeClientReq;
 		this->_errorPages = rhs._errorPages;
 		this->_redirect = rhs._redirect;
+        this->_cgiMap = rhs._cgiMap;
+        this->_parentEnv = rhs._parentEnv;
 	}
 	return (*this);
 }
@@ -116,8 +121,11 @@ void	Server::dispatchRequest(Client &client)
 {
 	Request	    &req = client.getRequest();
 	Response    &resp = client.getResponse();
-	int	locIdx = matchLocation(req.getURI());
 
+    if (req.getURI().find_first_of("?") != std::string::npos)
+        return (resp.buildGetCGIResponse(req.getURI()));
+
+	int	locIdx = matchLocation(req.getURI());
 	if (locIdx == -1)
 		return (resp.buildErrorResponse(404));
 	Location	&loc = this->_locations[locIdx];
@@ -125,30 +133,11 @@ void	Server::dispatchRequest(Client &client)
 		return (resp.build405Response(loc.getAcceptGET(), loc.getAcceptPOST(), loc.getAcceptDELETE()));
 	if (req.getMethod() == GET)
 		handleGET(client, loc);
-	// else if (req.getMethod() == POST)
-	// 	handlePOST(client, loc);
+	else if (req.getMethod() == POST)
+		handlePOST(client, loc, this->_cgiMap, this->_parentEnv);
 	// else
 	// 	handleDELETE(client, loc);
 }
-
-// void	Server::handleError(Client &client, Location &loc, short code) const
-// {
-// 	std::map<int, std::string>::const_iterator	it;
-// 	// Response	&resp = client.getResponse();
-
-// 	if ((it = loc.getErrorPages().find(code)) != loc.getErrorPages().end())
-// 	{
-// 		// return custom error page (it->second)
-// 	}
-// 	else if ((it = this->_errorPages.find(code)) != this->_errorPages.end())
-// 	{
-// 		// return custom error page (it->second)
-// 	}
-// 	else
-// 	{
-// 		resp.
-// 	}
-// }
 
 /*******************************************************************************
 *						HANDLE GET/POST/DELETE
@@ -223,7 +212,17 @@ void	Server::handleGET(Client &client, Location &loc) const
 }
 
 
-// void	Server::handlePOST(Client &client, Location &loc) const
-// {
-	
-// }
+void	Server::handlePOST(Client &client, Location &loc, std::map<int, CGI> &cgiMap, char **serverEnv) const
+{
+	//cgi map's key is clientFD
+    try
+    {
+        std::string scriptPath(client.getRequest().getURI());
+        cgiMap[client.getFd()] = CGI(serverEnv, client, scriptPath); //hope this keeps the CGI instance in the uppermost callstack :') 
+        //add cgiMap[client.getFd()].getReadFD() to epoll here
+    }
+    catch(const std::exception& e)
+    {
+        return (client.getResponse().buildErrorResponse(500));
+    }
+}

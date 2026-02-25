@@ -2,9 +2,9 @@
 #include <iostream>
 #include <unistd.h>
 
-int	main(int argc, char *argv[])
+int	main(int argc, char *argv[], char **envp)
 {
-	Webserv		webserv;
+	Webserv		webserv(envp);
 	const char	*config_file = "./config/default.conf";
     // const char *config_file = "/home/mturgeon/rank5/webserv/config/default.conf";
 
