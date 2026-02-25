@@ -316,6 +316,7 @@ void	Webserv::handleResponse(int clientFd)
 	Client&		    client = _clientMap[clientFd].client;
 	const char*		ptr = client.getResponse().getRawResponse().c_str() + client.getBytesSent();
 	size_t			remaining = client.getResponse().getToRead() - (client.getBytesSent());
+    std::cout << "in handleResponse, remaining: " << remaining << std::endl;
 	struct timeval  now;
 
 	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
@@ -324,6 +325,8 @@ void	Webserv::handleResponse(int clientFd)
 
 	if (bytesSentNow > 0)
 	{
+        std::cout << "bytesSent: " <<bytesSentNow<<std::endl;
+        std::cout << "toRead: " << client.getResponse().getToRead() << std::endl;
 		client.addBytesSent(bytesSentNow);
 		if ((client.getBytesSent()) == client.getResponse().getToRead())
 			closeClient(clientFd);

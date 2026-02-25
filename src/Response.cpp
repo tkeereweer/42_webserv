@@ -177,6 +177,7 @@ void	Response::_buildRawResponse(void)
 		this->_rawResponse += "\r\n";
 	}
 	this->_rawResponse += "\r\n";
+    this->_toRead += this->_rawResponse.size();
 	if (this->_entityBody != "")
 		this->_rawResponse += this->_entityBody;
 	this->_responseComplete = true;
@@ -186,7 +187,7 @@ void	Response::_buildRawResponse(void)
 void    Response::_writeFileToResponse(std::string filepath)
 {
 	size_t			readSize = 1024 * 1024; //1MB buffer
-	std::ifstream	file(filepath.c_str());
+	std::ifstream	file(filepath.c_str(), std::ios::binary); //allows opening of file with binary data like jpegs
 	if (!file.is_open())
 	{
 		std::cout << "file: " << filepath << " failed to open" <<std::endl;
@@ -212,7 +213,7 @@ void    Response::_writeFileToResponse(std::string filepath)
 	//content length would refer to the encoded length.
 	this->_contentEncoding = "";
 	//for now, only text/html or text/css handled with this method
-	std::string extension(&filepath[filepath.find_last_of(".")]);
+	std::string extension(&filepath[filepath.find_last_of(".") + 1]);
 	this->_contentType = "text/";
 	this->_contentType += extension;
 	this->_contentType += "; charset=utf-8";

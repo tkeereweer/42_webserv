@@ -83,12 +83,17 @@ int	Server::matchLocation(std::string URI) const
 	for (std::size_t i = 0; i < this->_locations.size(); i++)
 	{
 		long unsigned int	j = 0;
+        //j is index of character in URI
 		for (; j < this->_locations[i].getPath().length(); j++)
 		{
+            //breaks if location path > URI length or different char -> not matching
 			if (j >= URI.length() || URI[j] != this->_locations[i].getPath()[j])
 				break;
 		}
-		if (j == this->_locations[i].getPath().length() &&
+        if (matched == -1)
+            matched = i;
+        //returns "longest" match block, aka most "precise" match block.
+		else if (j == this->_locations[i].getPath().length() &&
 			this->_locations[i].getPath().length() > this->_locations[matched].getPath().length())
 			matched = i;
 	}
@@ -204,7 +209,11 @@ void	Server::handleGET(Client &client, Location &loc) const
 		if (isDir(path.c_str()))
 			return (handleDir(client, loc, path));
 		if (access(path.c_str(), R_OK) == -1)
+        {   
+            std::cout << "access errno: " << strerror(errno) << std::endl;
+            std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
 			return (client.getResponse().buildErrorResponse(404));
+        }
 		return (client.getResponse().buildRouteResponse(path));
 	}
 	catch (std::exception const &e)
