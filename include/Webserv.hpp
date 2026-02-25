@@ -11,7 +11,7 @@
 # include <ostream>
 # include <ctime>
 
-# define QUERY_TIMEOUT 3000 //30s == 30000ms between 2 reads and write is the standard on firefox. If lower, test value for debugging quicker
+# define QUERY_TIMEOUT 300000 //30s == 30000ms between 2 reads and write is the standard on firefox. If lower, test value for debugging quicker
 
 typedef enum	e_conf_type
 {
@@ -50,8 +50,8 @@ class	Webserv
 	private:
 		std::vector<Server>			_servers;
 		std::map<int, Server*>		_serverMap;
-		std::map<int, t_connection>	_clientMap;
 		std::map<int, t_cgi>		_cgiMap;
+		std::map<int, t_connection>	_clientMap; //int: fd of connection
 		int							_epollFd;
 
 		// configuration file parsing

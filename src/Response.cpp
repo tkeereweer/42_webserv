@@ -3,8 +3,16 @@
 #include <vector>
 #include <algorithm>
 #include <sstream>
+#include <sys/stat.h>
+#include <iostream>
 
-Response::Response(void): _errorCode(0), _responseComplete(false){}
+Response::Response(void):
+	_returnCode(0), 
+	_toRead(0),
+	_responseComplete(false)
+{
+	this->_sendTimestamp.tv_sec = this->_sendTimestamp.tv_usec = 0;
+}
 
 Response::~Response(void){}
 
@@ -12,15 +20,25 @@ Response    &Response::operator=(Response const &rhs)
 {
 	if (this != &rhs)
 	{
+		this->_protocol = rhs._protocol;
+		this->_returnCode = rhs._returnCode;
+		this->_reasonPhrase = rhs._reasonPhrase;
+		this->_allow = rhs._allow;
+
 		this->_contentEncoding = rhs._contentEncoding;
 		this->_contentLength = rhs._contentLength;
+		this->_toRead = rhs._toRead;
 		this->_contentType = rhs._contentType;
-		this->_entityBody = rhs._entityBody;
-		this->_errorCode = rhs._errorCode;
-		this->_protocol = rhs._protocol;
-		this->_reasonPhrase = rhs._reasonPhrase;
-		this->_responseComplete = rhs._responseComplete;
+		this->_location = rhs._location;
 		this->_setCookie = rhs._setCookie;
+
+		this->_entityBody = rhs._entityBody;
+		this->_bodyFilepath = rhs._bodyFilepath;
+
+		this->_rawResponse = rhs._rawResponse;
+		this->_responseComplete = rhs._responseComplete;
+		this->_sendTimestamp.tv_sec = rhs._sendTimestamp.tv_sec;
+		this->_sendTimestamp.tv_usec = rhs._sendTimestamp.tv_usec;
 	}
 	return (*this);
 }
@@ -34,7 +52,7 @@ Response::Response(Response const &src)
 void    Response::build405Response(bool getAllowed, bool postAllowed, bool deleteAllowed)
 {
 	this->_protocol = "HTTP/1.0";
-	this->_errorCode = 405;
+	this->_returnCode = 405;
 	this->_reasonPhrase = "Method Not Allowed";
 	if (getAllowed || postAllowed || deleteAllowed)
 		this->_allow = "Allow: ";
@@ -55,6 +73,7 @@ void    Response::build405Response(bool getAllowed, bool postAllowed, bool delet
 	return (_buildRawResponse());
 }
 
+
 //call dedicated function for 405
 void    Response::buildErrorResponse(short code)
 {
@@ -62,36 +81,51 @@ void    Response::buildErrorResponse(short code)
 	switch (code)
 	{
 		case (400):
-			this->_errorCode = 400;
+			this->_returnCode = 400;
 			this->_reasonPhrase = "Bad Request";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/400.html"; //filepath temporary cuz I suck and can't make relative path work...
 			break ;
 		case (403):
-			this->_errorCode = 403;
+			this->_returnCode = 403;
 			this->_reasonPhrase = "Forbidden";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/403.html";
 			break ;
 		case (404):
-			this->_errorCode = 404;
+			this->_returnCode = 404;
 			this->_reasonPhrase = "Not Found";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/404.html";
 			break ;
 		case (408):
-			this->_errorCode = 408;
+			this->_returnCode = 408;
 			this->_reasonPhrase = "Request Timeout";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/408.html";
 			break ;
 		case (411):
-			this->_errorCode = 411;
+			this->_returnCode = 411;
 			this->_reasonPhrase = "Length Required";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/411.html";
 			break ;
 		case (413):
-			this->_errorCode = 413;
+			this->_returnCode = 413;
 			this->_reasonPhrase = "Payload Too Large";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/413.html";
 			break ;
 		case (500):
-			this->_errorCode = 500;
+			this->_returnCode = 500;
 			this->_reasonPhrase = "Internal Server Error";
+			struct stat buf;
+			if (stat("/home/mturgeon/rank5/webserv/www/pages/errors/500.html", &buf) == 0)
+			{
+				std::cout << "500 error page file doesnt exist\n"; 
+				this->_bodyFilepath = "";
+				break;
+			} //get out of infinite loop if error page doesn't exist
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/500.html";
 			break ;
 		case (503):
-			this->_errorCode = 503;
+			this->_returnCode = 503;
 			this->_reasonPhrase = "Service Unavailable";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/503.html";
 			break ;
 		default:
 			throw (std::runtime_error("no matching error code handled"));
@@ -101,12 +135,23 @@ void    Response::buildErrorResponse(short code)
 
 void	Response::_buildRawResponse(void)
 {
+	std::stringstream returnCodeStr;
+
 	this->_rawResponse += this->_protocol;
 	this->_rawResponse += " ";
-	this->_rawResponse += this->_errorCode;
+	returnCodeStr << this->_returnCode;
+	this->_rawResponse += returnCodeStr.str();
 	this->_rawResponse += " ";
 	this->_rawResponse += this->_reasonPhrase;
 	this->_rawResponse += "\r\n";
+	if (!this->_bodyFilepath.empty())
+		_writeFileToResponse(this->_bodyFilepath);
+	if (!this->_location.empty())
+	{
+		this->_rawResponse += "Location: ";
+		this->_rawResponse += this->_location;
+		this->_rawResponse += "\r\n";
+	}
 	if (this->_contentEncoding != "")
 	{
 		this->_rawResponse += "Content-Encoding: ";
@@ -119,7 +164,7 @@ void	Response::_buildRawResponse(void)
 		this->_rawResponse += this->_contentLength;
 		this->_rawResponse += "\r\n";
 	}
-	if (this->_contentType != "")
+	if (this->_contentType != "") 
 	{
 		this->_rawResponse += "Content-Type: ";
 		this->_rawResponse += this->_contentType;
@@ -132,42 +177,100 @@ void	Response::_buildRawResponse(void)
 		this->_rawResponse += "\r\n";
 	}
 	this->_rawResponse += "\r\n";
+    this->_toRead += this->_rawResponse.size();
 	if (this->_entityBody != "")
 		this->_rawResponse += this->_entityBody;
 	this->_responseComplete = true;
 	return ;
 }
 
-//read the right ressource, set content type, content length and encoding and write in rawPath
-//if CGI handling or cookie setup, do here
-void    Response::buildRouteResponse(std::string localPath)
+void    Response::_writeFileToResponse(std::string filepath)
 {
 	size_t			readSize = 1024 * 1024; //1MB buffer
-	std::ifstream	file(localPath.c_str(), std::ios::binary); //last flag to preserve integrity ?
+	std::ifstream	file(filepath.c_str(), std::ios::binary); //allows opening of file with binary data like jpegs
 	if (!file.is_open())
-		return (buildErrorResponse(500));
+	{
+		std::cout << "file: " << filepath << " failed to open" <<std::endl;
+		throw (std::runtime_error("500"));
+	}
 	//most memory efficient approach for large files
 	//should we do "write" chunking of size == max_readable_chunk_per_TCP_packet ? THen use flags like for reading ?
 	std::vector<char> buffer(readSize);
 	long long	size = 0;
-	while (file.read(&buffer[0], readSize))
+	file.read(&buffer[0], readSize);
+	while (file.gcount() != 0)
 	{
-		if (this->_contentLength == "")
-			this->_contentLength = "Content-Lenght: ";
 		size += file.gcount(); //number of bytes read
 		this->_entityBody.insert(this->_entityBody.end(), buffer.begin(), buffer.end());
 		buffer.clear();
+		file.read(&buffer[0], readSize);
 	}
 	std::stringstream	sstr;
 	sstr << size;
 	this->_contentLength += sstr.str();
+	this->_toRead = size;
 	//set to empty for now as it is the server's responsibility to encode or not. 
 	//content length would refer to the encoded length.
 	this->_contentEncoding = "";
-	//for now, only type handled ?
-	this->_contentType = "text/html";
-	this->_errorCode = 200;
+	//for now, only text/html or text/css handled with this method
+	std::string extension(&filepath[filepath.find_last_of(".") + 1]);
+	this->_contentType = "text/";
+	this->_contentType += extension;
+	this->_contentType += "; charset=utf-8";
+	return ;  
+}
+
+//read the right ressource, set content type, content length and encoding and write in rawPath
+//if CGI handling or cookie setup, do here
+void    Response::buildRouteResponse(std::string localPath)
+{
+	_writeFileToResponse(localPath);
+	this->_returnCode = 200;
 	this->_protocol = "HTTP/1.0";
 	this->_reasonPhrase = "OK";
 	return (_buildRawResponse());
+}
+
+void    Response::buildRedirResponse(std::string redirPath)
+{
+	this->_protocol = "HTTP/1.0";
+	this->_returnCode = 302;
+	this->_reasonPhrase = "Found";
+	this->_location = redirPath;
+	return (_buildRawResponse());
+}
+
+//getters
+
+std::string &Response::getRawResponse(void)
+{
+	return (this->_rawResponse);
+}
+
+std::string Response::getContentLength(void) const
+{
+	return (this->_contentLength);
+}
+
+struct timeval	&Response::getSendTimestamp(void)
+{
+	return (this->_sendTimestamp);
+}
+
+bool	Response::getRespFlag(void) const
+{
+	return (this->_responseComplete);
+}
+
+size_t	Response::getToRead(void) const
+{
+	return (this->_toRead);
+}
+
+//setters
+
+void	Response::setSendTimestamp(struct timeval timestamp)
+{
+	this->_sendTimestamp.tv_sec = timestamp.tv_sec;
+	this->_sendTimestamp.tv_usec = timestamp.tv_usec;
 }

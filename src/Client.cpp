@@ -7,7 +7,7 @@
 Client::Client(void) : 
     _request(),
     _response(), 
-    _bytesSent(0), 
+    _bytesSent(0),
     _requestDone(false), 
     _responseDone(false)
 {}
@@ -16,7 +16,9 @@ Client::Client(int fd) :
 	_fd(fd),
     _request(),
     _response(),
-	_bytesSent(0)
+	_bytesSent(0),
+    _requestDone(false), 
+    _responseDone(false)
 {}
 
 Client::Client(Client const &src) :
@@ -38,6 +40,7 @@ Client&	Client::operator=(Client const &rhs)
 		_bytesSent = rhs._bytesSent;
         _requestDone = rhs._requestDone;
         _responseDone = rhs._responseDone;
+        _readBuffer = rhs._readBuffer;
 	}
 	return (*this);
 }

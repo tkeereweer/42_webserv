@@ -83,12 +83,17 @@ int	Server::matchLocation(std::string URI) const
 	for (std::size_t i = 0; i < this->_locations.size(); i++)
 	{
 		long unsigned int	j = 0;
+        //j is index of character in URI
 		for (; j < this->_locations[i].getPath().length(); j++)
 		{
+            //breaks if location path > URI length or different char -> not matching
 			if (j >= URI.length() || URI[j] != this->_locations[i].getPath()[j])
 				break;
 		}
-		if (j == this->_locations[i].getPath().length() &&
+        if (matched == -1)
+            matched = i;
+        //returns "longest" match block, aka most "precise" match block.
+		else if (j == this->_locations[i].getPath().length() &&
 			this->_locations[i].getPath().length() > this->_locations[matched].getPath().length())
 			matched = i;
 	}
@@ -153,13 +158,13 @@ static int	isDir(char const *path)
 {
    struct stat	statbuf;
    if (stat(path, &statbuf) != 0)
-	   return 0;
+	   return (0);
    return S_ISDIR(statbuf.st_mode);
 }
 
 std::string	Server::buildPath(std::string URI, Location &loc) const
 {
-	std::string	path = ".";
+	std::string	path = "/home/mturgeon/rank5/webserv"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
 	if (!loc.getRoot().empty())
 		path.append(loc.getRoot());
 	else if (!this->_root.empty())
@@ -172,14 +177,16 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir) const
 {
 	std::string	path;
 
-	if (!loc.getIndex().empty())
-		path = buildPath(loc.getIndex(), loc);
-	else if (!this->_index.empty())
-		path = buildPath(this->_index, loc);
+	if (!loc.getIndex().empty()) //build location path first if it exists
+		return (client.getResponse().buildRouteResponse(buildPath(loc.getIndex(), loc)));
+	else if (!this->_index.empty()) //else, build default location path for server
+		return (client.getResponse().buildRouteResponse(buildPath(this->_index, loc)));
 	if (!path.empty())
-		return (client.getResponse().buildRouteResponse("/index.html"));
+		return (client.getResponse().buildRouteResponse("/index.html")); //if failed, return homepage
 	else if (loc.getAutoIndex() == 1 || (loc.getAutoIndex() != 0 && this->_autoIndex == 1))
 	{
+		std::cout << "directory listing, for now just /index.html" << std::endl;
+		return (client.getResponse().buildRouteResponse("/index.html"));
 		// return directory listing
 	}
 	dir.append("index.html");
@@ -191,21 +198,32 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir) const
 
 void	Server::handleGET(Client &client, Location &loc) const
 {
-	Request	&req = client.getRequest();
-	if (!loc.getRedir().second.empty() || !this->_redirect.second.empty())
-	{
-		// return 302 Moved Temporarily with Location header set
+	try 
+	{	
+		Request	&req = client.getRequest();
+		if (!loc.getRedir().second.empty())
+			return (client.getResponse().buildRedirResponse(loc.getRedir().second));
+		else if (!this->_redirect.second.empty())
+			return (client.getResponse().buildRedirResponse(this->_redirect.second));
+		std::string	path = buildPath(req.getURI(), loc);
+		if (isDir(path.c_str()))
+			return (handleDir(client, loc, path));
+		if (access(path.c_str(), R_OK) == -1)
+        {   
+            std::cout << "access errno: " << strerror(errno) << std::endl;
+            std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
+			return (client.getResponse().buildErrorResponse(404));
+        }
+		return (client.getResponse().buildRouteResponse(path));
 	}
-	std::string	path = buildPath(req.getURI(), loc);
-	if (isDir(path.c_str()))
-		return (handleDir(client, loc, path));
-	if (access(path.c_str(), R_OK) == -1)
-		return (client.getResponse().buildErrorResponse(404));
-	return (client.getResponse().buildRouteResponse(loc.getPath()));
+	catch (std::exception const &e)
+	{
+		return (client.getResponse().buildErrorResponse(500));
+	}
 }
 
 
-void	Server::handlePOST(Client &client, Location &loc) const
-{
+// void	Server::handlePOST(Client &client, Location &loc) const
+// {
 	
-}
+// }

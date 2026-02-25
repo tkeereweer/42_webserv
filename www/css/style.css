@@ -1,0 +1,281 @@
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap");
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+    font-family:
+        "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    border-bottom: 1px solid #313244;
+    padding: 16px 40px;
+    background-color: #181825;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+header::before {
+    content: "//";
+    color: #6c7086;
+    font-size: 1rem;
+}
+
+.header-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.header-title a {
+    color: #cdd6f4;
+    text-decoration: none;
+}
+
+.header-title a:hover {
+    color: #89b4fa;
+}
+
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    gap: 48px;
+    padding: 60px 40px;
+}
+
+.banner {
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.25;
+    color: #89b4fa;
+    text-align: center;
+    white-space: pre;
+    letter-spacing: 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 780px;
+}
+
+.card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border: 1px solid #313244;
+    height: 130px;
+    padding: 0 20px;
+    color: #cdd6f4;
+    text-decoration: none;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background-color: #181825;
+    transition:
+        border-color 0.12s,
+        background-color 0.12s,
+        color 0.12s;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.card:hover {
+    border-color: #89b4fa;
+    background-color: #1e1e2e;
+    color: #89b4fa;
+}
+
+/* team page */
+
+.main-team {
+    justify-content: flex-start;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: #cdd6f4;
+    text-align: center;
+}
+
+.member-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    max-width: 780px;
+}
+
+.member {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 28px 0;
+    border-bottom: 1px solid #313244;
+}
+
+.member:first-child {
+    border-top: 1px solid #313244;
+}
+
+.member-pic {
+    width: 110px;
+    height: 110px;
+    object-fit: cover;
+    object-position: center;
+    flex-shrink: 0;
+    border: 1px solid #45475a;
+}
+
+.member-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.member-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #cdd6f4;
+    letter-spacing: 0.05em;
+}
+
+.member-role {
+    font-weight: 400;
+    color: #89b4fa;
+}
+
+.member-desc {
+    font-size: 0.9rem;
+    color: #6c7086;
+    line-height: 1.5;
+}
+
+/* readme page */
+
+.readme {
+    width: 100%;
+    max-width: 780px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.readme-subtitle {
+    font-size: 0.9rem;
+    color: #6c7086;
+    font-style: italic;
+    padding-bottom: 32px;
+}
+
+.readme-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-top: 1px solid #313244;
+    padding: 28px 0;
+}
+
+.readme-heading {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #89b4fa;
+}
+
+.readme-section p {
+    font-size: 0.95rem;
+    color: #cdd6f4;
+    line-height: 1.7;
+}
+
+.code-block {
+    background-color: #181825;
+    border: 1px solid #313244;
+    padding: 14px 18px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: #a6e3a1;
+    white-space: pre;
+}
+
+/* error pages */
+
+.main-error {
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+}
+
+.error-code {
+    font-size: 6rem;
+    font-weight: 600;
+    color: #89b4fa;
+    letter-spacing: 0.05em;
+    line-height: 1;
+}
+
+.error-code.error-5xx {
+    color: #f38ba8;
+}
+
+.error-message {
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #cdd6f4;
+}
+
+.error-desc {
+    font-size: 0.9rem;
+    color: #6c7086;
+    line-height: 1.6;
+    max-width: 400px;
+}
+
+.error-back {
+    margin-top: 16px;
+    display: inline-block;
+    border: 1px solid #313244;
+    padding: 10px 24px;
+    color: #cdd6f4;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background-color: #181825;
+    transition: border-color 0.12s, color 0.12s;
+}
+
+.error-back:hover {
+    border-color: #89b4fa;
+    color: #89b4fa;
+}
