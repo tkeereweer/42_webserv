@@ -122,6 +122,11 @@ void    Response::buildErrorResponse(short code)
 			} //get out of infinite loop if error page doesn't exist
 			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/500.html";
 			break ;
+        case (502):
+            this->_returnCode = 502;
+            this->_reasonPhrase = "Bad Gateway";
+            this->_bodyFilepath = "/home/mturgeon/rank5/webserv/www/pages/errors/502.html";
+            break ;
 		case (503):
 			this->_returnCode = 503;
 			this->_reasonPhrase = "Service Unavailable";
