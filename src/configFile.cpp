@@ -171,6 +171,14 @@ void	Webserv::parseRoot(std::list<t_conf_token>::iterator &token, std::list<t_co
 		throw(std::runtime_error("Error in root directive config"));
 }
 
+static bool	handledErrorCodes(int code)
+{
+	if (code == 400 || code == 403 || code == 404 || code == 405 || code == 408 || code == 411 
+		|| code == 413 || code == 500 || code == 502 || code == 503)
+		return (true);
+	return (false);
+}
+
 void	Webserv::parseErrorPage(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	char		*end_num;
@@ -185,7 +193,7 @@ void	Webserv::parseErrorPage(std::list<t_conf_token>::iterator &token, std::list
 		errno = 0;
 		throw(std::runtime_error("Error in error_page directive config"));
 	}
-	if (*end_num != '\0' || code < 400 || code > 499)
+	if (*end_num != '\0' || !handledErrorCodes(code))
 		throw(std::runtime_error("Error in error_page directive config"));
 	token++;
 	if (token == end || token->type != CONF_WORD)
@@ -248,6 +256,30 @@ void	Webserv::parseRedir(std::list<t_conf_token>::iterator &token, std::list<t_c
 		throw(std::runtime_error("Error in redirection directive config"));
 }
 
+void	Webserv::parseMaxCGIOutput(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
+{
+	char		*end_num;
+	long long	max_size;
+
+	token++;
+	if (token == end || token->type != CONF_WORD)
+		throw(std::runtime_error("Error in cgi_max_output_size directive config"));
+	max_size = strtoll(token->value.c_str(), &end_num, 10);
+	if (max_size < 1)
+		throw(std::runtime_error("Error in cgi_max_output_size directive config"));
+	config.setMaxCGIOutput(max_size);
+	if (errno == ERANGE)
+	{
+		errno = 0;
+		throw(std::runtime_error("Error in cgi_max_output_size directive config"));
+	}
+	if (*end_num != '\0')
+		throw(std::runtime_error("Error in cgi_max_output_size directive config"));
+	token++;
+	if (token == end || token->type != SEMICOLON)
+		throw(std::runtime_error("Error in cgi_max_output_size directive config"));
+}
+
 /*******************************************************************************
 *						LOCATION BLOCK PARSING
 *******************************************************************************/
@@ -292,6 +324,8 @@ void	Webserv::parseLocation(std::list<t_conf_token>::iterator &token, std::list<
 			parseErrorPage(token, end, location);
 		else if (token->type == CONF_WORD && token->value == "return")
 			parseRedir(token, end, location);
+		else if (token->type == CONF_WORD && token->value == "cgi_max_output_size")
+			parseMaxCGIOutput(token, end, location);
 		else
 			throw(std::runtime_error("Unknown directive"));
 		token++;
@@ -372,6 +406,8 @@ void	Webserv::parseServerBlock(std::list<t_conf_token>::iterator &token, std::li
 			parseIndex(token, end, server);
 		else if (token->type == CONF_WORD && token->value == "return")
 			parseRedir(token, end, server);
+		else if (token->type == CONF_WORD && token->value == "cgi_max_output_size")
+			parseMaxCGIOutput(token, end, server);
 		else
 			throw(std::runtime_error("Unknown directive"));
 		token++;

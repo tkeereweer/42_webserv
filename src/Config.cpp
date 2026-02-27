@@ -92,6 +92,11 @@ std::pair<int, std::string>	Config::getRedir(void) const
 	return (this->_redirect);
 }
 
+long long	Config::getMaxCGIOutput(void) const
+{
+	return (this->_cgiMaxOutputSize);
+}
+
 void	Config::setAcceptGET(bool accept)
 {
 	this->_acceptGET = accept;
@@ -135,4 +140,9 @@ void	Config::addErrorPage(int code, std::string page)
 void	Config::setRedirect(int status, std::string path)
 {
 	this->_redirect = std::pair<int, std::string>(status, path);
+}
+
+void	Config::setMaxCGIOutput(long long maxCGIOutput)
+{
+	this->_cgiMaxOutputSize = maxCGIOutput;
 }

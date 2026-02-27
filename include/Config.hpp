@@ -17,6 +17,7 @@ class	Config
 		long long					_maxBodySizeClientReq;
 		std::map<int, std::string>	_errorPages;
 		std::pair<int, std::string>	_redirect;
+		long long					_cgiMaxOutputSize;
 
 	public:
 		Config(void);
@@ -33,6 +34,7 @@ class	Config
 		long long					getMaxBody(void) const;
 		std::map<int, std::string>	&getErrorPages(void);
 		std::pair<int, std::string>	getRedir(void) const;
+		long long					getMaxCGIOutput(void) const;
 
 		void	setAcceptGET(bool accept);
 		void	setAcceptPOST(bool accept);
@@ -43,6 +45,7 @@ class	Config
 		void	setMaxBody(long long maxBody);
 		void	addErrorPage(int code, std::string page);
 		void	setRedirect(int status, std::string path);
+		void	setMaxCGIOutput(long long maxCGIOutput);
 };
 
 #endif

@@ -158,6 +158,16 @@ ssize_t		CGI::getBytesSent(void) const
 	return (this->_bytesSent);
 }
 
+void	CGI::setCGIContentLength(long long length)
+{
+	this->_contentLength = length;
+}
+
+void	CGI::setCGIContentType(std::string type)
+{
+	this->_contentType = type;
+}
+
 
 /*******************************************************************************
 *						INIT

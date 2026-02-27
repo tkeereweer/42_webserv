@@ -126,8 +126,8 @@ bool	Server::isMethodAllowed(t_method method, Location &loc) const
 
 void	Server::dispatchRequest(Client &client, int epollFD)
 {
-	Request	    &req = client.getRequest();
-	Response    &resp = client.getResponse();
+	Request		&req = client.getRequest();
+	Response	&resp = client.getResponse();
 
 	if (req.getURI().find_first_of("?") != std::string::npos)
 		return (resp.buildGetCGIResponse(req.getURI()));
@@ -160,7 +160,7 @@ static int	isDir(char const *path)
 
 std::string	Server::buildPath(std::string URI, Location &loc) const
 {
-	std::string	path = "/home/mturgeon/rank5/webserv"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
+	std::string	path = "/home/mkeerewe/42/rank05/webserv_perso"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
 	if (!loc.getRoot().empty())
 		path.append(loc.getRoot());
 	else if (!this->_root.empty())
