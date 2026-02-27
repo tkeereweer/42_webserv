@@ -1,6 +1,8 @@
 #include "../include/Server.hpp"
 #include <stdexcept>
 #include <sys/stat.h>
+#include <sys/epoll.h>
+#include <fcntl.h>
 
 /*******************************************************************************
 *						CTOR/DTOR
@@ -15,7 +17,7 @@ Server::Server(Server const &src):
 	_name(src._name),
 	_sockets(src._sockets),
 	_locations(src._locations),
-    _parentEnv(src._parentEnv)
+	_parentEnv(src._parentEnv)
 {}
 
 Server	&Server::operator=(Server const &rhs)
@@ -34,8 +36,8 @@ Server	&Server::operator=(Server const &rhs)
 		this->_maxBodySizeClientReq = rhs._maxBodySizeClientReq;
 		this->_errorPages = rhs._errorPages;
 		this->_redirect = rhs._redirect;
-        this->_cgiMap = rhs._cgiMap;
-        this->_parentEnv = rhs._parentEnv;
+		this->_cgiVec = rhs._cgiVec;
+		this->_parentEnv = rhs._parentEnv;
 	}
 	return (*this);
 }
@@ -60,6 +62,11 @@ std::vector<t_socket>	&Server::getSockets(void)
 std::vector<Location>	&Server::getLocations(void)
 {
 	return (this->_locations);
+}
+
+std::vector<CGI>		&Server::getCgiMap(void)
+{
+	return (this->_cgiVec);
 }
 
 void	Server::setName(std::string name)
@@ -88,16 +95,16 @@ int	Server::matchLocation(std::string URI) const
 	for (std::size_t i = 0; i < this->_locations.size(); i++)
 	{
 		long unsigned int	j = 0;
-        //j is index of character in URI
+		//j is index of character in URI
 		for (; j < this->_locations[i].getPath().length(); j++)
 		{
-            //breaks if location path > URI length or different char -> not matching
+			//breaks if location path > URI length or different char -> not matching
 			if (j >= URI.length() || URI[j] != this->_locations[i].getPath()[j])
 				break;
 		}
-        if (matched == -1)
-            matched = i;
-        //returns "longest" match block, aka most "precise" match block.
+		if (matched == -1)
+			matched = i;
+		//returns "longest" match block, aka most "precise" match block.
 		else if (j == this->_locations[i].getPath().length() &&
 			this->_locations[i].getPath().length() > this->_locations[matched].getPath().length())
 			matched = i;
@@ -117,13 +124,13 @@ bool	Server::isMethodAllowed(t_method method, Location &loc) const
 		return (false);
 }
 
-void	Server::dispatchRequest(Client &client)
+void	Server::dispatchRequest(Client &client, int epollFD)
 {
 	Request	    &req = client.getRequest();
 	Response    &resp = client.getResponse();
 
-    if (req.getURI().find_first_of("?") != std::string::npos)
-        return (resp.buildGetCGIResponse(req.getURI()));
+	if (req.getURI().find_first_of("?") != std::string::npos)
+		return (resp.buildGetCGIResponse(req.getURI()));
 
 	int	locIdx = matchLocation(req.getURI());
 	if (locIdx == -1)
@@ -134,7 +141,7 @@ void	Server::dispatchRequest(Client &client)
 	if (req.getMethod() == GET)
 		handleGET(client, loc);
 	else if (req.getMethod() == POST)
-		handlePOST(client, loc, this->_cgiMap, this->_parentEnv);
+		handlePOST(client, loc, this->_parentEnv, epollFD);
 	// else
 	// 	handleDELETE(client, loc);
 }
@@ -198,12 +205,13 @@ void	Server::handleGET(Client &client, Location &loc) const
 		if (isDir(path.c_str()))
 			return (handleDir(client, loc, path));
 		if (access(path.c_str(), R_OK) == -1)
-        {   
-            std::cout << "access errno: " << strerror(errno) << std::endl;
-            std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
+		{   
+			std::cout << "access errno: " << strerror(errno) << std::endl;
+			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
 			return (client.getResponse().buildErrorResponse(404));
-        }
+		}
 		return (client.getResponse().buildRouteResponse(path));
+		//handle CGI w/ get method somewhere here
 	}
 	catch (std::exception const &e)
 	{
@@ -212,17 +220,35 @@ void	Server::handleGET(Client &client, Location &loc) const
 }
 
 
-void	Server::handlePOST(Client &client, Location &loc, std::map<int, CGI> &cgiMap, char **serverEnv) const
+void	Server::handlePOST(Client &client, Location &loc, char **serverEnv, int epollFD)
 {
+	(void)loc;
 	//cgi map's key is clientFD
-    try
-    {
-        std::string scriptPath(client.getRequest().getURI());
-        cgiMap[client.getFd()] = CGI(serverEnv, client, scriptPath); //hope this keeps the CGI instance in the uppermost callstack :') 
-        //add cgiMap[client.getFd()].getReadFD() to epoll here
-    }
-    catch(const std::exception& e)
-    {
-        return (client.getResponse().buildErrorResponse(500));
-    }
+	try
+	{
+		std::string scriptPath(client.getRequest().getURI());
+		this->_cgiVec.push_back(CGI(serverEnv, client, scriptPath)); 
+		_addCgiToEpoll(this->_cgiVec.back(), epollFD);
+	}
+	catch(const std::exception& e)
+	{
+		return (client.getResponse().buildErrorResponse(500));
+	}
+}
+
+void	Server::_addCgiToEpoll(CGI &cgi, int epollFD) const
+{
+	epoll_event	ev;
+	ev.events = EPOLLIN;
+	ev.data.fd = cgi.getReadFD();
+	fcntl(cgi.getReadFD(), F_SETFL, O_NONBLOCK);
+	epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getReadFD(), &ev);
+
+	if (cgi.getWriteFD() != -1)
+	{
+		ev.events = EPOLLOUT;
+		ev.data.fd = cgi.getWriteFD();
+		fcntl(cgi.getWriteFD(), F_SETFL, O_NONBLOCK);
+		epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getWriteFD(), &ev);
+	}
 }

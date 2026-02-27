@@ -37,7 +37,7 @@ class	Webserv
 {
 	private:
 		std::vector<Server>			_servers;
-		std::map<int, Server*>		_serverMap;
+		std::map<int, Server*>		_serverMap;// matches socketfd w/ corresponding server
 		std::map<int, t_connection>	_clientMap; //int: fd of connection
 		int							_epollFd;
         char                        **_parentEnv;
@@ -71,7 +71,7 @@ class	Webserv
     	void	closeClient(int clientFd);
 		
 		// HandleCgi
-		bool		isCgiFd(int fd);
+		long        isCgiFd(int fd);
 		void		launchCgi(int clientFd);
 		void		createPipes(int inPipe[], int outPipe[]);
 		CGI		    &populateCgiStruct(int clientFd, pid_t pid, int *inPipe, int *outPipe, std::map<int, CGI>& _cgiMap);
@@ -79,10 +79,8 @@ class	Webserv
 		char**		setupEnv(int clientFd);
 		void		freeEnv(char **env);
 		void		addCgiToEpoll(CGI &cgi);
-		void		handleCgiInput(int writeFd);
-		void		handleCgiOutput(int readFd);
-		void		closeCgi(int readFd);
-		void		_createNextAvailableFile(struct dirent *name, DIR *tmp, CGI& cgi);
+		void		_handleCgiInput(CGI &cgi);
+		void		_handleCgiOutput(CGI &cgi);
 
 
 		void	testPrint(int clientFd, Client &client);

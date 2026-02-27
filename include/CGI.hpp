@@ -20,18 +20,21 @@ class CGI //cgi's map key is clientFD
 		char		**_cgiEnv;
 		std::string	_queryString; //parsed by handle post in Server::
 
-		void		_createChildProcess(int *inPipe, int *outPipe);
-		std::string	_getProgPath(std::string scriptPath);
+		void		_createChildProcess(int *inPipe, int *outPipe, const char **childEnv);
+        void	    _setupEnvPOST(char **env, const char **childEnv, Client &client);
+        void	    _setupEnvGET(std::string queryString, char **env, const char **childEnv, Client &client);
 
 		CGI(void);
 	public:
 		//post method constructor
 		CGI(char **env, Client &client, std::string scriptPath);
 		//get method constructor
-		CGI::CGI(std::string queryString, char **env, Client &client, std::string scriptPath);
+		CGI(std::string queryString, char **env, Client &client, std::string scriptPath);
 		CGI(CGI const &src);
 		~CGI(void);
 		CGI	&operator=(CGI const &rhs);
+
+        void	closeCgi(int epollFD);
 
 		//getters
 		int			getClientFD(void) const;

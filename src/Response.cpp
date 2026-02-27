@@ -247,6 +247,7 @@ void    Response::buildRedirResponse(std::string redirPath)
 
 void    Response::buildGetCGIResponse(std::string cgiPath)
 {
+    (void)cgiPath;
 	//logic
 	//separate query params from actual URI and try matchLocation() here
 }

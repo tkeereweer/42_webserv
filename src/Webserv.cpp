@@ -200,6 +200,7 @@ void	Webserv::launchServer(void)
 {
 	int					readyFds;
 	struct epoll_event	readyEvents[10];
+    size_t              idx = 0;
 
 	this->_epollFd = this->setupEpoll();
 	while (1)
@@ -212,12 +213,14 @@ void	Webserv::launchServer(void)
 
 			if (isListenSocket(readyEvents[i].data.fd))
 				newClient(readyEvents[i].data.fd);
-			else if (isCgiFd(readyEvents[i].data.fd))
+			else if ((idx = isCgiFd(readyEvents[i].data.fd)))
 			{
+                int servIdx = idx >> 16;
+                int cgiIdx = idx & std::numeric_limits<int>::max();
 				if (readyEvents[i].events & EPOLLOUT)
-					handleCgiInput(readyEvents[i].data.fd);
+					_handleCgiInput(this->_servers[servIdx].getCgiMap()[cgiIdx]); //fd is CGI.writeFD
 				else
-					handleCgiOutput(readyEvents[i].data.fd);
+					_handleCgiOutput(this->_servers[servIdx].getCgiMap()[cgiIdx]); //fd is CGI.readFD
 			}
 			else
 			{
@@ -328,7 +331,10 @@ void	Webserv::handleRequest(int clientFd)
 
 			// std::cout << "~~~~~ request successfully received ! content: ~~~~~~" << std::endl;
 			// testPrint(clientFd, client); //put request dipsatcher here, build body here
-			this->_clientMap[clientFd].server->dispatchRequest(client);
+			this->_clientMap[clientFd].server->dispatchRequest(client, this->_epollFd);
+            //here, check if CGI in server and if writeFD != -1, else if readFD != -1
+            //put them in epoll control
+            
 			struct epoll_event event;
 			event.events = EPOLLOUT;
 			event.data.fd = clientFd;
@@ -344,6 +350,54 @@ void	Webserv::handleRequest(int clientFd)
 		closeClient(clientFd);
 }
 
+//is buffeer placeholder for where we want to write actually ?
+void	Webserv::_handleCgiInput(CGI &cgi)
+{
+	long long   contentLength = this->_clientMap[cgi.getClientFD()].client.getRequest().getContentLength();
+    Response    &response = this->_clientMap[cgi.getClientFD()].client.getResponse();
+	char	    buffer[1024];
+    
+    (void)contentLength;
+    (void)response;
+    (void)buffer;
+    (void)cgi;
+	// //logic to change as we're either reading directly
+	// ssize_t bytesRead = read(cgi.inFileFd, buffer, sizeof(buffer) - 1);
+
+	// if (bytesRead > 0)
+	// {
+	// 	buffer[bytesRead] = 0;
+	// 	ssize_t bytesSentNow = write(this->_writeFd, buffer, bytesRead);
+	// 	cgi.bytesSent += bytesSentNow;
+	// 	if (cgi.bytesSent >= contentLength)
+	// 	{
+	// 		close(cgi.inFileFd);
+	// 		epoll_ctl(_epollFd, EPOLL_CTL_DEL, writeFd, NULL);
+	// 		close(writeFd);
+	// 		_cgiMap.erase(writeFd);
+	// 		cgi.writeFd = -1;
+	// 	}
+	// }
+	// else
+	// 	closeCgi(_cgiMap[writeFd].readFd);
+}
+
+//is buffer placeholder for where we want to read ?
+void	Webserv::_handleCgiOutput(CGI &cgi)
+{
+    (void)cgi;
+	
+	char buffer[4096];
+    (void)buffer;
+	// ssize_t bytesRead = read(readFd, buffer, sizeof(buffer));
+
+	// if (bytesRead > 0)
+	// 	write(cgi.outFileFd, buffer, bytesRead);
+	// else
+	// {
+	// 	closeCgi(readFd);
+	// }
+}
 
 void	Webserv::handleResponse(int clientFd)
 {
@@ -388,11 +442,17 @@ bool	Webserv::isListenSocket(int fd) const
 }
 
 
-bool	Webserv::isCgiFd(int fd)
+long  Webserv::isCgiFd(int fd) //return a pair to identify server and CGI OR a bitshifted number ??? like return codes and error codes
 {
-	if (_cgiMap.find(fd) != _cgiMap.end())
-		return (true);
-	return (false);
+	for (size_t j = 0; j != this->_servers.size(); j++)
+    {
+        for (size_t i = 0; i != this->_servers[j].getCgiMap().size(); i++)
+        {
+            if (fd == this->_servers[j].getCgiMap()[i].getReadFD() || this->_servers[j].getCgiMap()[i].getWriteFD())
+                return ((static_cast<int>(j) << 16) | static_cast<int>(i));
+        }
+    }
+    return (0);
 }
 //t2 - t1
 int	getTimeDiff(timeval t1, timeval t2)

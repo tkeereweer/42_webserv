@@ -3,7 +3,6 @@
 
 # include <string>
 # include <vector>
-# include <map>
 # include <utility>
 
 # include "Config.hpp"
@@ -26,7 +25,7 @@ class	Server: public Config
 		std::string				_name;
 		std::vector<t_socket>	_sockets;
 		std::vector<Location>	_locations;
-		std::map<int, CGI>		_cgiMap; //more logical here as you can choose to have some virtual hosts have access to some CGIs or not.
+		std::vector<CGI>		_cgiVec; //more logical here as you can choose to have some virtual hosts have access to some CGIs or not.
 		char					**_parentEnv;
 
 		int			matchLocation(std::string URI) const;
@@ -35,8 +34,9 @@ class	Server: public Config
 		void		handleError(Client &client, Location &loc, short code) const;
 		void		handleDir(Client &client, Location &loc, std::string dir) const;
 		void		handleGET(Client &client, Location &loc) const;
-		void		handlePOST(Client &client, Location &loc, std::map<int, CGI> &cgiMap, char **serverEnv) const;
+		void		handlePOST(Client &client, Location &loc, char **serverEnv, int epollFD);
 		void		handleDELETE(Client &client, Location &loc) const;
+		void		_addCgiToEpoll(CGI &cgi, int epollFD) const;
 
 		Server(void);
 	public:
@@ -49,11 +49,13 @@ class	Server: public Config
 		std::vector<t_socket>		&getSockets(void);
 		std::vector<Location>		&getLocations(void);
 
+		std::vector<CGI>			&getCgiMap(void);
+
 		void	setName(std::string name);
 		void	addSocket(t_socket socket);
 		void	addLocation(Location location);
 
-		void	dispatchRequest(Client &client);
+		void	dispatchRequest(Client &client, int epollFD);
 };
 
 #endif
