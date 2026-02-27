@@ -330,7 +330,7 @@ void	Webserv::handleRequest(int clientFd)
 			*/
 
 			// std::cout << "~~~~~ request successfully received ! content: ~~~~~~" << std::endl;
-			// testPrint(clientFd, client); //put request dipsatcher here, build body here
+			testPrint(clientFd, client); //put request dipsatcher here, build body here
 			this->_clientMap[clientFd].server->dispatchRequest(client, this->_epollFd);
             //here, check if CGI in server and if writeFD != -1, else if readFD != -1
             //put them in epoll control
