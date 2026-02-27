@@ -9,7 +9,8 @@ Config::Config(void):
 	_acceptPOST(true),
 	_acceptDELETE(true),
 	_autoIndex(2),
-	_maxBodySizeClientReq(1024)
+	_maxBodySizeClientReq(-1),
+	_cgiMaxOutputSize(-1)
 {}
 
 Config::Config(Config const &src):
@@ -21,7 +22,8 @@ Config::Config(Config const &src):
 	_index(src._index),
 	_maxBodySizeClientReq(src._maxBodySizeClientReq),
 	_errorPages(src._errorPages),
-	_redirect(src._redirect)
+	_redirect(src._redirect),
+	_cgiMaxOutputSize(src._cgiMaxOutputSize)
 {}
 
 Config	&Config::operator=(Config const &rhs)
@@ -37,6 +39,7 @@ Config	&Config::operator=(Config const &rhs)
 		this->_maxBodySizeClientReq = rhs._maxBodySizeClientReq;
 		this->_errorPages = rhs._errorPages;
 		this->_redirect = rhs._redirect;
+		this->_cgiMaxOutputSize = rhs._cgiMaxOutputSize;
 	}
 	return (*this);
 }
@@ -92,6 +95,11 @@ std::pair<int, std::string>	Config::getRedir(void) const
 	return (this->_redirect);
 }
 
+long long	Config::getMaxCGIOutput(void) const
+{
+	return (this->_cgiMaxOutputSize);
+}
+
 void	Config::setAcceptGET(bool accept)
 {
 	this->_acceptGET = accept;
@@ -135,4 +143,9 @@ void	Config::addErrorPage(int code, std::string page)
 void	Config::setRedirect(int status, std::string path)
 {
 	this->_redirect = std::pair<int, std::string>(status, path);
+}
+
+void	Config::setMaxCGIOutput(long long maxCGIOutput)
+{
+	this->_cgiMaxOutputSize = maxCGIOutput;
 }

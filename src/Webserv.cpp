@@ -57,6 +57,7 @@ std::ostream	&operator<<(std::ostream &o, Webserv &input)
 		for (std::map<int, std::string>::iterator it = input.getServers()[i].getErrorPages().begin(); it != input.getServers()[i].getErrorPages().end(); ++it)
 				o << "\terror_page " << it->first << " " << it->second << ";" << std::endl;
 			o << "\treturn " << input.getServers()[i].getRedir().first << " " << input.getServers()[i].getRedir().second << ";" << std::endl;
+		o << "\tcgi_max_output_size " << input.getServers()[i].getMaxCGIOutput() << ";" << std::endl;
 		for (unsigned int j = 0; j < input.getServers()[i].getLocations().size(); j++)
 		{
 			o << "\tlocation " << input.getServers()[i].getLocations()[j].getPath() << " {" << std::endl;
@@ -69,6 +70,7 @@ std::ostream	&operator<<(std::ostream &o, Webserv &input)
 			for (std::map<int, std::string>::iterator it = input.getServers()[i].getLocations()[j].getErrorPages().begin(); it != input.getServers()[i].getLocations()[j].getErrorPages().end(); ++it)
 				o << "\t\terror_page " << it->first << " " << it->second << ";" << std::endl;
 			o << "\t\treturn " << input.getServers()[i].getLocations()[j].getRedir().first << " " << input.getServers()[i].getLocations()[j].getRedir().second << ";" << std::endl;
+			o << "\t\tcgi_max_output_size " << input.getServers()[i].getLocations()[j].getMaxCGIOutput() << ";" << std::endl;
 			o << "\t}" << std::endl;
 		}
 		o << "}" << std::endl;
