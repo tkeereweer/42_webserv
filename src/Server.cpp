@@ -1,8 +1,4 @@
 #include "../include/Server.hpp"
-#include <stdexcept>
-#include <sys/stat.h>
-#include <sys/epoll.h>
-#include <fcntl.h>
 
 /*******************************************************************************
 *						CTOR/DTOR
@@ -69,6 +65,11 @@ std::vector<CGI>		&Server::getCgiMap(void)
 	return (this->_cgiVec);
 }
 
+char	**Server::getParentEnv(void) const
+{
+	return (this->_parentEnv);
+}
+
 void	Server::setName(std::string name)
 {
 	this->_name = name;
@@ -130,7 +131,14 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	Response	&resp = client.getResponse();
 
 	if (req.getURI().find_first_of("?") != std::string::npos)
-		return (resp.buildGetCGIResponse(req.getURI()));
+	{
+		std::string 			URI = req.getURI();
+		std::string::iterator	end = URI.begin() + req.getURI().find_first_of("?") - 1;
+		std::string				relPath(URI.begin(), end);
+		req.setURI(relPath);
+		std::string				queryParam(end + 2, URI.end());
+		req.setQueryParam(queryParam);		
+	}
 
 	int	locIdx = matchLocation(req.getURI());
 	if (locIdx == -1)
@@ -139,9 +147,9 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	if (!isMethodAllowed(req.getMethod(), loc))
 		return (resp.build405Response(loc.getAcceptGET(), loc.getAcceptPOST(), loc.getAcceptDELETE()));
 	if (req.getMethod() == GET)
-		handleGET(client, loc);
+		handleGET(client, loc, epollFD);
 	else if (req.getMethod() == POST)
-		handlePOST(client, loc, this->_parentEnv, epollFD);
+		handlePOST(loc, client, this->_parentEnv, epollFD);
 	// else
 	// 	handleDELETE(client, loc);
 }
@@ -160,7 +168,7 @@ static int	isDir(char const *path)
 
 std::string	Server::buildPath(std::string URI, Location &loc) const
 {
-	std::string	path = "/home/mkeerewe/42/rank05/webserv_perso"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
+	std::string	path = "/home/mturgeon/rank5/webserv"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
 	if (!loc.getRoot().empty())
 		path.append(loc.getRoot());
 	else if (!this->_root.empty())
@@ -192,7 +200,7 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir) const
 		return (client.getResponse().buildRouteResponse("/index.html")); //is that what's supposed to happen ? I don't think I understood the right path...
 }
 
-void	Server::handleGET(Client &client, Location &loc) const
+void	Server::handleGET(Client &client, Location &loc, int epollFD)
 {
 	try 
 	{	
@@ -210,8 +218,10 @@ void	Server::handleGET(Client &client, Location &loc) const
 			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
 			return (client.getResponse().buildErrorResponse(404));
 		}
+        //handle GET Cgi
+        if (req.getURI().find(".py") || req.getURI().find(".php")) //.php or any other handled cgi
+			return (client.getResponse().buildGetCGIResponse(client, epollFD, *this, path)); //needs full path in there
 		return (client.getResponse().buildRouteResponse(path));
-		//handle CGI w/ get method somewhere here
 	}
 	catch (std::exception const &e)
 	{
@@ -220,15 +230,20 @@ void	Server::handleGET(Client &client, Location &loc) const
 }
 
 
-void	Server::handlePOST(Client &client, Location &loc, char **serverEnv, int epollFD)
+void	Server::handlePOST(Location &loc, Client &client, char **serverEnv, int epollFD)
 {
-	(void)loc;
-	//cgi map's key is clientFD
 	try
 	{
-		std::string scriptPath(client.getRequest().getURI());
-		this->_cgiVec.push_back(CGI(serverEnv, client, scriptPath)); 
-		_addCgiToEpoll(this->_cgiVec.back(), epollFD);
+		std::string path = buildPath(client.getRequest().getURI(), loc);
+		if (access(path.c_str(), R_OK) == -1)
+		{   
+			std::cout << "access errno: " << strerror(errno) << std::endl;
+			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
+			return (client.getResponse().buildErrorResponse(404));
+		}
+		this->_cgiVec.push_back(CGI(serverEnv, client, path)); 
+		addCgiToEpoll(this->_cgiVec.back(), epollFD);
+		return (client.getResponse().buildPostCgiResponse());
 	}
 	catch(const std::exception& e)
 	{
@@ -236,7 +251,7 @@ void	Server::handlePOST(Client &client, Location &loc, char **serverEnv, int epo
 	}
 }
 
-void	Server::_addCgiToEpoll(CGI &cgi, int epollFD) const
+void	Server::addCgiToEpoll(CGI &cgi, int epollFD) const
 {
 	epoll_event	ev;
 	ev.events = EPOLLIN;

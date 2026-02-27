@@ -1,10 +1,9 @@
 #ifndef CGI_HPP
 # define CGI_HPP
 
-# include "Client.hpp"
-# include <string>
-# include <iostream>
-# include <list>
+#include "libraryHeader.hpp"
+
+class Client;
 
 typedef enum	e_cgi_token
 {
@@ -14,6 +13,12 @@ typedef enum	e_cgi_token
 	CGI_LB,
 	CGI_COLON
 }	t_cgi_token;
+
+typedef struct s_cgiToken
+{
+    t_cgi_token type;
+    std::string val;
+}t_cgiToken;
 
 class CGI //cgi's map key is clientFD
 {
@@ -30,7 +35,7 @@ class CGI //cgi's map key is clientFD
 		char		**_cgiEnv;
 		std::string	_queryString; //parsed by handle post in Server::
 		//CGI output
-		std::list<t_reqToken>	_CGItokenList;
+		std::list<t_cgiToken>	_CGItokenList;
 		long long				_contentLength;
 		std::string				_contentType;
 		//flag to indicate we got to the end of request headers
@@ -46,6 +51,7 @@ class CGI //cgi's map key is clientFD
         void	    _setupEnvGET(std::string queryString, char **env, const char **childEnv, Client &client);
 
 		void	_lexInput(std::string const &str);
+        void    _parseCGIOutput(std::list<t_cgiToken>::iterator &it);
 
 		CGI(void);
 	public:

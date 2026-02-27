@@ -1,16 +1,13 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-# include <string>
-# include <vector>
-# include <utility>
-
+# include "CGI.hpp"
 # include "Config.hpp"
 # include "Location.hpp"
+# include "libraryHeader.hpp"
 # include "Client.hpp"
-# include "CGI.hpp"
-#include "Request.hpp"
-#include "Response.hpp"
+# include "Request.hpp"
+# include "Response.hpp"
 
 typedef struct s_socket
 {
@@ -31,12 +28,10 @@ class	Server: public Config
 		int			matchLocation(std::string URI) const;
 		bool		isMethodAllowed(t_method method, Location &loc) const;
 		std::string	buildPath(std::string URI, Location &loc) const;
-		void		handleError(Client &client, Location &loc, short code) const;
 		void		handleDir(Client &client, Location &loc, std::string dir) const;
-		void		handleGET(Client &client, Location &loc) const;
-		void		handlePOST(Client &client, Location &loc, char **serverEnv, int epollFD);
+		void		handleGET(Client &client, Location &loc, int epollFD);
+		void		handlePOST(Location &loc, Client &client, char **serverEnv, int epollFD);
 		void		handleDELETE(Client &client, Location &loc) const;
-		void		_addCgiToEpoll(CGI &cgi, int epollFD) const;
 
 		Server(void);
 	public:
@@ -50,12 +45,14 @@ class	Server: public Config
 		std::vector<Location>		&getLocations(void);
 
 		std::vector<CGI>			&getCgiMap(void);
+		char                        **getParentEnv(void) const;
 
 		void	setName(std::string name);
 		void	addSocket(t_socket socket);
 		void	addLocation(Location location);
 
 		void	dispatchRequest(Client &client, int epollFD);
+		void	addCgiToEpoll(CGI &cgi, int epollFD) const;
 };
 
 #endif

@@ -10,6 +10,7 @@ SRC = Client.cpp \
 	http_parsing/parsingMethods.cpp \
 	http_parsing/Request.cpp \
 	CGI.cpp \
+	parseCGIOutput.cpp \
 	Response.cpp \
 	main.cpp
 

@@ -1,15 +1,15 @@
 #include "../../include/Request.hpp"
 
 Request::Request(void):
-    _method(EMPTY),
-    _contentLength(0),
-    _reqComplete(false),
-    _reqLineValid(false), 
-    _reqHeadersValid(false)
-    {
-        this->_recvTimestamp.tv_sec = 0;
-        this->_recvTimestamp.tv_usec = 0;
-    }
+	_method(EMPTY),
+	_contentLength(0),
+	_reqComplete(false),
+	_reqLineValid(false), 
+	_reqHeadersValid(false)
+	{
+		this->_recvTimestamp.tv_sec = 0;
+		this->_recvTimestamp.tv_usec = 0;
+	}
 
 Request::Request(Request const &src)
 {
@@ -50,11 +50,12 @@ Request	&Request::operator=(Request const &rhs)
 		this->_contentType = rhs._contentType;
 		this->_cookies = rhs._cookies;
 		this->_bodyFilename = rhs._bodyFilename;
-        this->_reqComplete = rhs._reqComplete;
-        this->_reqHeadersValid = rhs._reqHeadersValid;
-        this->_reqLineValid = rhs._reqLineValid;
-        this->_tokenList = rhs._tokenList;
-        this->_recvTimestamp = rhs._recvTimestamp;
+		this->_reqComplete = rhs._reqComplete;
+		this->_reqHeadersValid = rhs._reqHeadersValid;
+		this->_reqLineValid = rhs._reqLineValid;
+		this->_tokenList = rhs._tokenList;
+		this->_recvTimestamp = rhs._recvTimestamp;
+		this->_queryParam = rhs._queryParam;
 	}
 	return (*this);
 }
@@ -149,16 +150,32 @@ std::string const	&Request::getBodyFilename(void) const
 
 struct timeval Request::getRecvTimestamp(void) const
 {
-    return (this->_recvTimestamp);
+	return (this->_recvTimestamp);
+}
+
+bool  Request::getReqFlag(void) const
+{
+	return (this->_reqComplete);
+}
+
+std::string	&Request::getQueryParam(void)
+{
+	return (this->_queryParam);
 }
 
 //setters
 void    Request::setRecvTimestamp(struct timeval time)
 {
-    this->_recvTimestamp = time;
+	this->_recvTimestamp = time;
 }
 
-bool  Request::getReqFlag(void) const
+void	Request::setURI(std::string path)
 {
-    return (this->_reqComplete);
+	this->_URI = path;
 }
+void	Request::setQueryParam(std::string params)
+{
+	this->_queryParam = params;
+}
+
+

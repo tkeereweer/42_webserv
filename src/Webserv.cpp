@@ -1,17 +1,5 @@
 #include "../include/Webserv.hpp"
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <cstdlib>
-#include <stdexcept>
-#include <cerrno>
-#include <unistd.h>
-#include <cstring>
-#include <sys/epoll.h>
-#include <iostream>
-#include <fcntl.h>
-#include <fstream>
-#include <sstream>
+
 
 /*******************************************************************************
 *						CTOR/DTOR

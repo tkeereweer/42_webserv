@@ -14,7 +14,7 @@ t_reqToken	token(std::string val, enum e_reqType type)
 	return (res);
 }
 
-enum e_reqType	whichType(std::string word)
+static enum e_reqType	whichType(std::string word)
 {
 	switch (word[0])
 	{

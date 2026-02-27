@@ -5,11 +5,9 @@
 # include "Server.hpp"
 # include "Client.hpp"
 # include "Request.hpp"
-# include <map>
-# include <vector>
-# include <list>
-# include <ostream>
-# include <ctime>
+#include "libraryHeader.hpp"
+
+
 
 # define QUERY_TIMEOUT 300000 //30s == 30000ms between 2 reads and write is the standard on firefox. If lower, test value for debugging quicker
 

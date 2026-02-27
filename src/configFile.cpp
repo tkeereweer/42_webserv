@@ -1,9 +1,4 @@
 #include "../include/Webserv.hpp"
-#include <fstream>
-#include <cctype>
-#include <iostream>
-#include <cstdlib>
-#include <unistd.h>
 
 std::string	Webserv::openFile(char const *filepath)
 {

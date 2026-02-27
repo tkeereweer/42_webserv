@@ -1,10 +1,6 @@
-#include "CGI.hpp"
+#include "../include/CGI.hpp"
 #include "../include/Webserv.hpp"
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <sys/epoll.h>
-#include <cstring>
-#include <dirent.h>
+
 
 CGI::CGI(void){}
 

@@ -1,10 +1,7 @@
 #include "../include/Response.hpp"
-#include <fstream>
-#include <vector>
-#include <algorithm>
-#include <sstream>
-#include <sys/stat.h>
-#include <iostream>
+#include "../include/Client.hpp"
+#include "../include/Server.hpp"
+
 
 Response::Response(void):
 	_returnCode(0), 
@@ -83,54 +80,54 @@ void    Response::buildErrorResponse(short code)
 		case (400):
 			this->_returnCode = 400;
 			this->_reasonPhrase = "Bad Request";
-			this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/pages/errors/400.html"; //filepath temporary cuz I suck and can't make relative path work...
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/400.html"; //filepath temporary cuz I suck and can't make relative path work...
 			break ;
 		case (403):
 			this->_returnCode = 403;
 			this->_reasonPhrase = "Forbidden";
-			this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/pages/errors/403.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/403.html";
 			break ;
 		case (404):
 			this->_returnCode = 404;
 			this->_reasonPhrase = "Not Found";
-			this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/pages/errors/404.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/404.html";
 			break ;
 		case (408):
 			this->_returnCode = 408;
 			this->_reasonPhrase = "Request Timeout";
-			this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/pages/errors/408.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/408.html";
 			break ;
 		case (411):
 			this->_returnCode = 411;
 			this->_reasonPhrase = "Length Required";
-			this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/pages/errors/411.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/411.html";
 			break ;
 		case (413):
 			this->_returnCode = 413;
 			this->_reasonPhrase = "Payload Too Large";
-			this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/pages/errors/413.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/413.html";
 			break ;
 		case (500):
 			this->_returnCode = 500;
 			this->_reasonPhrase = "Internal Server Error";
 			struct stat buf;
-			if (stat("/home/mkeerewe/42/rank05/webserv_perso/data/www/pages/errors/500.html", &buf) == 0)
+			if (stat("/home/mturgeon/rank5/webserv/data/www/pages/errors/500.html", &buf) == 0)
 			{
 				std::cout << "500 error page file doesnt exist\n"; 
 				this->_bodyFilepath = "";
 				break;
 			} //get out of infinite loop if error page doesn't exist
-			this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/pages/errors/500.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/500.html";
 			break ;
 		case (502):
 			this->_returnCode = 502;
 			this->_reasonPhrase = "Bad Gateway";
-			this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/pages/errors/502.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/502.html";
 			break ;
 		case (503):
 			this->_returnCode = 503;
 			this->_reasonPhrase = "Service Unavailable";
-			this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/pages/errors/503.html";
+			this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/pages/errors/503.html";
 			break ;
 		default:
 			throw (std::runtime_error("no matching error code handled"));
@@ -245,11 +242,22 @@ void    Response::buildRedirResponse(std::string redirPath)
 	return (_buildRawResponse());
 }
 
-void    Response::buildGetCGIResponse(std::string cgiPath)
+void    Response::buildGetCGIResponse(Client &client, int epollFD, Server &server, std::string scriptPath)
 {
-    (void)cgiPath;
-	//logic
-	//separate query params from actual URI and try matchLocation() here
+	server.getCgiMap().push_back(CGI(client.getRequest().getQueryParam(), server.getParentEnv(), client, scriptPath)); 
+	server.addCgiToEpoll(server.getCgiMap().back(), epollFD);
+    this->_protocol = "HTTP/1.0";
+    this->_returnCode = 200;
+    this->_reasonPhrase = "OK";
+    return ;
+}
+
+void Response::buildPostCgiResponse(void)
+{
+    this->_protocol = "HTTP/1.0";
+    this->_returnCode = 200;
+    this->_reasonPhrase = "OK";
+    return ;
 }
 
 //getters

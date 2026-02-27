@@ -1,7 +1,7 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
-#include <string>
+#include "libraryHeader.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
 

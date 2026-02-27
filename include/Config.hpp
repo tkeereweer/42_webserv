@@ -1,9 +1,7 @@
 #ifndef CONFIG_HPP
 # define CONFIG_HPP
 
-# include <string>
-# include <map>
-# include <utility>
+#include "libraryHeader.hpp"
 
 class	Config
 {

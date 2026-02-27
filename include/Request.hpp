@@ -1,19 +1,7 @@
 #ifndef REQUEST_HPP
 # define REQUEST_HPP
 
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <list>
-#include <algorithm>
-#include <cctype>
-#include <fstream>
-#include <dirent.h>
-#include <cstring>
-#include <unistd.h>
-#include <limits>
-#include <stdlib.h>
-#include <sys/time.h>
+#include "libraryHeader.hpp"
 
 typedef enum	e_method
 {
@@ -67,6 +55,7 @@ class Request
 		//body bytes already read such that after body consumed, contentLength - bytesRead == 0
 		long long	    _bytesRead;
 		struct timeval	_recvTimestamp;
+		std::string     _queryParam;
 
 
 		void	_lexInput(std::string const &str);
@@ -122,9 +111,12 @@ class Request
 		std::string const	&getBodyFilename(void) const;
 		struct timeval		getRecvTimestamp(void) const;
 		bool				getReqFlag(void) const;
+		std::string			&getQueryParam(void);
 
 		//setters
 		void				setRecvTimestamp(struct timeval time);
+		void                setURI(std::string path);
+		void                setQueryParam(std::string params);
 };
 
 std::ostream    &operator<<(std::ostream &stream, Request const &rhs);

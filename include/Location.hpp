@@ -1,11 +1,8 @@
 #ifndef LOCATION_HPP
 # define LOCATION_HPP
 
-# include <string>
-# include <map>
-# include <utility>
-
 # include "Config.hpp"
+# include "libraryHeader.hpp"
 
 class	Location: public Config
 {

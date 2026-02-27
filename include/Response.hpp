@@ -1,11 +1,11 @@
 #ifndef RESPONSE_HPP
 # define RESPONSE_HPP
 
-#include <string>
-#include <iostream>
-#include <list>
-#include <sys/time.h>
+#include "libraryHeader.hpp"
+#include "CGI.hpp"
 
+class Server;
+class Client;
 
 class Response
 {
@@ -26,9 +26,9 @@ class Response
 		//there can be multiple values
 		//key=value; Expires=Thu, <date> or Max-Age=<num in s>
 		std::string	_setCookie;
-        
+		
 		std::string	_entityBody;
-        std::string _bodyFilepath; //path of file to write in _entityBody
+		std::string _bodyFilepath; //path of file to write in _entityBody
 
 		//where we build the response and from which we will write to client
 		std::string 	_rawResponse;
@@ -36,7 +36,7 @@ class Response
 		struct timeval	_sendTimestamp;
 
 		void    _buildRawResponse(void);
-        void    _writeFileToResponse(std::string filepath);
+		void    _writeFileToResponse(std::string filepath);
 
 	
 	public:
@@ -49,7 +49,8 @@ class Response
 		void    build405Response(bool getAllowed, bool postAllowed, bool deleteAllowed);
 		void    buildRouteResponse(std::string localPath);
 		void    buildRedirResponse(std::string redirPath);
-        void    buildGetCGIResponse(std::string cgiPath);
+		void    buildGetCGIResponse(Client &client, int epollFD, Server &server, std::string scriptPath);
+		void	buildPostCgiResponse(void);
 
 		//getter
 		std::string 	&getRawResponse(void);
