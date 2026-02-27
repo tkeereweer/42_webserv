@@ -67,7 +67,7 @@ void    Response::build405Response(bool getAllowed, bool postAllowed, bool delet
 			this->_allow += ", ";
 		this->_allow += "DELETE";
 	}
-	return (_buildRawResponse());
+	return (buildRawResponse());
 }
 
 
@@ -132,10 +132,10 @@ void    Response::buildErrorResponse(short code)
 		default:
 			throw (std::runtime_error("no matching error code handled"));
 	}
-	return (_buildRawResponse());
+	return (buildRawResponse());
 }
 
-void	Response::_buildRawResponse(void)
+void	Response::buildRawResponse(void)
 {
 	std::stringstream returnCodeStr;
 
@@ -230,7 +230,7 @@ void    Response::buildRouteResponse(std::string localPath)
 	this->_returnCode = 200;
 	this->_protocol = "HTTP/1.0";
 	this->_reasonPhrase = "OK";
-	return (_buildRawResponse());
+	return (buildRawResponse());
 }
 
 void    Response::buildRedirResponse(std::string redirPath)
@@ -239,7 +239,7 @@ void    Response::buildRedirResponse(std::string redirPath)
 	this->_returnCode = 302;
 	this->_reasonPhrase = "Found";
 	this->_location = redirPath;
-	return (_buildRawResponse());
+	return (buildRawResponse());
 }
 
 void    Response::buildGetCGIResponse(Client &client, int epollFD, Server &server, std::string scriptPath)
@@ -272,6 +272,11 @@ std::string Response::getContentLength(void) const
 	return (this->_contentLength);
 }
 
+std::string 	Response::getContentType(void) const
+{
+	return (this->_contentType);
+}
+
 struct timeval	&Response::getSendTimestamp(void)
 {
 	return (this->_sendTimestamp);
@@ -287,10 +292,25 @@ size_t	Response::getToRead(void) const
 	return (this->_toRead);
 }
 
+std::string	&Response::getEntityBody(void)
+{
+	return (this->_entityBody);
+}
+
 //setters
 
 void	Response::setSendTimestamp(struct timeval timestamp)
 {
 	this->_sendTimestamp.tv_sec = timestamp.tv_sec;
 	this->_sendTimestamp.tv_usec = timestamp.tv_usec;
+}
+
+void	Response::setContentLength(std::string length)
+{
+	this->_contentLength = length;
+}
+
+void	Response::setContentType(std::string type)
+{
+	this->_contentType = type;
 }

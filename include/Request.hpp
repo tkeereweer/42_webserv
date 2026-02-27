@@ -27,7 +27,7 @@ typedef struct s_reqToken
 {
 	enum e_reqType type;
 	std::string	val;
-}t_reqToken;
+}	t_reqToken;
 
 
 //headers are divided like in RFC 1945
@@ -120,6 +120,9 @@ class Request
 };
 
 std::ostream    &operator<<(std::ostream &stream, Request const &rhs);
+
+bool	isToken(std::string &str);
+bool	isValidForHeaders(std::string &str);
 
 
 #endif

@@ -79,7 +79,7 @@ class	Webserv
 		void		freeEnv(char **env);
 		void		addCgiToEpoll(CGI &cgi);
 		void		_handleCgiInput(CGI &cgi);
-		void		_handleCgiOutput(CGI &cgi);
+		void		_handleCgiOutput(CGI &cgi, Server &server, Location &loc);
 
 
 		void	testPrint(int clientFd, Client &client);

@@ -210,7 +210,7 @@ void	Webserv::launchServer(void)
 				if (readyEvents[i].events & EPOLLOUT)
 					_handleCgiInput(this->_servers[servIdx].getCgiMap()[cgiIdx]); //fd is CGI.writeFD
 				else
-					_handleCgiOutput(this->_servers[servIdx].getCgiMap()[cgiIdx]); //fd is CGI.readFD
+					_handleCgiOutput(this->_servers[servIdx].getCgiMap()[cgiIdx], this->_servers[servIdx]); //fd is CGI.readFD
 			}
 			else
 			{
@@ -373,20 +373,85 @@ void	Webserv::_handleCgiInput(CGI &cgi)
 }
 
 //is buffer placeholder for where we want to read ?
-void	Webserv::_handleCgiOutput(CGI &cgi)
+void	Webserv::_handleCgiOutput(CGI &cgi, Server &server, Location &loc)
 {
-    (void)cgi;
-	
-	char buffer[4096];
-    (void)buffer;
-	// ssize_t bytesRead = read(readFd, buffer, sizeof(buffer));
+	char			buffer[4096];
+	int				lexReturn = -2;
+	struct timeval	now;
 
-	// if (bytesRead > 0)
-	// 	write(cgi.outFileFd, buffer, bytesRead);
-	// else
-	// {
-	// 	closeCgi(readFd);
-	// }
+	ssize_t	bytesRead = read(cgi.getReadFD(), buffer, sizeof(buffer) - 1);
+	//logic for timeout handling
+	if (bytesRead != -1)
+	{
+		long long	maxOutSize = loc.getMaxCGIOutput();
+		if (maxOutSize == -1)
+			maxOutSize = server.getMaxCGIOutput();
+		buffer[bytesRead] = '\0';
+		cgi.getOutBuff().append(buffer);
+		try
+		{
+			lexReturn = cgi.lexCGIOutput(cgi.getOutBuff());
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
+			struct epoll_event	event;
+			epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
+			//build error response
+		}
+		if (lexReturn != 0 && this->_clientMap[cgi.getClientFD()].client.getResponse().getContentType().empty())//first time done header parsing 
+		{
+			if (cgi.getContentType().empty() || (maxOutSize != -1 && cgi.getContentLength() > maxOutSize) || (maxOutSize == -1 && cgi.getContentLength() == -1))
+			{
+				struct epoll_event	event;
+				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
+				//build errror
+			}
+			this->_clientMap[cgi.getClientFD()].client.getResponse().setContentType(cgi.getContentType());
+			if (cgi.getContentLength() != -1)
+			{
+				this->_clientMap[cgi.getClientFD()].client.getResponse().setContentLength(std::to_string(cgi.getContentLength()));
+				this->_clientMap[cgi.getClientFD()].client.getResponse().buildRawResponse();
+			}
+		}
+		if (lexReturn != 0)
+		{
+			if (cgi.getContentLength() != -1)
+			{
+				this->_clientMap[cgi.getClientFD()].client.getResponse().getRawResponse().append(cgi.getOutBuff());
+				cgi.addBytesSent(cgi.getOutBuff().length());
+				if (cgi.getBytesSent() >= cgi.getContentLength())
+				{
+					struct epoll_event	event;
+					epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
+
+				}
+			}
+			else
+			{
+				if (bytesRead == 0)
+				{
+					struct epoll_event	event;
+					epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
+					this->_clientMap[cgi.getClientFD()].client.getResponse().setContentLength(std::to_string(cgi.getBytesSent()));
+					this->_clientMap[cgi.getClientFD()].client.getResponse().buildRawResponse();
+					return ;
+				}
+				this->_clientMap[cgi.getClientFD()].client.getResponse().getEntityBody().append(cgi.getOutBuff());
+				cgi.addBytesSent(cgi.getOutBuff().length());
+				if (cgi.getBytesSent() > maxOutSize)
+				{
+					struct epoll_event	event;
+					epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
+					//build error
+				}
+			}
+		}
+	}
+	else
+	{
+		//error
+	}
 }
 
 void	Webserv::handleResponse(int clientFd)

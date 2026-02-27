@@ -5,7 +5,7 @@ bool	isCRLF(std::string::const_iterator	&it)
 	return ((*it == '\r') && (*(it + 1) == '\n'));
 }
 
-t_reqToken	token(std::string val, enum e_reqType type)
+static t_reqToken	token(std::string val, enum e_reqType type)
 {
 	t_reqToken res;
 

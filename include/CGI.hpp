@@ -11,16 +11,17 @@ typedef enum	e_cgi_token
 	CGI_QUOTED,
 	CGI_SPACE,
 	CGI_LB,
-	CGI_COLON
+	CGI_COLON,
+	CGI_SLASH
 }	t_cgi_token;
 
 typedef struct s_cgiToken
 {
-    t_cgi_token type;
-    std::string val;
-}t_cgiToken;
+	t_cgi_token type;
+	std::string	val;
+}	t_cgiToken;
 
-class CGI //cgi's map key is clientFD
+class CGI
 {
 	private:
 		int			_clientFd;
@@ -38,10 +39,9 @@ class CGI //cgi's map key is clientFD
 		std::list<t_cgiToken>	_CGItokenList;
 		long long				_contentLength;
 		std::string				_contentType;
-		//flag to indicate we got to the end of request headers
-		bool    _outComplete;
-		bool    _outLineValid;      
-		bool    _outHeadersValid;         
+		//flag to indicate we got to the end of output headers
+		bool	_outComplete;
+		bool	_outHeadersValid;
 		//body bytes already read such that after body consumed, contentLength - bytesRead == 0
 		long long	    _bytesRead;
 		struct timeval	_outTimestamp;
@@ -50,8 +50,12 @@ class CGI //cgi's map key is clientFD
         void	    _setupEnvPOST(char **env, const char **childEnv, Client &client);
         void	    _setupEnvGET(std::string queryString, char **env, const char **childEnv, Client &client);
 
-		void	_lexInput(std::string const &str);
-        void    _parseCGIOutput(std::list<t_cgiToken>::iterator &it);
+		void		_lexInput(std::string const &str);
+		void		_parseCGIOutput(std::list<t_cgiToken>::iterator &it);
+		bool		_parseContentLength(std::list<t_cgiToken>::iterator &it);
+		bool		_parseContentType(std::list<t_cgiToken>::iterator &it);
+		std::string	_parseMediaType(std::list<t_cgiToken>::iterator &it);
+		void		_readLeftovers(std::list<t_cgiToken>::iterator &it);
 
 		CGI(void);
 	public:
@@ -72,10 +76,13 @@ class CGI //cgi's map key is clientFD
 		int			getReadFD(void) const;
 		std::string	&getOutBuff(void);
 		ssize_t		getBytesSent(void) const;
+		long long	getContentLength(void) const;
+		std::string	getContentType(void) const;
 
 		//setters
 		void	setCGIContentLength(long long length);
 		void	setCGIContentType(std::string type);
+		void	addBytesSent(int bytes);
 
 		//parse CGI output
 		int	lexCGIOutput(std::string &data);

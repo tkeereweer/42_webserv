@@ -14,7 +14,8 @@ CGI::CGI(std::string queryString, char **env, Client &client, std::string script
     _bytesSent(0),
     _scriptPath(scriptPath),
     _cgiEnv(env),
-    _queryString(queryString)
+    _queryString(queryString),
+	_contentLength(-1)
 {
 	//don't build input pipe but append queryString as query_string=<value here> to end of servEnv.
 
@@ -119,6 +120,8 @@ CGI	&CGI::operator=(CGI const &rhs)
 		this->_bytesSent = rhs._bytesSent;
 		this->_cgiEnv = rhs._cgiEnv;
 		this->_queryString = rhs._queryString;
+		this->_contentLength = rhs._contentLength;
+		this->_contentType = rhs._contentType;
 	}
 	return (*this);
 }
@@ -154,6 +157,16 @@ ssize_t		CGI::getBytesSent(void) const
 	return (this->_bytesSent);
 }
 
+long long	CGI::getContentLength(void) const
+{
+	return (this->_contentLength);
+}
+
+std::string	CGI::getContentType(void) const
+{
+	return (this->_contentType);
+}
+
 void	CGI::setCGIContentLength(long long length)
 {
 	this->_contentLength = length;
@@ -162,6 +175,11 @@ void	CGI::setCGIContentLength(long long length)
 void	CGI::setCGIContentType(std::string type)
 {
 	this->_contentType = type;
+}
+
+void	CGI::addBytesSent(int bytes)
+{
+	this->_bytesSent += bytes;
 }
 
 

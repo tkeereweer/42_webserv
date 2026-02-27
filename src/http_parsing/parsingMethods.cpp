@@ -466,7 +466,7 @@ bool	isValidForHeaders(std::string &str)
 	return (true);
 }
 
-bool	isHeader(std::list<t_reqToken>::iterator &it)
+static bool	isHeader(std::list<t_reqToken>::iterator &it)
 {
 	if (it->type != WORD)
 		return (false);
@@ -486,7 +486,7 @@ void	Request::_parseFullRequest(std::list<t_reqToken>::iterator &it)
 	//throws exception when request line not full
 	//empties token list
 	if (!this->_reqLineValid)
-		_parseRequestLine(it); 
+		_parseRequestLine(it);
 	while (it->type != CRLF && it != this->_tokenList.end())
 	{
 		//these functions must advance it beyond next CRLFwhen succesful
@@ -530,4 +530,3 @@ void	Request::_parseFullRequest(std::list<t_reqToken>::iterator &it)
 		this->_reqComplete = true;
 	return ;
 }
-

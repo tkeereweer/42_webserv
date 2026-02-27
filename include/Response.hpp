@@ -35,8 +35,7 @@ class Response
 		bool    		_responseComplete;
 		struct timeval	_sendTimestamp;
 
-		void    _buildRawResponse(void);
-		void    _writeFileToResponse(std::string filepath);
+        void    _writeFileToResponse(std::string filepath);
 
 	
 	public:
@@ -51,16 +50,21 @@ class Response
 		void    buildRedirResponse(std::string redirPath);
 		void    buildGetCGIResponse(Client &client, int epollFD, Server &server, std::string scriptPath);
 		void	buildPostCgiResponse(void);
+		void    buildRawResponse(void);
 
 		//getter
 		std::string 	&getRawResponse(void);
 		std::string 	getContentLength(void) const;
+		std::string 	getContentType(void) const;
 		struct timeval	&getSendTimestamp(void);
 		bool			getRespFlag(void) const;
 		size_t			getToRead(void) const;
+		std::string		&getEntityBody(void);
 
 		//setter
 		void	setSendTimestamp(struct timeval timestamp);
+		void	setContentLength(std::string length);
+		void	setContentType(std::string type);
 };
 
 #endif
