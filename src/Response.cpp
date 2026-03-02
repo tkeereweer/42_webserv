@@ -246,6 +246,7 @@ void    Response::buildGetCGIResponse(Client &client, int epollFD, Server &serve
 {
 	server.getCgiMap().push_back(CGI(client.getRequest().getQueryParam(), server.getParentEnv(), client, scriptPath)); 
 	server.addCgiToEpoll(server.getCgiMap().back(), epollFD);
+	client.setCgiResponseState(1); //ongoing
     this->_protocol = "HTTP/1.0";
     this->_returnCode = 200;
     this->_reasonPhrase = "OK";

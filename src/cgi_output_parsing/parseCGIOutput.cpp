@@ -42,7 +42,7 @@ bool	CGI::_parseContentLength(std::list<t_cgiToken>::iterator &it)
 	it++;
 	if (it->type != CGI_LB)
 		throw(std::runtime_error("invalid header: content-length"));
-	if (this->_contentLength != 0)
+	if (this->_contentLength != -1)
 		throw(std::runtime_error("more than 1 content-length header !"));
 	this->_contentLength = atoll(res.c_str());
 	return (true);
@@ -52,8 +52,8 @@ std::string	CGI::_parseMediaType(std::list<t_cgiToken>::iterator &it)
 {
 	std::string	res = "";
 
-	if (!isToken(it->val))
-		throw (std::runtime_error("wrong char in media type"));
+	// if (!isToken(it->val))
+	// 	throw (std::runtime_error("wrong char in media type"));
 	res += it->val;
 	it++;
 	if (it->type != CGI_SLASH)
@@ -87,8 +87,8 @@ bool	CGI::_parseContentType(std::list<t_cgiToken>::iterator &it)
 	if (it->type != CGI_COLON)
 		throw(std::runtime_error("invalid header: content-type"));
 	it++;
-	// if (it->type != SPACE)
-	// 	throw(std::runtime_error("invalid header: content-type"));
+	if (it->type != CGI_SPACE)
+		throw(std::runtime_error("invalid header: content-type"));
 	while (it->type == CGI_SPACE)
 		it++;
 	res += _parseMediaType(it);
@@ -164,7 +164,7 @@ int	CGI::lexCGIOutput(std::string &data)
 	while (rit->type != CGI_LB && rit != this->_CGItokenList.rend())
 		rit++;
 	if (rit == this->_CGItokenList.rend())
-		return (0);
+		return (this->_CGItokenList.clear(), 0);
 	//throw exception only if parsing interupted on bad grammar
 	try
 	{
@@ -177,18 +177,18 @@ int	CGI::lexCGIOutput(std::string &data)
 	}
 
 	if (this->_outComplete)
-		return (-1);
+		return (this->_CGItokenList.clear(), -1);
 	data.clear(); //issue here where we have deleted token list and we then clear data, losing info
-
-	//pop back in data last potentially unread token then pop_back()
-	if (!this->_CGItokenList.empty() && (this->_CGItokenList.back().type == CGI_WORD || this->_CGItokenList.back().type == CGI_SPACE))
-	{
-		data.append(this->_CGItokenList.back().val.begin(), this->_CGItokenList.back().val.end());
-		this->_CGItokenList.pop_back();
-	}
+	this->_CGItokenList.clear();
+	// //pop back in data last potentially unread token then pop_back()
+	// if (!this->_CGItokenList.empty() && (this->_CGItokenList.back().type == CGI_WORD || this->_CGItokenList.back().type == CGI_SPACE))
+	// {
+	// 	data.append(this->_CGItokenList.back().val.begin(), this->_CGItokenList.back().val.end());
+	// 	this->_CGItokenList.pop_back();
+	// }
 
 	if (!(this->_outHeadersValid))
 		return (0);
 	else
-		return (this->_contentLength - this->_bytesRead);
+		return (this->_CGItokenList.clear(), this->_contentLength - this->_bytesRead);
 }

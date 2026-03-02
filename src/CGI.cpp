@@ -7,7 +7,7 @@ CGI::CGI(void){}
 void	freeEnv(char **env);
 
 //constructor for get method CGI with query_string argument
-CGI::CGI(std::string queryString, char **env, Client &client, std::string scriptPath):
+CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, std::string scriptPath):
 	_clientFd(client.getFd()),
 	_writeFd(-1),
 	_inFileFd(-1),
@@ -28,8 +28,8 @@ CGI::CGI(std::string queryString, char **env, Client &client, std::string script
 		throw (std::runtime_error(std::strerror(errno)));
 
 	//setup environment variables
-	const char	**childEnv = (const char **)env;
-	_setupEnvGET(queryString, env, childEnv, client);
+	char	**childEnv;
+	_setupEnvGET(queryString, env, &childEnv, client);
 
 	//create child
 	this->_pid = fork();
@@ -39,24 +39,16 @@ CGI::CGI(std::string queryString, char **env, Client &client, std::string script
 		_createChildProcess(inPipe, outPipe, childEnv);
 	close(inPipe[0]);
 	close(outPipe[1]);
-	freeEnv((char **)childEnv);
+	freeEnv(childEnv);
 
 	this->_readFd = outPipe[0];
-	this->_inFileFd = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
-	if (this->_inFileFd == -1)
-			throw (std::runtime_error(std::strerror(errno)));
-}
-
-int envSize(char **env)
-{
-	int i = 0;
-	while (env[i])
-		i++;
-	return (i);
+	// this->_inFileFd = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY); //get has no body
+	// if (this->_inFileFd == -1)
+	// 	throw (std::runtime_error(std::strerror(errno)));
 }
 
 //constructor for post method CGI
-CGI::CGI(char **env, Client &client, std::string scriptPath):
+CGI::CGI(std::vector<std::string> env, Client &client, std::string scriptPath):
 	_clientFd(client.getFd()),
 	_bytesSent(0),
     _scriptPath(scriptPath),
@@ -77,8 +69,8 @@ CGI::CGI(char **env, Client &client, std::string scriptPath):
 	}
 
 	//setup environment variables
-	const char	**childEnv = (const char **)env;
-	_setupEnvPOST(env, childEnv, client);
+	char	**childEnv;
+	_setupEnvPOST(env, &childEnv, client);
 
 	//create child
 	this->_pid = fork();
@@ -88,13 +80,13 @@ CGI::CGI(char **env, Client &client, std::string scriptPath):
 		_createChildProcess(inPipe, outPipe, childEnv);
 	close(inPipe[0]);
 	close(outPipe[1]);
-	freeEnv((char **)childEnv);
+	freeEnv(childEnv);
 
 	this->_readFd = outPipe[0];
 	this->_writeFd = inPipe[1]; //only for post method
 	this->_inFileFd = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
 	if (this->_inFileFd == -1)
-			throw (std::runtime_error(std::strerror(errno)));
+		throw (std::runtime_error(std::strerror(errno)));
 }
 
 CGI::CGI(CGI const &src)
@@ -192,24 +184,28 @@ void	freeEnv(char **env)
 		return ;
 
 	for (int i = 0; env[i]; i++)
-		free(env[i]);
+		delete [] env[i];
 
-	free(env);
+	delete[] env;
 }
 
-void	CGI::_setupEnvPOST(char **env, const char **childEnv, Client &client)
+void	CGI::_setupEnvPOST(std::vector<std::string> env, char ***childEnv, Client &client)
 {
-	int     	childEnvSize = envSize(env) + 2; //for CONTENT_LENGTH var and NULL
+	int	childEnvSize = env.size() + 2; //for CONTENT_LENGTH var and NULL
 	if (client.getRequest().getCookies() != "")
 		childEnvSize++;
-	childEnv = new const char *[childEnvSize];
-	for (int i = 0; env[i]; i++)
-		childEnv[i] = env[i];
+	*childEnv = new char *[childEnvSize];
+	for (size_t i = 0; i < env.size(); i++)
+	{
+		(*childEnv)[i] = new char[env[i].length() + 1];
+		std::strcpy((*childEnv)[i], env[i].c_str());
+	}
 	if (client.getRequest().getCookies() != "")
 	{
 		std::string cookies("COOKIE=");
 		cookies += client.getRequest().getCookies();
-		childEnv[childEnvSize - 2] = cookies.c_str();
+		(*childEnv)[childEnvSize - 3] = new char[cookies.length() + 1];
+		std::strcpy((*childEnv)[childEnvSize - 3], cookies.c_str());
 	}
 	if (client.getRequest().getContentLength() == 0)
 		throw (std::runtime_error("bad request"));
@@ -217,30 +213,42 @@ void	CGI::_setupEnvPOST(char **env, const char **childEnv, Client &client)
 	std::stringstream sstr;
 	sstr << client.getRequest().getContentLength();
 	contentLength += sstr.str();
-	childEnv[childEnvSize - 1] = contentLength.c_str();
-	childEnv [childEnvSize] = 0;
+	(*childEnv)[childEnvSize - 2] = new char[contentLength.length() + 1];
+	std::strcpy((*childEnv)[childEnvSize - 2], contentLength.c_str());
+	(*childEnv)[childEnvSize - 1] = NULL;
 }
 
-void	CGI::_setupEnvGET(std::string queryString, char **env, const char **childEnv, Client &client)
+void	CGI::_setupEnvGET(std::string queryString, std::vector<std::string> env, char ***childEnv, Client &client)
 {
-	int     	childEnvSize = envSize(env) + 2; //for CONTENT_LENGTH var and NULL
+	int	childEnvSize = env.size() + 1; //for CONTENT_LENGTH var and NULL // why CONTENT_LENGTH
 	if (client.getRequest().getCookies() != "")
 		childEnvSize++;
-	childEnv = new const char *[childEnvSize];
-	for (int i = 0; env[i]; i++)
-		childEnv[i] = env[i];
+	if (!queryString.empty())
+		childEnvSize++;
+	*childEnv = new char *[childEnvSize];
+	for (size_t i = 0; i < env.size(); i++)
+	{
+		(*childEnv)[i] = new char[env[i].length() + 1];
+		std::strcpy((*childEnv)[i], env[i].c_str());
+	}
 	if (client.getRequest().getCookies() != "")
 	{
+		int	idx = queryString.empty() ? childEnvSize - 2 : childEnvSize - 3;
 		std::string cookies("COOKIE=");
 		cookies += client.getRequest().getCookies();
-		childEnv[childEnvSize - 1] = cookies.c_str();
+		(*childEnv)[idx] = new char[cookies.length() + 1];
+		std::strcpy((*childEnv)[idx], cookies.c_str());
 	}
-		if (client.getRequest().getContentLength() == 0)
-		throw (std::runtime_error("bad request"));
-	std::string	qString("QUERY_STRING=");
-	qString += queryString;
-	childEnv[childEnvSize - 1] = qString.c_str();
-	childEnv [childEnvSize] = 0;	
+	// if (client.getRequest().getContentLength() == 0) //get do not have contentLenght?
+	// 	throw (std::runtime_error("bad request"));
+	if (!queryString.empty())
+	{
+		std::string	qString("QUERY_STRING=");
+		qString += queryString;
+		(*childEnv)[childEnvSize - 2] = new char[qString.length() + 1];
+		std::strcpy((*childEnv)[childEnvSize - 2], qString.c_str());
+	}
+	(*childEnv)[childEnvSize - 1] = NULL;
 }
 
 std::string	getProgPath(std::string scriptPath)
@@ -253,7 +261,7 @@ std::string	getProgPath(std::string scriptPath)
 	throw(std::runtime_error(".py or .php only"));
 }
 
-void	CGI::_createChildProcess(int *inPipe, int *outPipe, const char **childEnv)
+void	CGI::_createChildProcess(int *inPipe, int *outPipe, char **childEnv)
 {
 		dup2(inPipe[0], STDIN_FILENO);
 		dup2(outPipe[1], STDOUT_FILENO);
@@ -266,9 +274,9 @@ void	CGI::_createChildProcess(int *inPipe, int *outPipe, const char **childEnv)
 		char		*argv[] = {	path,
 								const_cast<char*>(this->_scriptPath.c_str()),
 								NULL};
-		if (this->_cgiEnv == NULL || execve(path, argv, (char **)childEnv) == -1)
+		if (this->_cgiEnv.empty() || execve(path, argv, childEnv) == -1)
 		{
-			freeEnv((char **)childEnv);
+			freeEnv(childEnv);
 			close(inPipe[0]);
 			close(outPipe[1]);
 			exit(1);

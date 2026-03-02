@@ -52,8 +52,8 @@
 
                 try {
                     const response = await fetch('../cgi-bin/test.py', {
-                        method: 'POST',
-                        body: formData
+                        method: 'GET',
+                        // body: formData
                     });
 
                     if (!response.ok) throw new Error(`Server error: ${response.status}`);

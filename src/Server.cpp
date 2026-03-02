@@ -6,7 +6,7 @@
 
 Server::Server(void): Config(){}
 
-Server::Server(char **envp): Config(), _parentEnv(envp){}
+Server::Server(std::vector<std::string> envp): Config(), _parentEnv(envp) {}
 
 Server::Server(Server const &src):
 	Config(src),
@@ -65,7 +65,7 @@ std::vector<CGI>		&Server::getCgiMap(void)
 	return (this->_cgiVec);
 }
 
-char	**Server::getParentEnv(void) const
+std::vector<std::string>	Server::getParentEnv(void) const
 {
 	return (this->_parentEnv);
 }
@@ -133,7 +133,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	if (req.getURI().find_first_of("?") != std::string::npos)
 	{
 		std::string 			URI = req.getURI();
-		std::string::iterator	end = URI.begin() + req.getURI().find_first_of("?") - 1;
+		std::string::iterator	end = URI.begin() + req.getURI().find_first_of("?");
 		std::string				relPath(URI.begin(), end);
 		req.setURI(relPath);
 		std::string				queryParam(end + 2, URI.end());
@@ -220,18 +220,19 @@ void	Server::handleGET(Client &client, Location &loc, int epollFD)
 		}
         //handle GET Cgi
 		(void)epollFD;
-        // if (req.getURI().find(".py") || req.getURI().find(".php")) //.php or any other handled cgi
-		// 	return (client.getResponse().buildGetCGIResponse(client, epollFD, *this, path)); //needs full path in there
+        if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
+			return (client.getResponse().buildGetCGIResponse(client, epollFD, *this, path)); //needs full path in there
 		return (client.getResponse().buildRouteResponse(path));
 	}
 	catch (std::exception const &e)
 	{
+		std::cerr << e.what() << std::endl;
 		return (client.getResponse().buildErrorResponse(500));
 	}
 }
 
 
-void	Server::handlePOST(Location &loc, Client &client, char **serverEnv, int epollFD)
+void	Server::handlePOST(Location &loc, Client &client, std::vector<std::string> serverEnv, int epollFD)
 {
 	try
 	{
@@ -244,6 +245,7 @@ void	Server::handlePOST(Location &loc, Client &client, char **serverEnv, int epo
 		}
 		this->_cgiVec.push_back(CGI(serverEnv, client, path)); 
 		addCgiToEpoll(this->_cgiVec.back(), epollFD);
+		client.setCgiResponseState(1);
 		return (client.getResponse().buildPostCgiResponse());
 	}
 	catch(const std::exception& e)

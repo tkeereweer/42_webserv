@@ -38,7 +38,7 @@ class	Webserv
 		std::map<int, Server*>		_serverMap;// matches socketfd w/ corresponding server
 		std::map<int, t_connection>	_clientMap; //int: fd of connection
 		int							_epollFd;
-        char                        **_parentEnv;
+        std::vector<std::string>	_parentEnv;
 
 		// configuration file parsing
 		void					parseListen(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);

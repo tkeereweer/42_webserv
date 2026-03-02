@@ -5,13 +5,20 @@
 *						CTOR/DTOR
 *******************************************************************************/
 
-Webserv::Webserv(char **envp): _parentEnv(envp) {}
+Webserv::Webserv(char **envp)
+{
+	for (int i = 0; envp[i] != NULL; i++)
+	{
+		this->_parentEnv.push_back(std::string(envp[i]));
+	}
+}
 
 Webserv::Webserv(Webserv const &src):
 	_servers(src._servers),
 	_serverMap(src._serverMap),
 	_clientMap(src._clientMap),
-	_epollFd(src._epollFd)
+	_epollFd(src._epollFd),
+	_parentEnv(src._parentEnv)
 {}
 
 Webserv	&Webserv::operator=(Webserv const &rhs)
@@ -172,7 +179,7 @@ void	Webserv::activityNotif(struct epoll_event	readyEvent)
 {
 	if (isListenSocket(readyEvent.data.fd))
 		std::cout << "ListenSocket (" << readyEvent.data.fd << ") is ready for ";
-	else if (isCgiFd(readyEvent.data.fd))
+	else if (isCgiFd(readyEvent.data.fd) != -1)
 		std::cout << "Pipe (" << readyEvent.data.fd << ") is ready for ";
 	else
 		std::cout << "Client (" << readyEvent.data.fd << ") is ready for ";
@@ -190,7 +197,7 @@ void	Webserv::launchServer(void)
 {
 	int					readyFds;
 	struct epoll_event	readyEvents[10];
-    size_t              idx = 0;
+    long				idx = 0;
 
 	this->_epollFd = this->setupEpoll();
 	while (1)
@@ -203,7 +210,7 @@ void	Webserv::launchServer(void)
 
 			if (isListenSocket(readyEvents[i].data.fd))
 				newClient(readyEvents[i].data.fd);
-			else if ((idx = isCgiFd(readyEvents[i].data.fd)))
+			else if ((idx = isCgiFd(readyEvents[i].data.fd)) != -1)
 			{
                 int servIdx = idx >> 16;
                 int cgiIdx = idx & std::numeric_limits<int>::max();
@@ -375,7 +382,7 @@ void	Webserv::_handleCgiInput(CGI &cgi)
 //is buffer placeholder for where we want to read ?
 void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 {
-	char			buffer[4096];
+	char			buffer[4056];
 	int				lexReturn = -2;
 	// struct timeval	now;
 
@@ -389,16 +396,19 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 		long long	maxOutSize = server.getMaxCGIOutput();
 		buffer[bytesRead] = '\0';
 		cgi.getOutBuff().append(buffer);
-		try
+		if (this->_clientMap[cgi.getClientFD()].client.getResponse().getContentType().empty())
 		{
-			lexReturn = cgi.lexCGIOutput(cgi.getOutBuff());
-		}
-		catch(const std::exception& e)
-		{
-			std::cerr << e.what() << '\n';
-			struct epoll_event	event;
-			epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
-			//build error response
+			try
+			{
+				lexReturn = cgi.lexCGIOutput(cgi.getOutBuff());
+			}
+			catch(const std::exception& e)
+			{
+				std::cerr << e.what() << '\n';
+				struct epoll_event	event;
+				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
+				//build error response
+			}
 		}
 		if (lexReturn != 0 && this->_clientMap[cgi.getClientFD()].client.getResponse().getContentType().empty())//first time done header parsing 
 		{
@@ -417,7 +427,6 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 				this->_clientMap[cgi.getClientFD()].client.getResponse().setContentLength(stream.str());
 				this->_clientMap[cgi.getClientFD()].client.getResponse().setToRead(cgi.getContentLength());
 				this->_clientMap[cgi.getClientFD()].client.getResponse().buildRawResponse();
-				this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(1); //cgi response ongoing
 			}
 		}
 		if (lexReturn != 0)
@@ -426,6 +435,7 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 			{
 				this->_clientMap[cgi.getClientFD()].client.getResponse().getRawResponse().append(cgi.getOutBuff());
 				cgi.addBytesSent(cgi.getOutBuff().length());
+				cgi.getOutBuff().clear();
 				if (cgi.getBytesSent() >= cgi.getContentLength())
 				{
 					struct epoll_event	event;
@@ -441,15 +451,16 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 					std::stringstream	stream;
 
 					epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
-					stream << cgi.getContentLength();
+					stream << cgi.getBytesSent();
 					this->_clientMap[cgi.getClientFD()].client.getResponse().setContentLength(stream.str());
-					this->_clientMap[cgi.getClientFD()].client.getResponse().setToRead(cgi.getContentLength());
+					this->_clientMap[cgi.getClientFD()].client.getResponse().setToRead(cgi.getBytesSent());
 					this->_clientMap[cgi.getClientFD()].client.getResponse().buildRawResponse();
 					this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
 					return ;
 				}
 				this->_clientMap[cgi.getClientFD()].client.getResponse().getEntityBody().append(cgi.getOutBuff());
 				cgi.addBytesSent(cgi.getOutBuff().length());
+				cgi.getOutBuff().clear();
 				if (cgi.getBytesSent() > maxOutSize)
 				{
 					struct epoll_event	event;
@@ -514,11 +525,11 @@ long  Webserv::isCgiFd(int fd) //return a pair to identify server and CGI OR a b
     {
         for (size_t i = 0; i != this->_servers[j].getCgiMap().size(); i++)
         {
-            if (fd == this->_servers[j].getCgiMap()[i].getReadFD() || this->_servers[j].getCgiMap()[i].getWriteFD())
+            if (fd == this->_servers[j].getCgiMap()[i].getReadFD() || fd == this->_servers[j].getCgiMap()[i].getWriteFD())
                 return ((static_cast<int>(j) << 16) | static_cast<int>(i));
         }
     }
-    return (0);
+    return (-1);
 }
 //t2 - t1
 int	getTimeDiff(timeval t1, timeval t2)

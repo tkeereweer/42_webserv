@@ -26,17 +26,17 @@ typedef struct s_cgiToken
 class CGI
 {
 	private:
-		int			_clientFd;
-		int			_pid;
-		int			_writeFd;
-		int 		_readFd;
-		int			_inFileFd; //tempfile where the body is stored.
-		std::string	_outBuff;
-		ssize_t		_bytesSent;
-		std::string	_scriptPath;
+		int							_clientFd;
+		int							_pid;
+		int							_writeFd;
+		int 						_readFd;
+		int							_inFileFd; //tempfile where the body is stored.
+		std::string					_outBuff;
+		ssize_t						_bytesSent;
+		std::string					_scriptPath;
 		//environment variables
-		char		**_cgiEnv;
-		std::string	_queryString; //parsed by handle post in Server::
+		std::vector<std::string>	_cgiEnv;
+		std::string					_queryString; //parsed by handle post in Server::
 		//CGI output
 		std::list<t_cgiToken>	_CGItokenList;
 		long long				_contentLength;
@@ -48,9 +48,9 @@ class CGI
 		long long	    _bytesRead;
 		struct timeval	_outTimestamp;
 
-		void		_createChildProcess(int *inPipe, int *outPipe, const char **childEnv);
-        void	    _setupEnvPOST(char **env, const char **childEnv, Client &client);
-        void	    _setupEnvGET(std::string queryString, char **env, const char **childEnv, Client &client);
+		void		_createChildProcess(int *inPipe, int *outPipe, char **childEnv);
+        void	    _setupEnvPOST(std::vector<std::string> env, char ***childEnv, Client &client);
+        void	    _setupEnvGET(std::string queryString, std::vector<std::string> env, char ***childEnv, Client &client);
 
 		void		_lexInput(std::string const &str);
 		void		_parseCGIOutput(std::list<t_cgiToken>::iterator &it);
@@ -62,9 +62,9 @@ class CGI
 		CGI(void);
 	public:
 		//post method constructor
-		CGI(char **env, Client &client, std::string scriptPath);
+		CGI(std::vector<std::string> env, Client &client, std::string scriptPath);
 		//get method constructor
-		CGI(std::string queryString, char **env, Client &client, std::string scriptPath);
+		CGI(std::string queryString, std::vector<std::string> env, Client &client, std::string scriptPath);
 		CGI(CGI const &src);
 		~CGI(void);
 		CGI	&operator=(CGI const &rhs);

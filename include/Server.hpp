@@ -19,23 +19,23 @@ typedef struct s_socket
 class	Server: public Config
 {
 	private:
-		std::string				_name;
-		std::vector<t_socket>	_sockets;
-		std::vector<Location>	_locations;
-		std::vector<CGI>		_cgiVec; //more logical here as you can choose to have some virtual hosts have access to some CGIs or not.
-		char					**_parentEnv;
+		std::string					_name;
+		std::vector<t_socket>		_sockets;
+		std::vector<Location>		_locations;
+		std::vector<CGI>			_cgiVec; //more logical here as you can choose to have some virtual hosts have access to some CGIs or not.
+		std::vector<std::string>	_parentEnv;
 
 		int			matchLocation(std::string URI) const;
 		bool		isMethodAllowed(t_method method, Location &loc) const;
 		std::string	buildPath(std::string URI, Location &loc) const;
 		void		handleDir(Client &client, Location &loc, std::string dir) const;
 		void		handleGET(Client &client, Location &loc, int epollFD);
-		void		handlePOST(Location &loc, Client &client, char **serverEnv, int epollFD);
+		void		handlePOST(Location &loc, Client &client, std::vector<std::string> serverEnv, int epollFD);
 		void		handleDELETE(Client &client, Location &loc) const;
 
 		Server(void);
 	public:
-		Server(char **envp);
+		Server(std::vector<std::string> envp);
 		Server(Server const &src);
 		Server	&operator=(Server const &rhs);
 		virtual ~Server(void);
@@ -45,7 +45,7 @@ class	Server: public Config
 		std::vector<Location>		&getLocations(void);
 
 		std::vector<CGI>			&getCgiMap(void);
-		char                        **getParentEnv(void) const;
+		std::vector<std::string>	getParentEnv(void) const;
 
 		void	setName(std::string name);
 		void	addSocket(t_socket socket);

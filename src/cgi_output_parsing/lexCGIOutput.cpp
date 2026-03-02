@@ -53,14 +53,13 @@ void	CGI::_lexInput(std::string const &str)
 			if (*it == '\n')
 			{
 				this->_CGItokenList.push_back(token(std::string("\n"), CGI_LB));
-				it++;
 				continue;
 			}
 			word += *it;
 			this->_CGItokenList.push_back(token(word, CGI_SPACE));
 			word.clear();
 		}
-		else if (!inQuotes && *it == ':')
+		else if (!inQuotes && (*it == ':' || *it == ';' || *it == '/'))
 		{
 			if (word != "")
 			{
