@@ -9,7 +9,7 @@ Client::Client(void) :
     _response(), 
     _bytesSent(0),
     _requestDone(false), 
-    _responseDone(false)
+    _cgiResponseState(0)
 {}
 
 Client::Client(int fd) : 
@@ -18,7 +18,7 @@ Client::Client(int fd) :
     _response(),
 	_bytesSent(0),
     _requestDone(false), 
-    _responseDone(false)
+    _cgiResponseState(0)
 {}
 
 Client::Client(Client const &src) :
@@ -27,7 +27,7 @@ Client::Client(Client const &src) :
 	_response(src._response),
 	_bytesSent(src._bytesSent),
     _requestDone(false),
-    _responseDone(false)
+    _cgiResponseState(0)
     {}
 
 Client&	Client::operator=(Client const &rhs)
@@ -39,7 +39,7 @@ Client&	Client::operator=(Client const &rhs)
 		_response = rhs._response;
 		_bytesSent = rhs._bytesSent;
         _requestDone = rhs._requestDone;
-        _responseDone = rhs._responseDone;
+        _cgiResponseState = rhs._cgiResponseState;
         _readBuffer = rhs._readBuffer;
 	}
 	return (*this);
@@ -73,6 +73,10 @@ size_t		Client::getBytesSent(void) const
 	return (_bytesSent);
 }
 
+int			Client::getCgiResponseState(void) const
+{
+	return (this->_cgiResponseState);
+}
 
 void		Client::setReadBuffer(const std::string& readBuffer)
 {
@@ -92,6 +96,11 @@ void		Client::appendReadBuffer(const std::string& appendix)
 void		Client::addBytesSent(size_t bytesSent)
 {
 	_bytesSent += bytesSent;
+}
+
+void		Client::setCgiResponseState(int state)
+{
+	this->_cgiResponseState = state;
 }
 
 

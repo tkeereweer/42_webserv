@@ -5,7 +5,7 @@
 # include "Server.hpp"
 # include "Client.hpp"
 # include "Request.hpp"
-#include "libraryHeader.hpp"
+# include "libraryHeader.hpp"
 
 
 
@@ -79,7 +79,7 @@ class	Webserv
 		void		freeEnv(char **env);
 		void		addCgiToEpoll(CGI &cgi);
 		void		_handleCgiInput(CGI &cgi);
-		void		_handleCgiOutput(CGI &cgi, Server &server, Location &loc);
+		void		_handleCgiOutput(CGI &cgi, Server &server);
 
 
 		void	testPrint(int clientFd, Client &client);

@@ -1,9 +1,9 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
-#include "libraryHeader.hpp"
-#include "Request.hpp"
-#include "Response.hpp"
+# include "libraryHeader.hpp"
+# include "Request.hpp"
+# include "Response.hpp"
 
 class	Client
 {
@@ -14,7 +14,7 @@ class	Client
 		Response	_response;
 		size_t		_bytesSent;
         bool        _requestDone;
-        bool        _responseDone;
+        int	        _cgiResponseState;
 
 	public:
 		Client(void);
@@ -28,11 +28,13 @@ class	Client
 		Response&           getResponse(void);
 		size_t				getBytesSent(void) const;
 		Request             &getRequest(void);
+		int					getCgiResponseState(void) const;
 
 		void				setReadBuffer(const std::string& readBuffer);
 		void				setResponse(const Response& response);
 		void				appendReadBuffer(const std::string& appendix);
 		void				addBytesSent(size_t bytesSent);
+		void				setCgiResponseState(int state);
 
 		void				clearReadBuffer(void);
 		void				clearBytesSent(void);

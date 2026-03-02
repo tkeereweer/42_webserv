@@ -10,7 +10,8 @@ SRC = Client.cpp \
 	http_parsing/parsingMethods.cpp \
 	http_parsing/Request.cpp \
 	CGI.cpp \
-	parseCGIOutput.cpp \
+	cgi_output_parsing/parseCGIOutput.cpp \
+	cgi_output_parsing/lexCGIOutput.cpp \
 	Response.cpp \
 	main.cpp
 
@@ -33,6 +34,9 @@ $(OBJ_DIR)/%.o: src/%.cpp | $(OBJ_DIR)
 	$(CC) $(FLAGS) -Iinclude -c $< -o $@
 
 $(OBJ_DIR)/%.o: src/http_parsing/%.cpp | $(OBJ_DIR)
+	$(CC) $(FLAGS) -Iinclude -c $< -o $@
+
+$(OBJ_DIR)/%.o: src/cgi_output_parsing/%.cpp | $(OBJ_DIR)
 	$(CC) $(FLAGS) -Iinclude -c $< -o $@
 
 $(OBJ_DIR):

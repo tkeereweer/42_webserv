@@ -65,6 +65,7 @@ class Response
 		void	setSendTimestamp(struct timeval timestamp);
 		void	setContentLength(std::string length);
 		void	setContentType(std::string type);
+		void	setToRead(size_t bytes);
 };
 
 #endif

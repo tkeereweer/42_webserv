@@ -373,19 +373,20 @@ void	Webserv::_handleCgiInput(CGI &cgi)
 }
 
 //is buffer placeholder for where we want to read ?
-void	Webserv::_handleCgiOutput(CGI &cgi, Server &server, Location &loc)
+void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 {
 	char			buffer[4096];
 	int				lexReturn = -2;
-	struct timeval	now;
+	// struct timeval	now;
 
 	ssize_t	bytesRead = read(cgi.getReadFD(), buffer, sizeof(buffer) - 1);
 	//logic for timeout handling
 	if (bytesRead != -1)
 	{
-		long long	maxOutSize = loc.getMaxCGIOutput();
-		if (maxOutSize == -1)
-			maxOutSize = server.getMaxCGIOutput();
+		// long long	maxOutSize = loc.getMaxCGIOutput();
+		// if (maxOutSize == -1)
+		// 	maxOutSize = server.getMaxCGIOutput();
+		long long	maxOutSize = server.getMaxCGIOutput();
 		buffer[bytesRead] = '\0';
 		cgi.getOutBuff().append(buffer);
 		try
@@ -410,8 +411,13 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server, Location &loc)
 			this->_clientMap[cgi.getClientFD()].client.getResponse().setContentType(cgi.getContentType());
 			if (cgi.getContentLength() != -1)
 			{
-				this->_clientMap[cgi.getClientFD()].client.getResponse().setContentLength(std::to_string(cgi.getContentLength()));
+				std::stringstream	stream;
+
+				stream << cgi.getContentLength();
+				this->_clientMap[cgi.getClientFD()].client.getResponse().setContentLength(stream.str());
+				this->_clientMap[cgi.getClientFD()].client.getResponse().setToRead(cgi.getContentLength());
 				this->_clientMap[cgi.getClientFD()].client.getResponse().buildRawResponse();
+				this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(1); //cgi response ongoing
 			}
 		}
 		if (lexReturn != 0)
@@ -424,7 +430,7 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server, Location &loc)
 				{
 					struct epoll_event	event;
 					epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
-
+					this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
 				}
 			}
 			else
@@ -432,9 +438,14 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server, Location &loc)
 				if (bytesRead == 0)
 				{
 					struct epoll_event	event;
+					std::stringstream	stream;
+
 					epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
-					this->_clientMap[cgi.getClientFD()].client.getResponse().setContentLength(std::to_string(cgi.getBytesSent()));
+					stream << cgi.getContentLength();
+					this->_clientMap[cgi.getClientFD()].client.getResponse().setContentLength(stream.str());
+					this->_clientMap[cgi.getClientFD()].client.getResponse().setToRead(cgi.getContentLength());
 					this->_clientMap[cgi.getClientFD()].client.getResponse().buildRawResponse();
+					this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
 					return ;
 				}
 				this->_clientMap[cgi.getClientFD()].client.getResponse().getEntityBody().append(cgi.getOutBuff());
@@ -471,7 +482,7 @@ void	Webserv::handleResponse(int clientFd)
 		if ((client.getBytesSent()) == client.getResponse().getToRead())
 			closeClient(clientFd);
 	}
-	else
+	else if (client.getCgiResponseState() != 1)
 		closeClient(clientFd);
 }
 

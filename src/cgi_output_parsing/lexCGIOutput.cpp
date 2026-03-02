@@ -6,7 +6,9 @@ t_cgi_token	whichType(std::string word)
 	{
 		case ':':
 			return (CGI_COLON);
-        case '/':
+		case ';':
+			return (CGI_SEMI_COLON);
+		case '/':
 			return (CGI_SLASH);
 	}
 	return (CGI_WORD);

@@ -2,15 +2,15 @@
 
 static bool	isHeader(std::list<t_cgiToken>::iterator &it)
 {
-	if (it->type != WORD)
+	if (it->type != CGI_WORD)
 		return (false);
 	it++;
-	if (it->type != COLON)
+	if (it->type != CGI_COLON)
 		return (false);
 	it++;
-	while (it->type == SPACE)
+	while (it->type == CGI_SPACE)
 		it++;
-	while (it->type != CRLF && isValidForHeaders(it->val)) //type check before function important
+	while (it->type != CGI_LB && isValidForHeaders(it->val)) //type check before function important
 		it++;
 	return (true);
 }
@@ -24,14 +24,14 @@ bool	CGI::_parseContentLength(std::list<t_cgiToken>::iterator &it)
 	if (it->val != "content-length")
 		return (false);
 	it++;
-	if (it->type != COLON)
+	if (it->type != CGI_COLON)
 		throw(std::runtime_error("invalid header: content-length"));
 	it++;
 	// if (it->type != SPACE)
 	// 	throw(std::runtime_error("invalid header: content-length"));
-	while (it->type == SPACE)
+	while (it->type == CGI_SPACE)
 		it++;
-	if (it->type != WORD || it->val.size() == 0)
+	if (it->type != CGI_WORD || it->val.size() == 0)
 		throw(std::runtime_error("invalid header: content-length"));
 	for (std::string::iterator ite = it->val.begin(); ite != it->val.end(); ite++)
 	{
@@ -56,7 +56,7 @@ std::string	CGI::_parseMediaType(std::list<t_cgiToken>::iterator &it)
 		throw (std::runtime_error("wrong char in media type"));
 	res += it->val;
 	it++;
-	if (it->type != SLASH)
+	if (it->type != CGI_SLASH)
 		throw (std::runtime_error("wrong media type format, expected '/'"));
 	res += it->val;
 	it++;
@@ -64,7 +64,7 @@ std::string	CGI::_parseMediaType(std::list<t_cgiToken>::iterator &it)
 			throw (std::runtime_error("expected valid parameter"));
 	res += it->val;
 	it++;
-	while (it->type == SEMI_COLON)
+	while (it->type == CGI_SEMI_COLON)
 	{
 		it++;
 		if (!isToken(it->val))
@@ -84,12 +84,12 @@ bool	CGI::_parseContentType(std::list<t_cgiToken>::iterator &it)
 	if (it->val != "content-type")
 		return (false);
 	it++;
-	if (it->type != COLON)
+	if (it->type != CGI_COLON)
 		throw(std::runtime_error("invalid header: content-type"));
 	it++;
 	// if (it->type != SPACE)
 	// 	throw(std::runtime_error("invalid header: content-type"));
-	while (it->type == SPACE)
+	while (it->type == CGI_SPACE)
 		it++;
 	res += _parseMediaType(it);
 	if (it->type != CGI_LB)
@@ -181,7 +181,7 @@ int	CGI::lexCGIOutput(std::string &data)
 	data.clear(); //issue here where we have deleted token list and we then clear data, losing info
 
 	//pop back in data last potentially unread token then pop_back()
-	if (!this->_CGItokenList.empty() && (this->_CGItokenList.back().type == WORD || this->_CGItokenList.back().type == SPACE))
+	if (!this->_CGItokenList.empty() && (this->_CGItokenList.back().type == CGI_WORD || this->_CGItokenList.back().type == CGI_SPACE))
 	{
 		data.append(this->_CGItokenList.back().val.begin(), this->_CGItokenList.back().val.end());
 		this->_CGItokenList.pop_back();

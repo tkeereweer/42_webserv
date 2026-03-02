@@ -1,7 +1,8 @@
 #ifndef CGI_HPP
 # define CGI_HPP
 
-#include "libraryHeader.hpp"
+# include "libraryHeader.hpp"
+# include "Request.hpp"
 
 class Client;
 
@@ -12,7 +13,8 @@ typedef enum	e_cgi_token
 	CGI_SPACE,
 	CGI_LB,
 	CGI_COLON,
-	CGI_SLASH
+	CGI_SLASH,
+	CGI_SEMI_COLON
 }	t_cgi_token;
 
 typedef struct s_cgiToken
