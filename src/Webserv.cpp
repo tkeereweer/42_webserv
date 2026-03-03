@@ -29,7 +29,7 @@ Webserv	&Webserv::operator=(Webserv const &rhs)
 		this->_serverMap = rhs._serverMap;
 		this->_clientMap = rhs._clientMap;
 		this->_epollFd = rhs._epollFd; // close old epollFd ??
-        this->_parentEnv = rhs._parentEnv;
+		this->_parentEnv = rhs._parentEnv;
 	}
 	return (*this);
 }
@@ -197,7 +197,7 @@ void	Webserv::launchServer(void)
 {
 	int					readyFds;
 	struct epoll_event	readyEvents[10];
-    long				idx = 0;
+	long				idx = 0;
 
 	this->_epollFd = this->setupEpoll();
 	while (1)
@@ -212,12 +212,12 @@ void	Webserv::launchServer(void)
 				newClient(readyEvents[i].data.fd);
 			else if ((idx = isCgiFd(readyEvents[i].data.fd)) != -1)
 			{
-                int servIdx = idx >> 16;
-                int cgiIdx = idx & std::numeric_limits<int>::max();
+				int servIdx = idx >> 16;
+				int cgiIdx = idx & std::numeric_limits<int>::max();
 				if (readyEvents[i].events & EPOLLOUT)
-					_handleCgiInput(this->_servers[servIdx].getCgiMap()[cgiIdx]); //fd is CGI.writeFD
+					_handleCgiInput(this->_servers[servIdx].getCgiVec()[cgiIdx], this->_servers[servIdx]); //fd is CGI.writeFD
 				else
-					_handleCgiOutput(this->_servers[servIdx].getCgiMap()[cgiIdx], this->_servers[servIdx]); //fd is CGI.readFD
+					_handleCgiOutput(this->_servers[servIdx].getCgiVec()[cgiIdx], this->_servers[servIdx]); //fd is CGI.readFD
 			}
 			else
 			{
@@ -289,7 +289,7 @@ void	Webserv::handleRequest(int clientFd)
 	struct timeval	now;
 
 	ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
-    //logic for timeout handling
+	//logic for timeout handling
 	gettimeofday(&now, NULL);
 	client.getRequest().setRecvTimestamp(now);
 	int	lexReturn = -2;
@@ -306,7 +306,7 @@ void	Webserv::handleRequest(int clientFd)
 		{
 			std::cerr << e.what() << '\n';
 			client.getResponse().buildErrorResponse(400);
-            lexReturn = -1; //to get into write response logic
+			lexReturn = -1; //to get into write response logic
 		}
 		if (lexReturn > 0) //write in tempfile logic
 		{
@@ -330,10 +330,10 @@ void	Webserv::handleRequest(int clientFd)
 
 			// std::cout << "~~~~~ request successfully received ! content: ~~~~~~" << std::endl;
 			testPrint(clientFd, client); //put request dipsatcher here, build body here
-			this->_clientMap[clientFd].server->dispatchRequest(client, this->_epollFd);
-            //here, check if CGI in server and if writeFD != -1, else if readFD != -1
-            //put them in epoll control
-            
+			this->_clientMap[clientFd].server->dispatchRequest(client, this->_epollFd); //CGI added to epoll ctl in this function
+			
+			 
+
 			struct epoll_event event;
 			event.events = EPOLLOUT;
 			event.data.fd = clientFd;
@@ -349,36 +349,50 @@ void	Webserv::handleRequest(int clientFd)
 		closeClient(clientFd);
 }
 
-//is buffeer placeholder for where we want to write actually ?
-void	Webserv::_handleCgiInput(CGI &cgi)
+void    Webserv::_destroyCGI(int fd, Server &server)//readFD or writeFD of CGI
 {
-	long long   contentLength = this->_clientMap[cgi.getClientFD()].client.getRequest().getContentLength();
-    Response    &response = this->_clientMap[cgi.getClientFD()].client.getResponse();
-	char	    buffer[1024];
-    
-    (void)contentLength;
-    (void)response;
-    (void)buffer;
-    (void)cgi;
-	// //logic to change as we're either reading directly
-	// ssize_t bytesRead = read(cgi.inFileFd, buffer, sizeof(buffer) - 1);
+    epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, fd, NULL);
+    long cgiID = isCgiFd(fd);
+    std::vector<CGI>::iterator remove(server.getCgiVec().begin() + (cgiID & 16));
+    server.getCgiVec().erase(remove);
+    return ;
+}
 
-	// if (bytesRead > 0)
-	// {
-	// 	buffer[bytesRead] = 0;
-	// 	ssize_t bytesSentNow = write(this->_writeFd, buffer, bytesRead);
-	// 	cgi.bytesSent += bytesSentNow; //bytes sent already used in handleCGIOutput, rename needed
-	// 	if (cgi.bytesSent >= contentLength)
-	// 	{
-	// 		close(cgi.inFileFd);
-	// 		epoll_ctl(_epollFd, EPOLL_CTL_DEL, writeFd, NULL);
-	// 		close(writeFd);
-	// 		_cgiMap.erase(writeFd);
-	// 		cgi.writeFd = -1;
-	// 	}
-	// }
-	// else
-	// 	closeCgi(_cgiMap[writeFd].readFd);
+//is buffeer placeholder for where we want to write actually ?
+void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
+{
+    Client      &client = this->_clientMap[cgi.getClientFD()].client;
+	long long   contentLength = client.getRequest().getContentLength();
+	char	    buffer[4056];
+	
+	//logic to change as we're either reading directly
+    int     fileFD = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
+    if (fileFD == -1)
+    {
+        //open client fd
+        //send error 500
+        //clean up stuff
+    }
+	ssize_t bytesRead = read(fileFD, buffer, sizeof(buffer) - 1);
+
+	if (bytesRead > 0)
+	{
+		buffer[bytesRead] = 0;
+		ssize_t bytesSentNow = write(cgi.getWriteFD(), buffer, bytesRead);
+		cgi.addBytesWritten(bytesSentNow); //bytes sent already used in handleCGIOutput, rename needed
+		if (cgi.getBytesWritten() >= contentLength)
+		{
+            //cleanup handled in CGI destructor
+			close(fileFD);
+			_destroyCGI(cgi.getWriteFD(), server);
+		}
+	}
+	else
+    {
+        //add client FD back in epoll ?
+		_destroyCGI(cgi.getWriteFD(), server);
+    }
+    close(fileFD);
 }
 
 void	Webserv::_cgiError(CGI &cgi)
@@ -533,14 +547,14 @@ bool	Webserv::isListenSocket(int fd) const
 long  Webserv::isCgiFd(int fd) //return a pair to identify server and CGI OR a bitshifted number ??? like return codes and error codes
 {
 	for (size_t j = 0; j != this->_servers.size(); j++)
-    {
-        for (size_t i = 0; i != this->_servers[j].getCgiMap().size(); i++)
-        {
-            if (fd == this->_servers[j].getCgiMap()[i].getReadFD() || fd == this->_servers[j].getCgiMap()[i].getWriteFD())
-                return ((static_cast<int>(j) << 16) | static_cast<int>(i));
-        }
-    }
-    return (-1);
+	{
+		for (size_t i = 0; i != this->_servers[j].getCgiVec().size(); i++)
+		{
+			if (fd == this->_servers[j].getCgiVec()[i].getReadFD() || fd == this->_servers[j].getCgiVec()[i].getWriteFD())
+				return ((static_cast<int>(j) << 16) | static_cast<int>(i));
+		}
+	}
+	return (-1);
 }
 //t2 - t1
 int	getTimeDiff(timeval t1, timeval t2)
@@ -583,9 +597,9 @@ void    Webserv::handleTimeouts(void)
 	}
 	for (size_t j = 0; j != this->_servers.size(); j++)
     {
-        for (size_t i = 0; i != this->_servers[j].getCgiMap().size(); i++)
+        for (size_t i = 0; i != this->_servers[j].getCgiVec().size(); i++)
         {
-			CGI	&cgi = this->_servers[j].getCgiMap()[i];
+			CGI	&cgi = this->_servers[j].getCgiVec()[i];
 			cgiOutStamp = cgi.getOutTimestamp();
 			if (this->_clientMap[cgi.getClientFD()].client.getCgiResponseState() == 1 && (cgiOutStamp.tv_sec != 0 || cgiOutStamp.tv_usec != 0) && getTimeDiff(cgiOutStamp, now) > QUERY_TIMEOUT)
 			{

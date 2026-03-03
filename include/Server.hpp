@@ -44,7 +44,7 @@ class	Server: public Config
 		std::vector<t_socket>		&getSockets(void);
 		std::vector<Location>		&getLocations(void);
 
-		std::vector<CGI>			&getCgiMap(void);
+		std::vector<CGI>			&getCgiVec(void);
 		std::vector<std::string>	getParentEnv(void) const;
 
 		void	setName(std::string name);

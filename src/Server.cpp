@@ -60,7 +60,7 @@ std::vector<Location>	&Server::getLocations(void)
 	return (this->_locations);
 }
 
-std::vector<CGI>		&Server::getCgiMap(void)
+std::vector<CGI>		&Server::getCgiVec(void)
 {
 	return (this->_cgiVec);
 }
@@ -168,7 +168,8 @@ static int	isDir(char const *path)
 
 std::string	Server::buildPath(std::string URI, Location &loc) const
 {
-	std::string	path = "/home/mkeerewe/42/rank05/webserv_perso"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
+    //this field should not end w/ a '/'
+	std::string	path = "/home/mturgeon/rank5/webserv"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
 	if (!loc.getRoot().empty())
 		path.append(loc.getRoot());
 	else if (!this->_root.empty())

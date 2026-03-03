@@ -34,6 +34,7 @@ class CGI
 		int 						_readFd;
 		int							_inFileFd; //tempfile where the body is stored.
 		std::string					_outBuff;
+		ssize_t                     _bytesWritten;
 		ssize_t						_bytesSent;
 		std::string					_scriptPath;
 		//environment variables
@@ -51,8 +52,8 @@ class CGI
 		struct timeval	_outTimestamp;
 
 		void		_createChildProcess(int *inPipe, int *outPipe, char **childEnv);
-        void	    _setupEnvPOST(std::vector<std::string> env, char ***childEnv, Client &client);
-        void	    _setupEnvGET(std::string queryString, std::vector<std::string> env, char ***childEnv, Client &client);
+		void	    _setupEnvPOST(std::vector<std::string> env, char ***childEnv, Client &client);
+		void	    _setupEnvGET(std::string queryString, std::vector<std::string> env, char ***childEnv, Client &client);
 
 		void		_lexInput(std::string const &str);
 		void		_parseCGIOutput(std::list<t_cgiToken>::iterator &it);
@@ -71,7 +72,7 @@ class CGI
 		~CGI(void);
 		CGI	&operator=(CGI const &rhs);
 
-        void	closeCgi(int epollFD);
+		void	closeCgi(int epollFD);
 
 		//getters
 		int				getClientFD(void) const;
@@ -84,12 +85,14 @@ class CGI
 		std::string		getContentType(void) const;
 		Location		&getLocation(void);
 		struct timeval	getOutTimestamp(void) const;
+		ssize_t     	getBytesWritten(void) const;
 
 		//setters
 		void	setCGIContentLength(long long length);
 		void	setCGIContentType(std::string type);
-		void	addBytesSent(int bytes);
 		void	setOutTimestamp(struct timeval tv);
+		void	addBytesSent(ssize_t bytes);
+		void	addBytesWritten(ssize_t bytes);
 
 		//parse CGI output
 		int	lexCGIOutput(std::string &data);

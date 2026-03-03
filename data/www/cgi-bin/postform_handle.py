@@ -2,16 +2,8 @@ import sys
 import os
 from urllib.parse import parse_qs
 
-print("POST FORM HANDLE START")
-
-print("--- ENV ---")
-for key, value in os.environ.items():
-    print(f"{key}={value}")
-
-print("--- BODY ---")
-
 # Configuration
-LOG_FILE_PATH = "../upload/customer_list.log"
+LOG_FILE_PATH = "/home/mturgeon/rank5/webserv/data/upload/customer_list.log"
 HEADERS = [
     "First Name", "Last Name", "Sex", "Email Address", 
     "Marketing", "Annoying Status", "About You"
