@@ -343,3 +343,16 @@ void	CGI::addBytesWritten(ssize_t bytes)
 {
 	this->_bytesWritten += bytes;
 }
+Location    &CGI::getLocation(void)
+{
+    return (*(this->_loc));
+}
+
+struct timeval    CGI::getOutTimestamp(void) const
+{
+    return (this->_outTimestamp);
+}
+void    CGI::setOutTimestamp(struct timeval tv)
+{
+    this->_outTimestamp = tv;
+}

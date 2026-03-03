@@ -186,5 +186,5 @@ int	CGI::lexCGIOutput(std::string &data)
 	if (!(this->_outHeadersValid))
 		return (0);
 	else
-		return (this->_CGItokenList.clear(), this->_contentLength - this->_bytesRead);
+		return (this->_CGItokenList.clear(), 1);
 }

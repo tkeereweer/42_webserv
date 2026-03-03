@@ -384,7 +384,7 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 		{
             //cleanup handled in CGI destructor
 			close(fileFD);
-			_destroyCGI(cgi.getWriteFD(), server);
+            epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
 		}
 	}
 	else
@@ -440,7 +440,7 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 
 void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 {
-	char			buffer[11];
+	char			buffer[4056];
 	int				lexReturn = -3;
 	struct timeval	now;
 
@@ -509,7 +509,7 @@ void	Webserv::handleResponse(int clientFd)
 	struct timeval  now;
 
 	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
-	gettimeofday(&now, NULL);
+	gettimeofday(&now, NULL); //might cause trouble as forbidden function (stdtime works cuz timeout ~ 30-60s)
 	client.getResponse().setSendTimestamp(now);
 
 	if (bytesSentNow > 0)
