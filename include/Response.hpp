@@ -48,7 +48,7 @@ class Response
 		void    build405Response(bool getAllowed, bool postAllowed, bool deleteAllowed);
 		void    buildRouteResponse(std::string localPath);
 		void    buildRedirResponse(std::string redirPath);
-		void    buildGetCGIResponse(Client &client, int epollFD, Server &server, std::string scriptPath);
+		void    buildGetCGIResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath);
 		void	buildPostCgiResponse(void);
 		void    buildRawResponse(void);
 

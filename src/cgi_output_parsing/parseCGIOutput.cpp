@@ -146,7 +146,10 @@ void	CGI::_parseCGIOutput(std::list<t_cgiToken>::iterator &it)
 	if (it != this->_CGItokenList.end())
 		_readLeftovers(it);
 	else
+	{
+		this->_outBuff.clear();
 		this->_outComplete = true;
+	}
 	return ;
 }
 
@@ -178,15 +181,8 @@ int	CGI::lexCGIOutput(std::string &data)
 
 	if (this->_outComplete)
 		return (this->_CGItokenList.clear(), -1);
-	data.clear(); //issue here where we have deleted token list and we then clear data, losing info
+	// data.clear(); //issue here where we have deleted token list and we then clear data, losing info
 	this->_CGItokenList.clear();
-	// //pop back in data last potentially unread token then pop_back()
-	// if (!this->_CGItokenList.empty() && (this->_CGItokenList.back().type == CGI_WORD || this->_CGItokenList.back().type == CGI_SPACE))
-	// {
-	// 	data.append(this->_CGItokenList.back().val.begin(), this->_CGItokenList.back().val.end());
-	// 	this->_CGItokenList.pop_back();
-	// }
-
 	if (!(this->_outHeadersValid))
 		return (0);
 	else

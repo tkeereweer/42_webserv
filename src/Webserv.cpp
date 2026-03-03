@@ -243,6 +243,7 @@ void	Webserv::newClient(int listenFd)
 {
 	struct sockaddr	clientAddr;
 	socklen_t		addrSize = sizeof(clientAddr);
+	struct timeval	now;
 
 	int	clientFd = accept(listenFd, &clientAddr, &addrSize);
 	if (clientFd == -1)
@@ -267,7 +268,8 @@ void	Webserv::newClient(int listenFd)
 		close(clientFd);
 		throw(std::runtime_error(std::strerror(errno)));
 	}
-
+	gettimeofday(&now, NULL);
+	_clientMap[clientFd].client.getRequest().setRecvTimestamp(now);
 	std::cout << "New client with fd: " << clientFd << std::endl;
 }
 
@@ -385,7 +387,8 @@ void	Webserv::_cgiError(CGI &cgi)
 
 	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
 	this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
-	this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502);	
+	this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502);
+	// erase cgi from cgi map
 }
 
 int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
@@ -398,6 +401,7 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 	}
 	catch(const std::exception& e)
 	{
+		std::cout << e.what() << std::endl;
 		return (-2);
 	}
 	if (lexReturn != 0 && this->_clientMap[cgi.getClientFD()].client.getResponse().getContentType().empty())//first time done header parsing 
@@ -422,18 +426,19 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 
 void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 {
-	char	buffer[4056];
-	int		lexReturn = -3;
-	// struct timeval	now;
+	char			buffer[11];
+	int				lexReturn = -3;
+	struct timeval	now;
 
 	ssize_t	bytesRead = read(cgi.getReadFD(), buffer, sizeof(buffer) - 1);
 	//logic for timeout handling
+	gettimeofday(&now, NULL);
+	cgi.setOutTimestamp(now);
 	if (bytesRead != -1)
 	{
-		// long long	maxOutSize = loc.getMaxCGIOutput();
-		// if (maxOutSize == -1)
-		// 	maxOutSize = server.getMaxCGIOutput();
-		long long	maxOutSize = server.getMaxCGIOutput();
+		long long	maxOutSize = cgi.getLocation().getMaxCGIOutput();
+		if (maxOutSize == -1)
+			maxOutSize = server.getMaxCGIOutput();
 		buffer[bytesRead] = '\0';
 		cgi.getOutBuff().append(buffer);
 		if (this->_clientMap[cgi.getClientFD()].client.getResponse().getContentType().empty())
@@ -553,6 +558,7 @@ void    Webserv::handleTimeouts(void)
 	struct timeval	sendStamp;
 	bool			reqFlag;
 	bool			responseFlag;
+	struct timeval	cgiOutStamp;
 	
 	gettimeofday(&now, NULL);
 	for (std::map<int, t_connection>::iterator it = this->_clientMap.begin(); it != this->_clientMap.end(); it++)
@@ -573,6 +579,19 @@ void    Webserv::handleTimeouts(void)
 		{
 			client.getResponse().buildErrorResponse(408);
 			closeClient(client.getFd());
+		}
+	}
+	for (size_t j = 0; j != this->_servers.size(); j++)
+    {
+        for (size_t i = 0; i != this->_servers[j].getCgiMap().size(); i++)
+        {
+			CGI	&cgi = this->_servers[j].getCgiMap()[i];
+			cgiOutStamp = cgi.getOutTimestamp();
+			if (this->_clientMap[cgi.getClientFD()].client.getCgiResponseState() == 1 && (cgiOutStamp.tv_sec != 0 || cgiOutStamp.tv_usec != 0) && getTimeDiff(cgiOutStamp, now) > QUERY_TIMEOUT)
+			{
+				this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(503);
+				// erase cgi from cgi map
+			}
 		}
 	}
 }

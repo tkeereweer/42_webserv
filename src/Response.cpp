@@ -242,9 +242,9 @@ void    Response::buildRedirResponse(std::string redirPath)
 	return (buildRawResponse());
 }
 
-void    Response::buildGetCGIResponse(Client &client, int epollFD, Server &server, std::string scriptPath)
+void    Response::buildGetCGIResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath)
 {
-	server.getCgiMap().push_back(CGI(client.getRequest().getQueryParam(), server.getParentEnv(), client, scriptPath)); 
+	server.getCgiMap().push_back(CGI(client.getRequest().getQueryParam(), server.getParentEnv(), client, loc, scriptPath)); 
 	server.addCgiToEpoll(server.getCgiMap().back(), epollFD);
 	client.setCgiResponseState(1); //ongoing
     this->_protocol = "HTTP/1.0";

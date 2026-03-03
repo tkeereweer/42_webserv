@@ -136,7 +136,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 		std::string::iterator	end = URI.begin() + req.getURI().find_first_of("?");
 		std::string				relPath(URI.begin(), end);
 		req.setURI(relPath);
-		std::string				queryParam(end + 2, URI.end());
+		std::string				queryParam(end + 1, URI.end());
 		req.setQueryParam(queryParam);		
 	}
 
@@ -221,7 +221,7 @@ void	Server::handleGET(Client &client, Location &loc, int epollFD)
         //handle GET Cgi
 		(void)epollFD;
         if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
-			return (client.getResponse().buildGetCGIResponse(client, epollFD, *this, path)); //needs full path in there
+			return (client.getResponse().buildGetCGIResponse(client, &loc, epollFD, *this, path)); //needs full path in there
 		return (client.getResponse().buildRouteResponse(path));
 	}
 	catch (std::exception const &e)
@@ -243,7 +243,7 @@ void	Server::handlePOST(Location &loc, Client &client, std::vector<std::string> 
 			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
 			return (client.getResponse().buildErrorResponse(404));
 		}
-		this->_cgiVec.push_back(CGI(serverEnv, client, path)); 
+		this->_cgiVec.push_back(CGI(serverEnv, client, &loc, path)); 
 		addCgiToEpoll(this->_cgiVec.back(), epollFD);
 		client.setCgiResponseState(1);
 		return (client.getResponse().buildPostCgiResponse());

@@ -3,6 +3,7 @@
 
 # include "libraryHeader.hpp"
 # include "Request.hpp"
+# include "Location.hpp"
 
 class Client;
 
@@ -26,6 +27,7 @@ typedef struct s_cgiToken
 class CGI
 {
 	private:
+		Location					*_loc;
 		int							_clientFd;
 		int							_pid;
 		int							_writeFd;
@@ -45,7 +47,7 @@ class CGI
 		bool	_outComplete;
 		bool	_outHeadersValid;
 		//body bytes already read such that after body consumed, contentLength - bytesRead == 0
-		long long	    _bytesRead;
+		long long		_bytesRead;
 		struct timeval	_outTimestamp;
 
 		void		_createChildProcess(int *inPipe, int *outPipe, char **childEnv);
@@ -62,9 +64,9 @@ class CGI
 		CGI(void);
 	public:
 		//post method constructor
-		CGI(std::vector<std::string> env, Client &client, std::string scriptPath);
+		CGI(std::vector<std::string> env, Client &client, Location *loc, std::string scriptPath);
 		//get method constructor
-		CGI(std::string queryString, std::vector<std::string> env, Client &client, std::string scriptPath);
+		CGI(std::string queryString, std::vector<std::string> env, Client &client, Location *loc, std::string scriptPath);
 		CGI(CGI const &src);
 		~CGI(void);
 		CGI	&operator=(CGI const &rhs);
@@ -72,19 +74,22 @@ class CGI
         void	closeCgi(int epollFD);
 
 		//getters
-		int			getClientFD(void) const;
-		int 		getPID(void) const;
-		int			getWriteFD(void) const;
-		int			getReadFD(void) const;
-		std::string	&getOutBuff(void);
-		ssize_t		getBytesSent(void) const;
-		long long	getContentLength(void) const;
-		std::string	getContentType(void) const;
+		int				getClientFD(void) const;
+		int 			getPID(void) const;
+		int				getWriteFD(void) const;
+		int				getReadFD(void) const;
+		std::string		&getOutBuff(void);
+		ssize_t			getBytesSent(void) const;
+		long long		getContentLength(void) const;
+		std::string		getContentType(void) const;
+		Location		&getLocation(void);
+		struct timeval	getOutTimestamp(void) const;
 
 		//setters
 		void	setCGIContentLength(long long length);
 		void	setCGIContentType(std::string type);
 		void	addBytesSent(int bytes);
+		void	setOutTimestamp(struct timeval tv);
 
 		//parse CGI output
 		int	lexCGIOutput(std::string &data);

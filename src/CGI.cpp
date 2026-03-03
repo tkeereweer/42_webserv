@@ -2,12 +2,13 @@
 #include "../include/Webserv.hpp"
 
 
-CGI::CGI(void){}
+CGI::CGI(void) {}
 
 void	freeEnv(char **env);
 
 //constructor for get method CGI with query_string argument
-CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, std::string scriptPath):
+CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, Location *loc, std::string scriptPath):
+	_loc(loc),
 	_clientFd(client.getFd()),
 	_writeFd(-1),
 	_inFileFd(-1),
@@ -15,7 +16,9 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
     _scriptPath(scriptPath),
     _cgiEnv(env),
     _queryString(queryString),
-	_contentLength(-1)
+	_contentLength(-1),
+	_outComplete(false),
+	_outHeadersValid(false)
 {
 	//don't build input pipe but append queryString as query_string=<value here> to end of servEnv.
 
@@ -45,14 +48,20 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
 	// this->_inFileFd = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY); //get has no body
 	// if (this->_inFileFd == -1)
 	// 	throw (std::runtime_error(std::strerror(errno)));
+
+	this->_outTimestamp.tv_usec = 0;
+	this->_outTimestamp.tv_sec = 0;
 }
 
 //constructor for post method CGI
-CGI::CGI(std::vector<std::string> env, Client &client, std::string scriptPath):
+CGI::CGI(std::vector<std::string> env, Client &client, Location *loc, std::string scriptPath):
+	_loc(loc),
 	_clientFd(client.getFd()),
 	_bytesSent(0),
     _scriptPath(scriptPath),
-    _cgiEnv(env)
+    _cgiEnv(env),
+	_outComplete(false),
+	_outHeadersValid(false)
 {
 	//add what's below when switching back to relative paths
 	// std::string dot(".");
@@ -87,6 +96,9 @@ CGI::CGI(std::vector<std::string> env, Client &client, std::string scriptPath):
 	this->_inFileFd = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
 	if (this->_inFileFd == -1)
 		throw (std::runtime_error(std::strerror(errno)));
+
+	this->_outTimestamp.tv_usec = 0;
+	this->_outTimestamp.tv_sec = 0;
 }
 
 CGI::CGI(CGI const &src)
@@ -103,6 +115,7 @@ CGI	&CGI::operator=(CGI const &rhs)
 {
 	if (this != &rhs)
 	{
+		this->_loc = rhs._loc;
 		this->_clientFd = rhs._clientFd;
 		this->_pid = rhs._clientFd;
 		this->_writeFd = rhs._writeFd;
@@ -114,6 +127,9 @@ CGI	&CGI::operator=(CGI const &rhs)
 		this->_queryString = rhs._queryString;
 		this->_contentLength = rhs._contentLength;
 		this->_contentType = rhs._contentType;
+		this->_outComplete = rhs._outComplete;
+		this->_outHeadersValid = rhs._outHeadersValid;
+		this->_outTimestamp = rhs._outTimestamp;
 	}
 	return (*this);
 }
@@ -159,6 +175,16 @@ std::string	CGI::getContentType(void) const
 	return (this->_contentType);
 }
 
+Location	&CGI::getLocation(void)
+{
+	return (*(this->_loc));
+}
+
+struct timeval	CGI::getOutTimestamp(void) const
+{
+	return (this->_outTimestamp);
+}
+
 void	CGI::setCGIContentLength(long long length)
 {
 	this->_contentLength = length;
@@ -172,6 +198,11 @@ void	CGI::setCGIContentType(std::string type)
 void	CGI::addBytesSent(int bytes)
 {
 	this->_bytesSent += bytes;
+}
+
+void	CGI::setOutTimestamp(struct timeval tv)
+{
+	this->_outTimestamp = tv;
 }
 
 
