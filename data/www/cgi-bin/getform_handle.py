@@ -2,13 +2,13 @@ import sys
 import os
 from urllib.parse import parse_qs
 
-print("GET FORM HANDLE START")
+# print("GET FORM HANDLE START")
 
-print("--- ENV ---")
-for key, value in os.environ.items():
-    print(f"{key}={value}")
+# print("--- ENV ---")
+# for key, value in os.environ.items():
+#     print(f"{key}={value}")
 
-print("--- BODY ---")
+# print("--- BODY ---")
 
 # Configuration
 LOG_FILE_PATH = "../upload/customer_list.log"

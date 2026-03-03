@@ -80,6 +80,8 @@ class	Webserv
 		void		addCgiToEpoll(CGI &cgi);
 		void		_handleCgiInput(CGI &cgi);
 		void		_handleCgiOutput(CGI &cgi, Server &server);
+		void		_cgiError(CGI &cgi);
+		int			_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize);
 
 
 		void	testPrint(int clientFd, Client &client);

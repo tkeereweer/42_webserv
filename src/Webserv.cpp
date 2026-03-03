@@ -365,7 +365,7 @@ void	Webserv::_handleCgiInput(CGI &cgi)
 	// {
 	// 	buffer[bytesRead] = 0;
 	// 	ssize_t bytesSentNow = write(this->_writeFd, buffer, bytesRead);
-	// 	cgi.bytesSent += bytesSentNow;
+	// 	cgi.bytesSent += bytesSentNow; //bytes sent already used in handleCGIOutput, rename needed
 	// 	if (cgi.bytesSent >= contentLength)
 	// 	{
 	// 		close(cgi.inFileFd);
@@ -379,11 +379,51 @@ void	Webserv::_handleCgiInput(CGI &cgi)
 	// 	closeCgi(_cgiMap[writeFd].readFd);
 }
 
-//is buffer placeholder for where we want to read ?
+void	Webserv::_cgiError(CGI &cgi)
+{
+	struct epoll_event	event;
+
+	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
+	this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
+	this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502);	
+}
+
+int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
+{
+	int	lexReturn;
+
+	try
+	{
+		lexReturn = cgi.lexCGIOutput(cgi.getOutBuff());
+	}
+	catch(const std::exception& e)
+	{
+		return (-2);
+	}
+	if (lexReturn != 0 && this->_clientMap[cgi.getClientFD()].client.getResponse().getContentType().empty())//first time done header parsing 
+	{
+		if (cgi.getContentType().empty() || (maxOutSize != -1 && cgi.getContentLength() > maxOutSize) || (maxOutSize == -1 && cgi.getContentLength() == -1))
+		{
+			return (-2);
+		}
+		this->_clientMap[cgi.getClientFD()].client.getResponse().setContentType(cgi.getContentType());
+		if (cgi.getContentLength() != -1)
+		{
+			std::stringstream	stream;
+
+			stream << cgi.getContentLength();
+			this->_clientMap[cgi.getClientFD()].client.getResponse().setContentLength(stream.str());
+			this->_clientMap[cgi.getClientFD()].client.getResponse().setToRead(cgi.getContentLength());
+			this->_clientMap[cgi.getClientFD()].client.getResponse().buildRawResponse();
+		}
+	}
+	return (lexReturn);
+}
+
 void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 {
-	char			buffer[4056];
-	int				lexReturn = -2;
+	char	buffer[4056];
+	int		lexReturn = -3;
 	// struct timeval	now;
 
 	ssize_t	bytesRead = read(cgi.getReadFD(), buffer, sizeof(buffer) - 1);
@@ -398,36 +438,8 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 		cgi.getOutBuff().append(buffer);
 		if (this->_clientMap[cgi.getClientFD()].client.getResponse().getContentType().empty())
 		{
-			try
-			{
-				lexReturn = cgi.lexCGIOutput(cgi.getOutBuff());
-			}
-			catch(const std::exception& e)
-			{
-				std::cerr << e.what() << '\n';
-				struct epoll_event	event;
-				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
-				//build error response
-			}
-		}
-		if (lexReturn != 0 && this->_clientMap[cgi.getClientFD()].client.getResponse().getContentType().empty())//first time done header parsing 
-		{
-			if (cgi.getContentType().empty() || (maxOutSize != -1 && cgi.getContentLength() > maxOutSize) || (maxOutSize == -1 && cgi.getContentLength() == -1))
-			{
-				struct epoll_event	event;
-				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
-				//build errror
-			}
-			this->_clientMap[cgi.getClientFD()].client.getResponse().setContentType(cgi.getContentType());
-			if (cgi.getContentLength() != -1)
-			{
-				std::stringstream	stream;
-
-				stream << cgi.getContentLength();
-				this->_clientMap[cgi.getClientFD()].client.getResponse().setContentLength(stream.str());
-				this->_clientMap[cgi.getClientFD()].client.getResponse().setToRead(cgi.getContentLength());
-				this->_clientMap[cgi.getClientFD()].client.getResponse().buildRawResponse();
-			}
+			if ((lexReturn = _setupCGIResponseHeaders(cgi, maxOutSize)) == -2)
+				return(_cgiError(cgi));
 		}
 		if (lexReturn != 0)
 		{
@@ -445,7 +457,7 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 			}
 			else
 			{
-				if (bytesRead == 0)
+				if (bytesRead == 0) //we are done reading
 				{
 					struct epoll_event	event;
 					std::stringstream	stream;
@@ -462,18 +474,12 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 				cgi.addBytesSent(cgi.getOutBuff().length());
 				cgi.getOutBuff().clear();
 				if (cgi.getBytesSent() > maxOutSize)
-				{
-					struct epoll_event	event;
-					epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
-					//build error
-				}
+					return (_cgiError(cgi));
 			}
 		}
 	}
 	else
-	{
-		//error
-	}
+		return (_cgiError(cgi));
 }
 
 void	Webserv::handleResponse(int clientFd)
