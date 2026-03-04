@@ -27,10 +27,11 @@ class	Server: public Config
 
 		int			matchLocation(std::string URI) const;
 		bool		isMethodAllowed(t_method method, Location &loc) const;
+		void		_getQueryParams(Request &req);
 		std::string	buildPath(std::string URI, Location &loc) const;
 		void		handleDir(Client &client, Location &loc, std::string dir) const;
-		void		handleGET(Client &client, Location &loc, int epollFD);
-		void		handlePOST(Location &loc, Client &client, std::vector<std::string> serverEnv, int epollFD);
+		void		handleGET(Client &client, Location &loc, std::string path, int epollFD);
+		void		handlePOST(Location &loc, Client &client, std::string path, std::vector<std::string> serverEnv, int epollFD);
 		void		handleDELETE(Client &client, Location &loc) const;
 
 		Server(void);

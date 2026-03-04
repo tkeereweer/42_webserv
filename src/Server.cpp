@@ -125,11 +125,16 @@ bool	Server::isMethodAllowed(t_method method, Location &loc) const
 		return (false);
 }
 
-void	Server::dispatchRequest(Client &client, int epollFD)
+static int	isDir(char const *path)
 {
-	Request		&req = client.getRequest();
-	Response	&resp = client.getResponse();
+   struct stat	statbuf;
+   if (stat(path, &statbuf) != 0)
+	   return (0);
+   return S_ISDIR(statbuf.st_mode);
+}
 
+void	Server::_getQueryParams(Request &req)
+{
 	if (req.getURI().find_first_of("?") != std::string::npos)
 	{
 		std::string 			URI = req.getURI();
@@ -139,17 +144,40 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 		std::string				queryParam(end + 1, URI.end());
 		req.setQueryParam(queryParam);		
 	}
+}
 
+void	Server::dispatchRequest(Client &client, int epollFD)
+{
+	Request		&req = client.getRequest();
+	Response	&resp = client.getResponse();
+
+	_getQueryParams(req);
 	int	locIdx = matchLocation(req.getURI());
 	if (locIdx == -1)
 		return (resp.buildErrorResponse(404));
 	Location	&loc = this->_locations[locIdx];
+	if (!loc.getRedir().second.empty())
+		return (client.getResponse().buildRedirResponse(loc.getRedir().second));
+	else if (!this->_redirect.second.empty())
+		return (client.getResponse().buildRedirResponse(this->_redirect.second));
+	if ((loc.getMaxBody() != -1 && req.getContentLength() > loc.getMaxBody())
+		|| (this->_maxBodySizeClientReq != -1 && req.getContentLength() > this->_maxBodySizeClientReq))
+		return (resp.buildErrorResponse(413));
+	std::string	path = buildPath(req.getURI(), loc);
+	if (isDir(path.c_str()))
+		return (handleDir(client, loc, path));
+	if (access(path.c_str(), R_OK) == -1)
+	{
+		std::cout << "access errno: " << strerror(errno) << std::endl;
+		std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
+		return (client.getResponse().buildErrorResponse(404));
+	}
 	if (!isMethodAllowed(req.getMethod(), loc))
 		return (resp.build405Response(loc.getAcceptGET(), loc.getAcceptPOST(), loc.getAcceptDELETE()));
 	if (req.getMethod() == GET)
-		handleGET(client, loc, epollFD);
+		handleGET(client, loc, path, epollFD);
 	else if (req.getMethod() == POST)
-		handlePOST(loc, client, this->_parentEnv, epollFD);
+		handlePOST(loc, client, path, this->_parentEnv, epollFD);
 	// else
 	// 	handleDELETE(client, loc);
 }
@@ -157,14 +185,6 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 /*******************************************************************************
 *						HANDLE GET/POST/DELETE
 *******************************************************************************/
-
-static int	isDir(char const *path)
-{
-   struct stat	statbuf;
-   if (stat(path, &statbuf) != 0)
-	   return (0);
-   return S_ISDIR(statbuf.st_mode);
-}
 
 std::string	Server::buildPath(std::string URI, Location &loc) const
 {
@@ -201,26 +221,12 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir) const
 		return (client.getResponse().buildRouteResponse("/index.html")); //is that what's supposed to happen ? I don't think I understood the right path...
 }
 
-void	Server::handleGET(Client &client, Location &loc, int epollFD)
+void	Server::handleGET(Client &client, Location &loc, std::string path, int epollFD)
 {
 	try 
 	{	
 		Request	&req = client.getRequest();
-		if (!loc.getRedir().second.empty())
-			return (client.getResponse().buildRedirResponse(loc.getRedir().second));
-		else if (!this->_redirect.second.empty())
-			return (client.getResponse().buildRedirResponse(this->_redirect.second));
-		std::string	path = buildPath(req.getURI(), loc);
-		if (isDir(path.c_str()))
-			return (handleDir(client, loc, path));
-		if (access(path.c_str(), R_OK) == -1)
-		{   
-			std::cout << "access errno: " << strerror(errno) << std::endl;
-			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
-			return (client.getResponse().buildErrorResponse(404));
-		}
         //handle GET Cgi
-		(void)epollFD;
         if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
 			return (client.getResponse().buildGetCGIResponse(client, &loc, epollFD, *this, path)); //needs full path in there
 		return (client.getResponse().buildRouteResponse(path));
@@ -233,17 +239,10 @@ void	Server::handleGET(Client &client, Location &loc, int epollFD)
 }
 
 
-void	Server::handlePOST(Location &loc, Client &client, std::vector<std::string> serverEnv, int epollFD)
+void	Server::handlePOST(Location &loc, Client &client, std::string path, std::vector<std::string> serverEnv, int epollFD)
 {
 	try
 	{
-		std::string path = buildPath(client.getRequest().getURI(), loc);
-		if (access(path.c_str(), R_OK) == -1)
-		{   
-			std::cout << "access errno: " << strerror(errno) << std::endl;
-			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
-			return (client.getResponse().buildErrorResponse(404));
-		}
 		this->_cgiVec.push_back(CGI(serverEnv, client, &loc, path)); 
 		addCgiToEpoll(this->_cgiVec.back(), epollFD);
 		client.setCgiResponseState(1);
