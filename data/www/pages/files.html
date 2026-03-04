@@ -9,17 +9,18 @@
     <body>
         <header>
             <span class="header-title"
-                ><a href="index.html">At your Webservice</a></span
+                ><a href="/index.html">At your Webservice</a></span
             >
         </header>
         <main>
             <h1 class="page-title">FILES</h1>
             <div>
-                <!-- add action attribute to define where to send the request -->
-                <form method="post">
+                <form action="../cgi-bin/upload_handle.py" method="POST" enctype="multipart/form-data">
                     <label for="myfile">Select a file:</label>
                     <input type="file" id="myfile" name="myfile" />
+                    <button type="submit" class="card">Upload</button>
                 </form>
+                <p><a href="../cgi-bin/list_files.py">View uploaded files</a></p>
             </div>
         </main>
     </body>
