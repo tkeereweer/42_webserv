@@ -66,6 +66,7 @@ class Response
 		void	setContentLength(std::string length);
 		void	setContentType(std::string type);
 		void	setToRead(size_t bytes);
+		void	setReturnCode(short code);
 };
 
 #endif

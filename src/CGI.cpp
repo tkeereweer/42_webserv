@@ -17,6 +17,7 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
     _cgiEnv(env),
     _queryString(queryString),
 	_contentLength(-1),
+	_status(-1),
 	_outComplete(false),
 	_outHeadersValid(false)
 {
@@ -60,6 +61,8 @@ CGI::CGI(std::vector<std::string> env, Client &client, Location *loc, std::strin
 	_bytesSent(0),
     _scriptPath(scriptPath),
     _cgiEnv(env),
+	_contentLength(-1),
+	_status(-1),
 	_outComplete(false),
 	_outHeadersValid(false)
 {
@@ -183,6 +186,11 @@ Location	&CGI::getLocation(void)
 struct timeval	CGI::getOutTimestamp(void) const
 {
 	return (this->_outTimestamp);
+}
+
+int	CGI::getStatus(void) const
+{
+	return (this->_status);
 }
 
 void	CGI::setCGIContentLength(long long length)
