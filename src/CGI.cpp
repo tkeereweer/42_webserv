@@ -18,6 +18,7 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
     _cgiEnv(env),
     _queryString(queryString),
 	_contentLength(-1),
+	_status(-1),
 	_outComplete(false),
 	_outHeadersValid(false)
 {
@@ -62,7 +63,8 @@ CGI::CGI(std::vector<std::string> env, Client &client, Location *loc, std::strin
     _bytesSent(0),
     _scriptPath(scriptPath),
     _cgiEnv(env),
-    _contentLength(-1),
+	_contentLength(-1),
+	_status(-1),
 	_outComplete(false),
 	_outHeadersValid(false)
 {
@@ -324,6 +326,21 @@ std::string	CGI::getContentType(void) const
 	return (this->_contentType);
 }
 
+Location	&CGI::getLocation(void)
+{
+	return (*(this->_loc));
+}
+
+struct timeval	CGI::getOutTimestamp(void) const
+{
+	return (this->_outTimestamp);
+}
+
+int	CGI::getStatus(void) const
+{
+	return (this->_status);
+}
+
 void	CGI::setCGIContentLength(long long length)
 {
 	this->_contentLength = length;
@@ -343,15 +360,7 @@ void	CGI::addBytesWritten(ssize_t bytes)
 {
 	this->_bytesWritten += bytes;
 }
-Location    &CGI::getLocation(void)
-{
-    return (*(this->_loc));
-}
 
-struct timeval    CGI::getOutTimestamp(void) const
-{
-    return (this->_outTimestamp);
-}
 void    CGI::setOutTimestamp(struct timeval tv)
 {
     this->_outTimestamp = tv;

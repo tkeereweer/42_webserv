@@ -320,3 +320,8 @@ void	Response::setToRead(size_t bytes)
 {
 	this->_toRead = bytes;
 }
+
+void	Response::setReturnCode(short code)
+{
+	this->_returnCode = code;
+}

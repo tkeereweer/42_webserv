@@ -27,8 +27,8 @@ bool	CGI::_parseContentLength(std::list<t_cgiToken>::iterator &it)
 	if (it->type != CGI_COLON)
 		throw(std::runtime_error("invalid header: content-length"));
 	it++;
-	// if (it->type != SPACE)
-	// 	throw(std::runtime_error("invalid header: content-length"));
+	if (it->type != CGI_SPACE)
+		throw(std::runtime_error("invalid header: content-length"));
 	while (it->type == CGI_SPACE)
 		it++;
 	if (it->type != CGI_WORD || it->val.size() == 0)
@@ -98,6 +98,50 @@ bool	CGI::_parseContentType(std::list<t_cgiToken>::iterator &it)
 	return (true);
 }
 
+static bool	isHandledStatus(int code)
+{
+	if (code == 200 || code == 202 || code == 204
+		|| code == 300 || code == 301 || code == 302
+		|| code == 400 || code == 403 || code == 404 || code == 405 || code == 408 || code == 411 || code == 413
+		|| code == 500 || code == 502 || code == 503)
+		return (true);
+	return (false);
+}
+
+bool	CGI::_parseStatus(std::list<t_cgiToken>::iterator &it)
+{
+	std::string res = "";
+	int			status;
+
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), tolower);
+	if (it->val != "status")
+		return (false);
+	it++;
+	if (it->type != CGI_COLON)
+		throw(std::runtime_error("invalid header: status"));
+	it++;
+	if (it->type != CGI_SPACE)
+		throw(std::runtime_error("invalid header: status"));
+	while (it->type == CGI_SPACE)
+		it++;
+	if (it->type != CGI_WORD || it->val.size() == 0)
+		throw(std::runtime_error("invalid header: status"));
+	for (std::string::iterator ite = it->val.begin(); ite != it->val.end(); ite++)
+	{
+		if (!isdigit(*ite))
+			throw(std::runtime_error("invalid header: status"));
+	}
+	res += it->val;
+	it++;
+	if (it->type != CGI_LB)
+		throw(std::runtime_error("invalid header: status"));
+	status = atoi(res.c_str());
+	if (!isHandledStatus(status))
+		return (false);
+	this->_status = atoi(res.c_str());
+	return (true);
+}
+
 void	CGI::_readLeftovers(std::list<t_cgiToken>::iterator &it)
 {
 	this->_outBuff.clear();
@@ -113,7 +157,8 @@ void	CGI::_parseCGIOutput(std::list<t_cgiToken>::iterator &it)
 		//these functions must advance it beyond next CRLFwhen succesful
 		//throw exception if header format not respected --> in body overshoots in bad requests handled
 		if (!(_parseContentLength(it)
-			|| _parseContentType(it)))
+			|| _parseContentType(it)
+			|| _parseStatus(it)))
 		{
 			try
 			{
