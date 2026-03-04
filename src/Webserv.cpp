@@ -402,7 +402,7 @@ void	Webserv::_cgiError(CGI &cgi)
 	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
 	this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
 	this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502);
-	// erase cgi from cgi map
+	_destroyCGI(cgi.getReadFD(), *(this->_clientMap[cgi.getClientFD()].server));
 }
 
 int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
@@ -478,6 +478,7 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 					struct epoll_event	event;
 					epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
 					this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
+					_destroyCGI(cgi.getReadFD(), *(this->_clientMap[cgi.getClientFD()].server));
 				}
 			}
 			else
@@ -496,6 +497,7 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 					event.events = EPOLLOUT;
 					event.data.fd = cgi.getClientFD();
 					epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event);
+					_destroyCGI(cgi.getReadFD(), *(this->_clientMap[cgi.getClientFD()].server));
 					return ;
 				}
 				this->_clientMap[cgi.getClientFD()].client.getResponse().getEntityBody().append(cgi.getOutBuff());
