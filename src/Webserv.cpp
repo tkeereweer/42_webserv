@@ -425,7 +425,8 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 			return (-2);
 		}
 		this->_clientMap[cgi.getClientFD()].client.getResponse().setContentType(cgi.getContentType());
-		this->_clientMap[cgi.getClientFD()].client.getResponse().setReturnCode(cgi.getStatus());
+		if (cgi.getStatus() != -1)
+			this->_clientMap[cgi.getClientFD()].client.getResponse().setReturnCode(cgi.getStatus());
 		if (cgi.getContentLength() != -1)
 		{
 			std::stringstream	stream;

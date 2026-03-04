@@ -3,7 +3,7 @@ import os
 from urllib.parse import parse_qs
 
 # Configuration
-LOG_FILE_PATH = "/home/mturgeon/rank5/webserv/data/upload/customer_list.log"
+LOG_FILE_PATH = "/home/mkeerewe/42/rank05/webserv_perso/data/upload/customer_list.log"
 HEADERS = [
     "First Name", "Last Name", "Sex", "Email Address", 
     "Marketing", "Annoying Status", "About You"

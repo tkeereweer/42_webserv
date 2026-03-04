@@ -138,6 +138,7 @@ CGI	&CGI::operator=(CGI const &rhs)
 		this->_outComplete = rhs._outComplete;
 		this->_outHeadersValid = rhs._outHeadersValid;
 		this->_outTimestamp = rhs._outTimestamp;
+		this->_status = rhs._status;
 	}
 	return (*this);
 }
