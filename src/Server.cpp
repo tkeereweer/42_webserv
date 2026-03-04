@@ -164,20 +164,14 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 		|| (this->_maxBodySizeClientReq != -1 && req.getContentLength() > this->_maxBodySizeClientReq))
 		return (resp.buildErrorResponse(413));
 	std::string	path = buildPath(req.getURI(), loc);
-	if (isDir(path.c_str()))
+	if (isDir(path.c_str()) || *(path.rbegin()) == '/')
 		return (handleDir(client, loc, path));
-	if (access(path.c_str(), R_OK) == -1)
-	{
-		std::cout << "access errno: " << strerror(errno) << std::endl;
-		std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
-		return (client.getResponse().buildErrorResponse(404));
-	}
 	if (!isMethodAllowed(req.getMethod(), loc))
 		return (resp.build405Response(loc.getAcceptGET(), loc.getAcceptPOST(), loc.getAcceptDELETE()));
 	if (req.getMethod() == GET)
 		handleGET(client, loc, path, epollFD);
 	else if (req.getMethod() == POST)
-		handlePOST(loc, client, path, this->_parentEnv, epollFD);
+		handlePOST(loc, client, path, epollFD);
 	// else
 	// 	handleDELETE(client, loc);
 }
@@ -226,6 +220,12 @@ void	Server::handleGET(Client &client, Location &loc, std::string path, int epol
 	try 
 	{	
 		Request	&req = client.getRequest();
+		if (access(path.c_str(), R_OK) == -1)
+		{
+			std::cout << "access errno: " << strerror(errno) << std::endl;
+			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
+			return (client.getResponse().buildErrorResponse(404));
+		}
         //handle GET Cgi
         if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
 			return (client.getResponse().buildGetCGIResponse(client, &loc, epollFD, *this, path)); //needs full path in there
@@ -238,15 +238,45 @@ void	Server::handleGET(Client &client, Location &loc, std::string path, int epol
 	}
 }
 
+void	Server::uploadFile(Location &loc, Client &client)
+{
+	Request			&req = client.getRequest();
+	std::ifstream	ifs;
+	std::string		uploadPath = "/home/mkeerewe/42/rank05/webserv_perso";
+	std::string		fileName;
+	std::ofstream	ofs;
+	char			buffer[4056];
+	std::streamsize	read;
 
-void	Server::handlePOST(Location &loc, Client &client, std::string path, std::vector<std::string> serverEnv, int epollFD)
+	uploadPath.append(loc.getUploadStore());
+	fileName  = std::string(req.getURI(), req.getURI().find_last_of('/') + 1);
+	if (fileName.empty())
+		return (client.getResponse().buildErrorResponse(400));
+	uploadPath += "/" + fileName;
+	ifs.open(req.getBodyFilename().c_str(), std::ios_base::in | std::ios_base::binary);
+	ofs.open(uploadPath.c_str(), std::ios_base::out | std::ios_base::binary);
+	if (!ifs.is_open() || !ofs.is_open())
+		return (client.getResponse().buildErrorResponse(500));
+	while (!ifs.eof() && !ifs.bad())
+	{
+		ifs.read(buffer, sizeof(buffer));
+		read = ifs.gcount();
+		ofs.write(buffer, read);
+	}
+	client.getResponse().buildPostResponse(uploadPath);
+}
+
+void	Server::handlePOST(Location &loc, Client &client, std::string path, int epollFD)
 {
 	try
 	{
-		this->_cgiVec.push_back(CGI(serverEnv, client, &loc, path)); 
-		addCgiToEpoll(this->_cgiVec.back(), epollFD);
-		client.setCgiResponseState(1);
-		return (client.getResponse().buildPostCgiResponse());
+		Request	&req = client.getRequest();
+        //handle POST Cgi
+        if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
+			return (client.getResponse().buildPostCgiResponse(client, &loc, epollFD, *this, path));
+		if (loc.getUploadStore().empty())
+			return (client.getResponse().buildErrorResponse(403));
+		return (uploadFile(loc, client));
 	}
 	catch(const std::exception& e)
 	{

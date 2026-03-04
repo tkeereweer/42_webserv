@@ -285,7 +285,7 @@ void	Webserv::testPrint(int clientFd, Client &client)
 void	Webserv::handleRequest(int clientFd)
 {
 	Client&		    client = _clientMap[clientFd].client;
-	char		    buffer[1024];
+	char		    buffer[4056];
 	struct timeval	now;
 
 	ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);

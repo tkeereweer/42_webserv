@@ -284,6 +284,10 @@ void	Webserv::parseUpload(std::list<t_conf_token>::iterator &token, std::list<t_
 	token++;
 	if (token == end || token->type != CONF_WORD)
 		throw(std::runtime_error("Error in upload_store directive config"));
+	if (token->value[0] != '/')
+		throw(std::runtime_error("Error in upload_store directive config"));
+	while (*(token->value.rbegin()) == '/' && token->value.length() > 1)
+		token->value.erase(token->value.length() - 1);
 	location.setUploadStore(token->value);
 	token++;
 	if (token == end || token->type != SEMICOLON)
