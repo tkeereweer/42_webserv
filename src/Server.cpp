@@ -151,6 +151,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	Request		&req = client.getRequest();
 	Response	&resp = client.getResponse();
 
+
 	_getQueryParams(req);
 	int	locIdx = matchLocation(req.getURI());
 	if (locIdx == -1)
@@ -178,8 +179,8 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 		handleGET(client, loc, path, epollFD);
 	else if (req.getMethod() == POST)
 		handlePOST(loc, client, path, this->_parentEnv, epollFD);
-	// else
-	// 	handleDELETE(client, loc);
+	else
+		handleDELETE(client, path);
 }
 
 /*******************************************************************************
@@ -189,7 +190,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 std::string	Server::buildPath(std::string URI, Location &loc) const
 {
     //this field should not end w/ a '/'
-	std::string	path = "/home/mkeerewe/42/rank05/webserv_perso"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
+	std::string	path = "/home/sravizza/42/rank05/webserv_perso"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
 	if (!loc.getRoot().empty())
 		path.append(loc.getRoot());
 	else if (!this->_root.empty())
@@ -253,6 +254,24 @@ void	Server::handlePOST(Location &loc, Client &client, std::string path, std::ve
 		return (client.getResponse().buildErrorResponse(500));
 	}
 }
+
+
+void	Server::handleDELETE(Client &client, std::string& path) const
+{
+	try
+	{
+		return (client.getResponse().buildDelResponse(client, path));
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+		return (client.getResponse().buildErrorResponse(500));
+	}
+	
+
+
+}
+
 
 void	Server::addCgiToEpoll(CGI &cgi, int epollFD) const
 {

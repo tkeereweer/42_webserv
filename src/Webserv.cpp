@@ -202,11 +202,11 @@ void	Webserv::launchServer(void)
 	this->_epollFd = this->setupEpoll();
 	while (1)
 	{
-		std::cout << "\nWaiting for connections" << std::endl;
+		// std::cout << "\nWaiting for connections" << std::endl;
 		readyFds = epoll_wait(_epollFd, readyEvents, 10, -1);
 		for (int i  = 0; i < readyFds; i++)
 		{
-			activityNotif(readyEvents[i]);
+			// activityNotif(readyEvents[i]);
 
 			if (isListenSocket(readyEvents[i].data.fd))
 				newClient(readyEvents[i].data.fd);

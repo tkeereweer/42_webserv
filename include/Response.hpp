@@ -51,6 +51,7 @@ class Response
 		void    buildGetCGIResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath);
 		void	buildPostCgiResponse(void);
 		void    buildRawResponse(void);
+		void	buildDelResponse(Client& client, std::string& path);
 
 		//getter
 		std::string 	&getRawResponse(void);

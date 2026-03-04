@@ -1,5 +1,6 @@
 #include "../include/CGI.hpp"
 #include "../include/Webserv.hpp"
+#include <sstream>
 
 
 CGI::CGI(void) {}
@@ -35,6 +36,9 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
 	//setup environment variables
 	char	**childEnv;
 	_setupEnvGET(queryString, env, &childEnv, client);
+
+		std::string	progPath = getProgPath(this->_scriptPath);
+		std::cout<<"PROGPATH:"<<progPath<<std::endl;
 
 	//create child
 	this->_pid = fork();
@@ -220,14 +224,41 @@ void	CGI::_setupEnvGET(std::string queryString, std::vector<std::string> env, ch
 	(*childEnv)[childEnvSize - 1] = NULL;
 }
 
-std::string	getProgPath(std::string scriptPath)
+std::string	CGI::getProgPath(std::string& scriptPath)
 {
 	std::string ext = scriptPath.substr(scriptPath.find_last_of('.'));
+	std::string prog;
 	if (ext == ".py")
-		return "/usr/bin/python3";
-	if (ext == ".php")
-		return "/usr/bin/php";
-	throw(std::runtime_error(".py or .php only"));
+		return (pathfinder("python3"));
+		// return "/usr/bin/python3";
+	else if (ext == ".php")
+		return (pathfinder("php"));
+		// return "/usr/bin/php";
+	else
+		throw(std::runtime_error(".py or .php only"));
+	
+	
+}
+
+std::string	CGI::pathfinder(std::string prog)
+{
+	std::vector<std::string>::iterator it = std::find(_cgiEnv.begin(), _cgiEnv.end(), "PATH=");
+	for (int i = 0; i < (int)_cgiEnv.size(); i++)
+	{
+		std::cout << _cgiEnv[i] << std::endl;
+	}
+	if (it == _cgiEnv.end())
+		throw(std::runtime_error("no path in env"));
+
+	std::istringstream 			ss(*it);
+	std::string 				token;
+	while (std::getline(ss, token, ':'))
+	{
+		std::string path = token + "/" + prog;
+		if (access(path.c_str(), F_OK) == 0)
+			return (path);
+	}
+	throw (std::runtime_error("path not working"));
 }
 
 void	CGI::_createChildProcess(int *inPipe, int *outPipe, char **childEnv)
