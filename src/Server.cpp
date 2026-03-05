@@ -174,7 +174,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	else if (req.getMethod() == POST)
 		handlePOST(loc, client, path, epollFD);
 	else
-		handleDELETE(client, loc);
+		handleDELETE(client, path);
 }
 
 /*******************************************************************************
