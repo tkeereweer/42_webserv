@@ -240,25 +240,28 @@ std::string	CGI::getProgPath(std::string& scriptPath)
 	
 }
 
-std::string	CGI::pathfinder(std::string prog)
+std::string CGI::pathfinder(std::string prog)
 {
-	std::vector<std::string>::iterator it = std::find(_cgiEnv.begin(), _cgiEnv.end(), "PATH=");
-	for (int i = 0; i < (int)_cgiEnv.size(); i++)
+	std::vector<std::string>::iterator	it;
+
+	for (it = _cgiEnv.begin(); it != _cgiEnv.end(); it++)
 	{
-		std::cout << _cgiEnv[i] << std::endl;
+		if (it->substr(0, 5) == "PATH=")
+			break;
 	}
+
 	if (it == _cgiEnv.end())
 		throw(std::runtime_error("no path in env"));
 
-	std::istringstream 			ss(*it);
-	std::string 				token;
+	std::istringstream	ss(it->substr(5));
+	std::string			token;
 	while (std::getline(ss, token, ':'))
 	{
-		std::string path = token + "/" + prog;
+		std::string		path = token + "/" + prog;
 		if (access(path.c_str(), F_OK) == 0)
 			return (path);
 	}
-	throw (std::runtime_error("path not working"));
+	throw(std::runtime_error("path not found for: " + prog));
 }
 
 void	CGI::_createChildProcess(int *inPipe, int *outPipe, char **childEnv)
