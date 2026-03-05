@@ -276,8 +276,9 @@ void	Webserv::newClient(int listenFd)
 
 void	Webserv::testPrint(int clientFd, Client &client)
 {
-	std::cout << client.getRequest() << std::endl;
-	std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
+	// std::cout << client.getRequest() << std::endl;
+	// std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
+	(void)client;
 	_clientMap[clientFd].client.clearReadBuffer();
 }
 

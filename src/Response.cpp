@@ -308,10 +308,10 @@ void	Response::buildDelResponse(Client &client, std::string& path)
 	}
 
 	else
-		_returnCode = 200; //204 + reason?
+		_returnCode = 200; //204 could do
 
 	this->_protocol = "HTTP/1.0";
-	this->_reasonPhrase = path + " has been deleted";
+	this->_reasonPhrase = "File has been deleted";
 
 	return (buildRawResponse());
 }

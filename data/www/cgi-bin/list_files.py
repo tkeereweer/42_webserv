@@ -12,10 +12,14 @@ def list_files():
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>At your Webservice \xe2\x80\x94 Uploaded Files</title>
+    <title>At your Webservice — Files</title>
     <link rel="stylesheet" href="../css/style.css"/>
     <style>
-        .file-list { list-style: none; padding: 0; }
+        .upload-row { display: flex; align-items: center; gap: 0.2rem; margin-bottom: 0.5rem; }
+        .upload-row input[type="file"] { margin-right: -0.5rem; }
+        .upload-btn { display: none; padding: 0.05rem 0.5rem; font-size: 0.8rem; line-height: 1; cursor: pointer; }
+        .files-heading { margin-top: 0.5rem; margin-bottom: 0.3rem; }
+        .file-list { list-style: none; padding: 0; margin-top: 0; }
         .file-item { display: flex; align-items: center; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #ccc; }
         .delete-btn { cursor: pointer; color: red; background: none; border: none; font-size: 1.1rem; font-weight: bold; padding: 0 0.4rem; }
         .delete-btn:hover { opacity: 0.6; }
@@ -25,8 +29,16 @@ def list_files():
     <header>
         <span class="header-title"><a href="/index.html">At your Webservice</a></span>
     </header>
-    <main>
-        <h1 class="page-title">UPLOADED FILES</h1>""")
+    <main class="main-team">
+        <h1 class="page-title">FILES</h1>
+
+        <form class="upload-row" action="../cgi-bin/upload_handle.php" method="POST" enctype="multipart/form-data">
+            <label for="myfile">Select a file:</label>
+            <input type="file" id="myfile" name="myfile" onchange="document.getElementById('upload-btn').style.display='inline-block'" />
+            <button type="submit" id="upload-btn" class="upload-btn">Upload</button>
+        </form>
+
+        <h2 class="files-heading">Uploaded Files</h2>""")
 
     if not files:
         print("        <p>No files uploaded yet.</p>")
@@ -40,8 +52,7 @@ def list_files():
             print('            </li>')
         print('        </ul>')
 
-    print("""        <p><a href="/files.html">Upload a file</a></p>
-    </main>
+    print("""    </main>
     <script>
         function deleteFile(filename) {
             fetch('/upload/' + encodeURIComponent(filename), { method: 'DELETE' })
