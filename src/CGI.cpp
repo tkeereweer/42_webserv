@@ -28,7 +28,6 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
 	//add what's below when switching back to relative paths
 	// std::string dot(".");
 	// this->_scriptPath.insert(this->_scriptPath.begin(), dot.begin(), dot.end());
-	int	inPipe[2];
 	int outPipe[2];
 	if (pipe(outPipe) == -1)
 		throw (std::runtime_error(std::strerror(errno)));
@@ -45,16 +44,10 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
 	if (this->_pid == -1)
 		throw (std::runtime_error(std::strerror(errno)));
 	if (this->_pid == 0)
-		_createChildProcess(inPipe, outPipe, childEnv);
-	close(inPipe[0]);
+		_createChildProcess(NULL, outPipe, childEnv);
 	close(outPipe[1]);
 	freeEnv(childEnv);
-
 	this->_readFd = outPipe[0];
-	// this->_inFileFd = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY); //get has no body
-	// if (this->_inFileFd == -1)
-	// 	throw (std::runtime_error(std::strerror(errno)));
-
 	this->_outTimestamp.tv_usec = 0;
 	this->_outTimestamp.tv_sec = 0;
 }
@@ -122,7 +115,7 @@ CGI::~CGI(void)
 	// if (this->_writeFd >= 0)
 	// 	close(this->_writeFd);
     // if process is hanging, call kill()
-	close(this->_inFileFd);
+	// close(this->_inFileFd);
 }
 
 CGI	&CGI::operator=(CGI const &rhs)
@@ -131,7 +124,7 @@ CGI	&CGI::operator=(CGI const &rhs)
 	{
 		this->_loc = rhs._loc;
 		this->_clientFd = rhs._clientFd;
-		this->_pid = rhs._clientFd;
+		this->_pid = rhs._pid;
 		this->_writeFd = rhs._writeFd;
 		this->_readFd = rhs._readFd;
 		this->_inFileFd = rhs._inFileFd;
@@ -269,24 +262,28 @@ std::string CGI::pathfinder(std::string prog)
 
 void	CGI::_createChildProcess(int *inPipe, int *outPipe, char **childEnv)
 {
+	if (inPipe != NULL)
+	{
 		dup2(inPipe[0], STDIN_FILENO);
-		dup2(outPipe[1], STDOUT_FILENO);
 		close(inPipe[1]);
-		close(outPipe[0]);
+	}
+	dup2(outPipe[1], STDOUT_FILENO);
+	close(outPipe[0]);
 
-		std::string	progPath = getProgPath(this->_scriptPath);
+	std::string	progPath = getProgPath(this->_scriptPath);
 
-		char		*path = const_cast<char*>(progPath.c_str());
-		char		*argv[] = {	path,
-								const_cast<char*>(this->_scriptPath.c_str()),
-								NULL};
-		if (this->_cgiEnv.empty() || execve(path, argv, childEnv) == -1)
-		{
-			freeEnv(childEnv);
+	char		*path = const_cast<char*>(progPath.c_str());
+	char		*argv[] = {	path,
+							const_cast<char*>(this->_scriptPath.c_str()),
+							NULL};
+	if (this->_cgiEnv.empty() || execve(path, argv, childEnv) == -1)
+	{
+		freeEnv(childEnv);
+		if (inPipe != NULL)
 			close(inPipe[0]);
-			close(outPipe[1]);
-			exit(1);
-		}
+		close(outPipe[1]);
+		exit(1);
+	}
 }
 
 
@@ -294,29 +291,6 @@ void	CGI::_createChildProcess(int *inPipe, int *outPipe, char **childEnv)
 /*******************************************************************************
 *						READ / WRITE / CLOSE
 *******************************************************************************/
-
-void	CGI::closeCgi(int epollFD)
-{
-
-	int	status;
-	waitpid(this->_pid, &status, WNOHANG); //non blocking 
-	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-	{
-		// script error,  return appropriate code
-	}
-
-	if (this->_writeFd != -1)
-	{
-		close(this->_inFileFd);
-		epoll_ctl(epollFD, EPOLL_CTL_DEL, this->_writeFd, NULL);
-		close(this->_writeFd);
-		// _cgiMap.erase(cgi.writeFd); //handled in handleCgiOutput
-		this->_writeFd = -1;
-	}
-	epoll_ctl(epollFD, EPOLL_CTL_DEL, this->_readFd, NULL);
-	close(this->_readFd);
-	// _cgiMap.erase(readFd); //handle in handleCgiOutput	
-}
 
 //getters
 int			CGI::getClientFD(void) const

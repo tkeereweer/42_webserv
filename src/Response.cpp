@@ -6,7 +6,7 @@
 
 
 Response::Response(void):
-	_returnCode(0), 
+	_returnCode(0),
 	_toRead(0),
 	_responseComplete(false)
 {
@@ -47,7 +47,7 @@ Response::Response(Response const &src)
 	*this = src;
 }
 
-//dedicated function for 
+//dedicated function for
 void    Response::build405Response(bool getAllowed, bool postAllowed, bool deleteAllowed)
 {
 	this->_protocol = "HTTP/1.0";
@@ -119,7 +119,7 @@ void    Response::buildErrorResponse(short code)
 			struct stat buf;
 			if (stat("/home/sravizza/42/rank05/webserv_perso/data/www/pages/errors/500.html", &buf) == 0)
 			{
-				std::cout << "500 error page file doesnt exist\n"; 
+				std::cout << "500 error page file doesnt exist\n";
 				this->_bodyFilepath = "";
 				break;
 			} //get out of infinite loop if error page doesn't exist
@@ -172,7 +172,7 @@ void	Response::buildRawResponse(void)
 		this->_rawResponse += this->_contentLength;
 		this->_rawResponse += "\r\n";
 	}
-	if (this->_contentType != "") 
+	if (this->_contentType != "")
 	{
 		this->_rawResponse += "Content-Type: ";
 		this->_rawResponse += this->_contentType;
@@ -217,7 +217,7 @@ void    Response::_writeFileToResponse(std::string filepath)
 	sstr << size;
 	this->_contentLength += sstr.str();
 	this->_toRead = size;
-	//set to empty for now as it is the server's responsibility to encode or not. 
+	//set to empty for now as it is the server's responsibility to encode or not.
 	//content length would refer to the encoded length.
 	this->_contentEncoding = "";
 	//for now, only text/html or text/css handled with this method
@@ -225,7 +225,7 @@ void    Response::_writeFileToResponse(std::string filepath)
 	this->_contentType = "text/";
 	this->_contentType += extension;
 	this->_contentType += "; charset=utf-8";
-	return ;  
+	return ;
 }
 
 //read the right ressource, set content type, content length and encoding and write in rawPath
@@ -264,7 +264,7 @@ void	Response::buildPostResponse(std::string createdFile)
 
 void    Response::buildGetCGIResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath)
 {
-	server.getCgiVec().push_back(CGI(client.getRequest().getQueryParam(), server.getParentEnv(), client, loc, scriptPath)); 
+	server.getCgiVec().push_back(CGI(client.getRequest().getQueryParam(), server.getParentEnv(), client, loc, scriptPath));
 	server.addCgiToEpoll(server.getCgiVec().back(), epollFD);
 	client.setCgiResponseState(1); //ongoing
     this->_protocol = "HTTP/1.0";
@@ -275,7 +275,7 @@ void    Response::buildGetCGIResponse(Client &client, Location *loc, int epollFD
 
 void Response::buildPostCgiResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath)
 {
-	server.getCgiVec().push_back(CGI(server.getParentEnv(), client, loc, scriptPath)); 
+	server.getCgiVec().push_back(CGI(server.getParentEnv(), client, loc, scriptPath));
 	server.addCgiToEpoll(server.getCgiVec().back(), epollFD);
 	client.setCgiResponseState(1);
     this->_protocol = "HTTP/1.0";

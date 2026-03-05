@@ -1,13 +1,19 @@
-import sys
 import os
+import sys
 from urllib.parse import parse_qs
 
 # Configuration
-LOG_FILE_PATH = "/home/mkeerewe/42/rank05/webserv_perso/data/upload/customer_list.log"
+LOG_FILE_PATH = "/workspace/data/upload/customer_list.log"
 HEADERS = [
-    "First Name", "Last Name", "Sex", "Email Address", 
-    "Marketing", "Annoying Status", "About You"
+    "First Name",
+    "Last Name",
+    "Sex",
+    "Email Address",
+    "Marketing",
+    "Annoying Status",
+    "About You",
 ]
+
 
 def handle_post():
     # 1. Ensure the directory exists
@@ -19,7 +25,7 @@ def handle_post():
     # 3. Read the body from stdin
     # CGI POST data is passed through stdin
     try:
-        content_length = int(os.environ.get('CONTENT_LENGTH', 0))
+        content_length = int(os.environ.get("CONTENT_LENGTH", 0))
         body = sys.stdin.read(content_length)
     except (ValueError, EOFError):
         body = ""
@@ -36,7 +42,7 @@ def handle_post():
     sex = get_val("sex")
     email = get_val("email")
     about_you = get_val("about_you")[:200]  # Hard limit to 200 chars
-    
+
     # Checkboxes only appear in the POST body if they are checked
     marketing = "Yes" if "marketing" in parsed_data else "No"
     annoying = "True" if "annoying_status" in parsed_data else "False"
@@ -46,13 +52,19 @@ def handle_post():
         # If it's a new file, write the header row
         if not file_exists:
             f.write("\t".join(HEADERS) + "\n")
-        
+
         # Prepare the entry
         entry = [
-            first_name, last_name, sex, email, 
-            marketing, annoying, about_you.replace("\n", " ") # Keep it on one line
+            first_name,
+            last_name,
+            sex,
+            email,
+            marketing,
+            annoying,
+            about_you.replace("\n", " "),  # Keep it on one line
         ]
         f.write("\t".join(entry) + "\n")
+
 
 if __name__ == "__main__":
     handle_post()

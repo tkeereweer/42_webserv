@@ -142,7 +142,7 @@ void	Server::_getQueryParams(Request &req)
 		std::string				relPath(URI.begin(), end);
 		req.setURI(relPath);
 		std::string				queryParam(end + 1, URI.end());
-		req.setQueryParam(queryParam);		
+		req.setQueryParam(queryParam);
 	}
 }
 
@@ -218,8 +218,8 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir) const
 
 void	Server::handleGET(Client &client, Location &loc, std::string path, int epollFD)
 {
-	try 
-	{	
+	try
+	{
 		Request	&req = client.getRequest();
 		if (access(path.c_str(), R_OK) == -1)
 		{
@@ -243,7 +243,7 @@ void	Server::uploadFile(Location &loc, Client &client)
 {
 	Request			&req = client.getRequest();
 	std::ifstream	ifs;
-	std::string		uploadPath = "/home/mkeerewe/42/rank05/webserv_perso";
+	std::string		uploadPath = "/workspace";
 	std::string		fileName;
 	std::ofstream	ofs;
 	char			buffer[4056];
@@ -309,13 +309,19 @@ void	Server::addCgiToEpoll(CGI &cgi, int epollFD) const
 	ev.events = EPOLLIN;
 	ev.data.fd = cgi.getReadFD();
 	fcntl(cgi.getReadFD(), F_SETFL, O_NONBLOCK);
-	epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getReadFD(), &ev);
+	if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getReadFD(), &ev) == -1)
+	{
+
+	}
 
 	if (cgi.getWriteFD() != -1)
 	{
 		ev.events = EPOLLOUT;
 		ev.data.fd = cgi.getWriteFD();
 		fcntl(cgi.getWriteFD(), F_SETFL, O_NONBLOCK);
-		epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getWriteFD(), &ev);
+		if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getWriteFD(), &ev) == -1)
+		{
+			
+		}
 	}
 }
