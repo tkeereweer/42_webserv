@@ -72,7 +72,6 @@ void    Response::build405Response(bool getAllowed, bool postAllowed, bool delet
 	return (buildRawResponse());
 }
 
-
 //call dedicated function for 405
 void    Response::buildErrorResponse(short code)
 {
@@ -249,6 +248,20 @@ void    Response::buildRedirResponse(std::string redirPath)
 	return (buildRawResponse());
 }
 
+void	Response::buildPostResponse(std::string createdFile)
+{
+	std::stringstream	stream;
+
+	this->_returnCode = 201;
+	this->_protocol = "HTTP/1.0";
+	this->_reasonPhrase = "Created";
+	this->_entityBody.append(createdFile);
+	stream << createdFile.length();
+	this->_contentLength = stream.str();
+	this->_toRead = createdFile.length();
+	return (buildRawResponse());
+}
+
 void    Response::buildGetCGIResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath)
 {
 	server.getCgiVec().push_back(CGI(client.getRequest().getQueryParam(), server.getParentEnv(), client, loc, scriptPath)); 
@@ -260,8 +273,11 @@ void    Response::buildGetCGIResponse(Client &client, Location *loc, int epollFD
     return ;
 }
 
-void Response::buildPostCgiResponse(void)
+void Response::buildPostCgiResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath)
 {
+	server.getCgiVec().push_back(CGI(server.getParentEnv(), client, loc, scriptPath)); 
+	server.addCgiToEpoll(server.getCgiVec().back(), epollFD);
+	client.setCgiResponseState(1);
     this->_protocol = "HTTP/1.0";
     this->_returnCode = 200;
     this->_reasonPhrase = "OK";

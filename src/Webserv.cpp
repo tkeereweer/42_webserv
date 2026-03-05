@@ -285,7 +285,7 @@ void	Webserv::testPrint(int clientFd, Client &client)
 void	Webserv::handleRequest(int clientFd)
 {
 	Client&		    client = _clientMap[clientFd].client;
-	char		    buffer[1024];
+	char		    buffer[4056];
 	struct timeval	now;
 
 	ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
@@ -317,31 +317,31 @@ void	Webserv::handleRequest(int clientFd)
 		}
 		if (lexReturn == -1)
 		{
-			/*
-				when using CGI, it's better to remove fd from epoll 
-				and re-add it in EPOLLOUT mode once response is build
-
-					epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
-
-				otherwise switch to EPOLLOUT once response has been build 
-				(i.e remove it from down here)
-
-			*/
-
 			// std::cout << "~~~~~ request successfully received ! content: ~~~~~~" << std::endl;
 			testPrint(clientFd, client); //put request dipsatcher here, build body here
 			this->_clientMap[clientFd].server->dispatchRequest(client, this->_epollFd); //CGI added to epoll ctl in this function
-			
-			 
-
-			struct epoll_event event;
-			event.events = EPOLLOUT;
-			event.data.fd = clientFd;
-			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientFd, &event) == -1)
+	 
+			if (this->_clientMap[clientFd].client.getCgiResponseState() == 0)
 			{
-				_clientMap.erase(clientFd);
-				close(clientFd);
-				throw(std::runtime_error(std::strerror(errno)));
+				struct epoll_event event;
+				event.events = EPOLLOUT;
+				event.data.fd = clientFd;
+				if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientFd, &event) == -1)
+				{
+					_clientMap.erase(clientFd);
+					close(clientFd);
+					throw(std::runtime_error(std::strerror(errno)));
+				}
+			}
+			else
+			{
+				struct epoll_event event;
+				if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, &event) == -1)
+				{
+					_clientMap.erase(clientFd);
+					close(clientFd);
+					throw(std::runtime_error(std::strerror(errno)));
+				}
 			}
 		}
 	}
@@ -402,7 +402,7 @@ void	Webserv::_cgiError(CGI &cgi)
 	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
 	this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
 	this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502);
-	// erase cgi from cgi map
+	_destroyCGI(cgi.getReadFD(), *(this->_clientMap[cgi.getClientFD()].server));
 }
 
 int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
@@ -430,11 +430,15 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 		if (cgi.getContentLength() != -1)
 		{
 			std::stringstream	stream;
+			struct epoll_event	event;
 
 			stream << cgi.getContentLength();
 			this->_clientMap[cgi.getClientFD()].client.getResponse().setContentLength(stream.str());
 			this->_clientMap[cgi.getClientFD()].client.getResponse().setToRead(cgi.getContentLength());
 			this->_clientMap[cgi.getClientFD()].client.getResponse().buildRawResponse();
+			event.events = EPOLLOUT;
+			event.data.fd = cgi.getClientFD();
+			epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event);
 		}
 	}
 	return (lexReturn);
@@ -474,6 +478,7 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 					struct epoll_event	event;
 					epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
 					this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
+					_destroyCGI(cgi.getReadFD(), *(this->_clientMap[cgi.getClientFD()].server));
 				}
 			}
 			else
@@ -489,6 +494,10 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 					this->_clientMap[cgi.getClientFD()].client.getResponse().setToRead(cgi.getBytesSent());
 					this->_clientMap[cgi.getClientFD()].client.getResponse().buildRawResponse();
 					this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
+					event.events = EPOLLOUT;
+					event.data.fd = cgi.getClientFD();
+					epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event);
+					_destroyCGI(cgi.getReadFD(), *(this->_clientMap[cgi.getClientFD()].server));
 					return ;
 				}
 				this->_clientMap[cgi.getClientFD()].client.getResponse().getEntityBody().append(cgi.getOutBuff());

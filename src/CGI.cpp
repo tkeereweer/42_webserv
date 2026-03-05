@@ -117,7 +117,10 @@ CGI::CGI(CGI const &src)
 
 CGI::~CGI(void)
 {
-    //close pipes
+	// if (this->_readFd >= 0)
+    // 	close(this->_readFd);
+	// if (this->_writeFd >= 0)
+	// 	close(this->_writeFd);
     // if process is hanging, call kill()
 	close(this->_inFileFd);
 }

@@ -31,8 +31,9 @@ class	Server: public Config
 		std::string	buildPath(std::string URI, Location &loc) const;
 		void		handleDir(Client &client, Location &loc, std::string dir) const;
 		void		handleGET(Client &client, Location &loc, std::string path, int epollFD);
-		void		handlePOST(Location &loc, Client &client, std::string path, std::vector<std::string> serverEnv, int epollFD);
+		void		handlePOST(Location &loc, Client &client, std::string path, int epollFD);
 		void		handleDELETE(Client &client, std::string& path) const;
+		void		uploadFile(Location &loc, Client &client);
 
 		Server(void);
 	public:
