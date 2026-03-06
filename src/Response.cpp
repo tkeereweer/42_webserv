@@ -60,7 +60,7 @@ void    Response::build405Response(bool getAllowed, bool postAllowed, bool delet
 	else if ((it = server->getErrorPages().find(405)) != server->getErrorPages().end())
 		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
 	else
-		this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/405.html";
+		this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/405.html";
 	if (getAllowed || postAllowed || deleteAllowed)
 		this->_allow = "Allow: ";
 	if (getAllowed)
@@ -87,7 +87,7 @@ void    Response::buildErrorResponse(short code, Server *server, Location *loc)
 
 	this->_protocol = "HTTP/1.0";
 	this->_bodyFilepath.clear();
-	if ((it = loc->getErrorPages().find(code)) != loc->getErrorPages().end())
+	if (loc && (it = loc->getErrorPages().find(code)) != loc->getErrorPages().end()) //problem here when loc is NULL
 		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
 	else if ((it = server->getErrorPages().find(code)) != server->getErrorPages().end())
 		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
@@ -97,61 +97,61 @@ void    Response::buildErrorResponse(short code, Server *server, Location *loc)
 			this->_returnCode = 400;
 			this->_reasonPhrase = "Bad Request";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/400.html";
+				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/400.html";
 			break ;
 		case (403):
 			this->_returnCode = 403;
 			this->_reasonPhrase = "Forbidden";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/403.html";
+				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/403.html";
 			break ;
 		case (404):
 			this->_returnCode = 404;
 			this->_reasonPhrase = "Not Found";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/404.html";
+				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/404.html";
 			break ;
 		case (408):
 			this->_returnCode = 408;
 			this->_reasonPhrase = "Request Timeout";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/408.html";
+				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/408.html";
 			break ;
 		case (409):
 			this->_returnCode = 409;
 			this->_reasonPhrase = "Conflict";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/409.html";
+				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/409.html";
 			break ;
 		case (411):
 			this->_returnCode = 411;
 			this->_reasonPhrase = "Length Required";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/411.html";
+				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/411.html";
 			break ;
 		case (413):
 			this->_returnCode = 413;
 			this->_reasonPhrase = "Payload Too Large";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/413.html";
+				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/413.html";
 			break ;
 		case (500):
 			this->_returnCode = 500;
 			this->_reasonPhrase = "Internal Server Error";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/500.html";
+				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/500.html";
 			break ;
 		case (502):
 			this->_returnCode = 502;
 			this->_reasonPhrase = "Bad Gateway";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/502.html";
+				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/502.html";
 			break ;
 		case (503):
 			this->_returnCode = 503;
 			this->_reasonPhrase = "Service Unavailable";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/503.html";
+				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/503.html";
 			break ;
 		default:
 			throw (std::runtime_error("no matching error code handled"));
@@ -163,13 +163,9 @@ void	Response::buildRawResponse(void)
 {
 	std::stringstream returnCodeStr;
 
-	this->_rawResponse += this->_protocol;
-	this->_rawResponse += " ";
+	this->_rawResponse += this->_protocol + " ";
 	returnCodeStr << this->_returnCode;
-	this->_rawResponse += returnCodeStr.str();
-	this->_rawResponse += " ";
-	this->_rawResponse += this->_reasonPhrase;
-	this->_rawResponse += "\r\n";
+	this->_rawResponse += returnCodeStr.str() + " " + this->_reasonPhrase + "\r\n";
 	if (!this->_bodyFilepath.empty())
 		_writeFileToResponse(this->_bodyFilepath);
 	if (!this->_location.empty())
@@ -287,10 +283,10 @@ void    Response::buildGetCGIResponse(Client &client, Location *loc, int epollFD
 	server.getCgiVec().push_back(CGI(client.getRequest().getQueryParam(), server.getParentEnv(), client, loc, scriptPath));
 	server.addCgiToEpoll(server.getCgiVec().back(), epollFD);
 	client.setCgiResponseState(1); //ongoing
-    this->_protocol = "HTTP/1.0";
-    this->_returnCode = 200;
-    this->_reasonPhrase = "OK";
-    return ;
+	this->_protocol = "HTTP/1.0";
+	this->_returnCode = 200;
+	this->_reasonPhrase = "OK";
+	return ;
 }
 
 void Response::buildPostCgiResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath)
@@ -298,10 +294,10 @@ void Response::buildPostCgiResponse(Client &client, Location *loc, int epollFD, 
 	server.getCgiVec().push_back(CGI(server.getParentEnv(), client, loc, scriptPath));
 	server.addCgiToEpoll(server.getCgiVec().back(), epollFD);
 	client.setCgiResponseState(1);
-    this->_protocol = "HTTP/1.0";
-    this->_returnCode = 200;
-    this->_reasonPhrase = "OK";
-    return ;
+	this->_protocol = "HTTP/1.0";
+	this->_returnCode = 200;
+	this->_reasonPhrase = "OK";
+	return ;
 }
 
 void	Response::buildDelResponse(Client &client, std::string& path, Server *server, Location *loc)
@@ -311,7 +307,7 @@ void	Response::buildDelResponse(Client &client, std::string& path, Server *serve
 	std::cout<<"path: "<< path << std::endl;
 	std::cout<<"filename: "<< filename << std::endl;
 
-    errno = 0;
+	errno = 0;
 	if (unlink(path.c_str()) == -1)
 	{
 		if (errno == EACCES || errno == EPERM || errno == EROFS)
@@ -328,6 +324,45 @@ void	Response::buildDelResponse(Client &client, std::string& path, Server *serve
 	this->_protocol = "HTTP/1.0";
 	this->_reasonPhrase = "File has been deleted";
 
+	return (buildRawResponse());
+}
+
+void	Response::buildDirectoryListingResponse(std::string &dir, Server *server, Location *loc)
+{
+	std::string	pageName;
+	std::string	content;
+
+	this->_protocol = "HTTP/1.0";
+	this->_returnCode = 200;
+	this->_reasonPhrase = "OK";
+	this->_contentType = "text/html; charset=utf-8";
+	content = "<!DOCTYPE html><html><head><title>Index of " + dir + "</title></head><body><h1>Index of " + dir + "</h1><hr><pre>\n";
+	if (dir != "/") //don't do the following if there are no pages up the tree
+		content += "<a href=\"../\">../</a>\n";
+
+	errno = 0;
+	DIR *tmp = opendir(dir.c_str());
+	if (tmp == NULL)
+		return (buildErrorResponse(500, server, loc));
+	struct dirent *name = readdir(tmp);
+	if (!name && errno != 0)
+		return (buildErrorResponse(500, server, loc));
+	while (name)
+	{
+		std::string temp = name->d_name;
+		std::string::iterator start = temp.begin() + temp.find_last_of("/") + 1;
+		pageName = std::string(start, temp.end()); 
+		if (pageName != "." && pageName != "..")
+			content += "<a href=\"" + pageName + "\">" + pageName + "</a>\n";
+		name = readdir(tmp);
+	}
+
+	content += "</pre><hr></body></html>";
+	std::stringstream sstr;
+	sstr << content.size();
+	this->_contentLength = sstr.str();
+	this->_toRead = content.size();
+	this->_entityBody = content;
 	return (buildRawResponse());
 }
 

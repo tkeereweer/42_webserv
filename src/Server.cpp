@@ -184,7 +184,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 std::string	Server::buildPath(std::string URI, Location &loc) const
 {
     //this field should not end w/ a '/'
-	std::string	path = "/home/mkeerewe/42/rank05/webserv_perso"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
+	std::string	path = "/home/mturgeon/rank5/webserv"; //TODO relative path
 	if (!loc.getRoot().empty())
 		path.append(loc.getRoot());
 	else if (!this->_root.empty())
@@ -193,27 +193,27 @@ std::string	Server::buildPath(std::string URI, Location &loc) const
 	return (path);
 }
 
+
 void	Server::handleDir(Client &client, Location &loc, std::string dir)
 {
-	std::string	path;
-
 	if (!loc.getIndex().empty()) //build location path first if it exists
-		return (client.getResponse().buildRouteResponse(buildPath(loc.getIndex(), loc), this, &loc));
+		return (client.getResponse().buildRouteResponse(buildPath("/" + loc.getIndex(), loc), this, &loc));
 	else if (!this->_index.empty()) //else, build default location path for server
-		return (client.getResponse().buildRouteResponse(buildPath(this->_index, loc), this, &loc));
-	if (!path.empty())
-		return (client.getResponse().buildRouteResponse("/index.html", this, &loc)); //if failed, return homepage
+		return (client.getResponse().buildRouteResponse(buildPath("/" + this->_index, loc), this, &loc));
+	// else if (!path.empty())
+	// 	return (client.getResponse().buildRouteResponse("/index.html", this, &loc)); //if failed, return homepage
 	else if (loc.getAutoIndex() == 1 || (loc.getAutoIndex() != 0 && this->_autoIndex == 1))
 	{
-		std::cout << "directory listing, for now just /index.html" << std::endl;
-		return (client.getResponse().buildRouteResponse("/index.html", this, &loc));
+        //build path with dir
+		return (client.getResponse().buildDirectoryListingResponse(dir, this, &loc));
 		// return directory listing
 	}
 	dir.append("index.html");
-	if (access(dir.c_str(), R_OK) == -1)
+    std::string	path = buildPath(dir, loc);
+	if (access(path.c_str(), R_OK) == -1)
 		return (client.getResponse().buildErrorResponse(403, this, &loc));
 	else
-		return (client.getResponse().buildRouteResponse("/index.html", this, &loc)); //is that what's supposed to happen ? I don't think I understood the right path...
+		return (client.getResponse().buildRouteResponse(path, this, &loc)); 
 }
 
 void	Server::handleGET(Client &client, Location &loc, std::string path, int epollFD)
@@ -243,7 +243,7 @@ void	Server::uploadFile(Location &loc, Client &client)
 {
 	Request			&req = client.getRequest();
 	std::ifstream	ifs;
-	std::string		uploadPath = "/home/mkeerewe/42/rank05/webserv_perso";
+	std::string		uploadPath = "/home/mturgeon/rank5/webserv";
 	std::string		fileName;
 	std::ofstream	ofs;
 	char			buffer[4056];

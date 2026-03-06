@@ -53,6 +53,7 @@ class Response
 		void	buildPostCgiResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath);
 		void    buildRawResponse(void);
 		void	buildDelResponse(Client& client, std::string& path, Server *server, Location *loc);
+        void	buildDirectoryListingResponse(std::string &dir, Server *server, Location *loc);
 
 		//getter
 		std::string 	&getRawResponse(void);
