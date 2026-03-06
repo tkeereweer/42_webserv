@@ -38,7 +38,7 @@ class	Webserv
 		std::map<int, Server*>		_serverMap;// matches socketfd w/ corresponding server
 		std::map<int, t_connection>	_clientMap; //int: fd of connection
 		int							_epollFd;
-        std::vector<std::string>	_parentEnv;
+		std::vector<std::string>	_parentEnv;
 
 		// configuration file parsing
 		void					parseListen(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
@@ -64,10 +64,10 @@ class	Webserv
 		void	activityNotif(struct epoll_event	readyEvents);
 		bool	isListenSocket(int fd) const;
 		void	newClient(int listenFd);
-    	void	handleRequest(int clientFd);
+		void	handleRequest(int clientFd);
 		void	handleResponse(int clientFd);
-        void    handleTimeouts(void);
-    	void	closeClient(int clientFd);
+		void    handleTimeouts(void);
+		void	closeClient(int clientFd);
 		
 		// HandleCgi
 		long        isCgiFd(int fd);
@@ -82,11 +82,11 @@ class	Webserv
 		void		_handleCgiOutput(CGI &cgi, Server &server);
 		void		_cgiError(CGI &cgi);
 		int			_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize);
-        void        _destroyCGI(int fd, Server &server);
+		void        _destroyCGI(int fd, Server &server);
 
 
 		void	testPrint(int clientFd, Client &client);
-        Webserv(void);
+		Webserv(void);
 
 	public:
 		Webserv(char **envp);

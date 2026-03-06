@@ -4,6 +4,7 @@
 // #include <unistd.h>
 // #include <fcntl.h>
 
+std::string	resolvePath(std::string relPath);
 
 Response::Response(void):
 	_returnCode(0),
@@ -60,7 +61,7 @@ void    Response::build405Response(bool getAllowed, bool postAllowed, bool delet
 	else if ((it = server->getErrorPages().find(405)) != server->getErrorPages().end())
 		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
 	else
-		this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/405.html";
+		this->_bodyFilepath = resolvePath("data/www/default-errors/405.html");
 	if (getAllowed || postAllowed || deleteAllowed)
 		this->_allow = "Allow: ";
 	if (getAllowed)
@@ -97,61 +98,61 @@ void    Response::buildErrorResponse(short code, Server *server, Location *loc)
 			this->_returnCode = 400;
 			this->_reasonPhrase = "Bad Request";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/400.html";
+				this->_bodyFilepath = resolvePath("data/www/default-errors/400.html");
 			break ;
 		case (403):
 			this->_returnCode = 403;
 			this->_reasonPhrase = "Forbidden";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/403.html";
+				this->_bodyFilepath = resolvePath("data/www/default-errors/403.html");
 			break ;
 		case (404):
 			this->_returnCode = 404;
 			this->_reasonPhrase = "Not Found";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/404.html";
+				this->_bodyFilepath = resolvePath("data/www/default-errors/404.html");
 			break ;
 		case (408):
 			this->_returnCode = 408;
 			this->_reasonPhrase = "Request Timeout";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/408.html";
+				this->_bodyFilepath = resolvePath("data/www/default-errors/408.html");
 			break ;
 		case (409):
 			this->_returnCode = 409;
 			this->_reasonPhrase = "Conflict";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/409.html";
+				this->_bodyFilepath = resolvePath("data/www/default-errors/409.html");
 			break ;
 		case (411):
 			this->_returnCode = 411;
 			this->_reasonPhrase = "Length Required";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/411.html";
+				this->_bodyFilepath = resolvePath("data/www/default-errors/411.html");
 			break ;
 		case (413):
 			this->_returnCode = 413;
 			this->_reasonPhrase = "Payload Too Large";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/413.html";
+				this->_bodyFilepath = resolvePath("data/www/default-errors/413.html");
 			break ;
 		case (500):
 			this->_returnCode = 500;
 			this->_reasonPhrase = "Internal Server Error";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/500.html";
+				this->_bodyFilepath = resolvePath("data/www/default-errors/500.html");
 			break ;
 		case (502):
 			this->_returnCode = 502;
 			this->_reasonPhrase = "Bad Gateway";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/502.html";
+				this->_bodyFilepath = resolvePath("data/www/default-errors/502.html");
 			break ;
 		case (503):
 			this->_returnCode = 503;
 			this->_reasonPhrase = "Service Unavailable";
 			if (this->_bodyFilepath.empty())
-				this->_bodyFilepath = "/home/mturgeon/rank5/webserv/data/www/default-errors/503.html";
+				this->_bodyFilepath = resolvePath("data/www/default-errors/503.html");
 			break ;
 		default:
 			throw (std::runtime_error("no matching error code handled"));
