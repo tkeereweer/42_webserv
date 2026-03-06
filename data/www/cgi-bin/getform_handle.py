@@ -11,7 +11,7 @@ from urllib.parse import parse_qs
 # print("--- BODY ---")
 
 # Configuration
-LOG_FILE_PATH = "/workspace/data/upload/customer_list.log"
+LOG_FILE_PATH = "/home/mturgeon/rank5/webserv/data/upload/customer_list.log"
 # Defining the columns exactly as requested
 HEADERS = [
     "First Name",

@@ -47,6 +47,7 @@ void    Request::_createTempFile(void)
 	struct dirent *name = readdir(tmp);
 	if (!name && errno != 0)
 		throw(std::runtime_error(strerror(errno)));
+    errno = 0;
 	while (name && strncmp(name->d_name, "wbsrv_rqst_", strlen("wbsrv_rqst_")))
 		name = readdir(tmp);
 	if (errno != 0)

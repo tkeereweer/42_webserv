@@ -318,7 +318,6 @@ void	Webserv::handleRequest(int clientFd)
 		}
 		if (lexReturn == -1)
 		{
-			// std::cout << "~~~~~ request successfully received ! content: ~~~~~~" << std::endl;
 			testPrint(clientFd, client); //put request dipsatcher here, build body here
 			this->_clientMap[clientFd].server->dispatchRequest(client, this->_epollFd); //CGI added to epoll ctl in this function
 	 

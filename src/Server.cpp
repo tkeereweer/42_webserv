@@ -184,7 +184,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 std::string	Server::buildPath(std::string URI, Location &loc) const
 {
     //this field should not end w/ a '/'
-	std::string	path = "/home/sravizza/42/rank05/webserv_perso"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
+	std::string	path = "/home/mturgeon/rank5/webserv"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
 	if (!loc.getRoot().empty())
 		path.append(loc.getRoot());
 	else if (!this->_root.empty())
@@ -243,7 +243,7 @@ void	Server::uploadFile(Location &loc, Client &client)
 {
 	Request			&req = client.getRequest();
 	std::ifstream	ifs;
-	std::string		uploadPath = "/workspace";
+	std::string		uploadPath = "/home/mturgeon/rank5/webserv";
 	std::string		fileName;
 	std::ofstream	ofs;
 	char			buffer[4056];
