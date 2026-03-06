@@ -21,8 +21,10 @@ def parse_multipart(data):
             continue
         headers_raw = part[:header_end].decode('utf-8', errors='replace')
         content = part[header_end + 4:]
-        if content.endswith(b'\r\n'):
-            content = content[:-2]
+        for suffix in (b'\r\n--', b'\r\n'):
+            if content.endswith(suffix):
+                content = content[:-len(suffix)]
+                break
 
         filename = None
         for line in headers_raw.split('\r\n'):

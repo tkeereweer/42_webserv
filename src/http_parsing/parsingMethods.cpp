@@ -9,7 +9,7 @@ void	Request::_parse(void)
 	}
 	catch(const std::exception& e)
 	{
-        this->_URI.clear(); //in case simple request fails after parseURI completed
+		this->_URI.clear(); //in case simple request fails after parseURI completed
 		try
 		{
 			_parseFullRequest(it);
@@ -204,13 +204,13 @@ void	verifyHTTPWord(std::string str)
 void	Request::_parseHTTPVersion(std::list<t_reqToken>::iterator &it)
 {
 	std::string	res = "";
-    if (it->val == "undefined")
-    {
-        res += it->val;
-        it++;
-        this->_HTTPVersion = res;
-        return;
-    }
+	if (it->val == "undefined")
+	{
+		res += it->val;
+		it++;
+		this->_HTTPVersion = res;
+		return;
+	}
 	if (it->val != "HTTP")
 		throw (std::runtime_error("wrong HTTP version"));
 	res += it->val;
@@ -263,6 +263,35 @@ bool	isToken(std::string &str)
 {
 	for (std::string::iterator it = str.begin(); it != str.end(); it++)
 	{
+		if ((*it >= 0 && *it <= 31)
+			|| *it == 127
+			|| isspace(*it)
+			|| *it == 34
+			|| (*it >= 40 && *it <= 41)
+			|| *it == 44
+			|| *it == 47
+			|| (*it >= 58 && *it <= 64)
+			|| (*it >= 91 && *it <= 93)
+			|| *it == 123
+			|| *it == 125)
+			return (false);
+	}
+	return (true);
+}
+
+bool	isTokenOrQuoted(std::string &str)
+{
+	bool inQuotes = false;
+	for (std::string::iterator it = str.begin(); it != str.end(); it++)
+	{
+		if (*it == '"' && !inQuotes && it != str.begin()) //first quote not first char of part
+			return (false);
+		if (*it == '"')
+		{
+			if (inQuotes) //quote found before end of string
+				return (false);
+			inQuotes = true;
+		}
 		if ((*it >= 0 && *it <= 31)
 			|| *it == 127
 			|| isspace(*it)
@@ -353,6 +382,22 @@ bool	Request::_parseContentLength(std::list<t_reqToken>::iterator &it)
 	return (true);
 }
 
+bool	isParameter(std::string &str)
+{
+	std::string::iterator it = str.begin();
+	advance(it, str.find('=', 0));
+	std::string firstHalf(str.begin(), it);
+	it++;
+	std::string	secondHalf(it, str.end());
+	if (firstHalf.size() == 0 || secondHalf.size() == 0
+		|| firstHalf.find('=', 0) != std::string::npos
+		|| secondHalf.find('=', 0) != std::string::npos
+		|| !isToken(firstHalf)
+		|| !isTokenOrQuoted(secondHalf))
+		return (false);
+	return (true);
+}
+
 std::string	Request::_parseMediaType(std::list<t_reqToken>::iterator &it)
 {
 	std::string	res = "";
@@ -371,8 +416,11 @@ std::string	Request::_parseMediaType(std::list<t_reqToken>::iterator &it)
 	it++;
 	while (it->type == SEMI_COLON)
 	{
+		res += "; ";
 		it++;
-		if (!isToken(it->val))
+		while (it->type == SPACE)
+			it++;
+		if (!isParameter(it->val))
 			throw (std::runtime_error("expected valid parameter"));
 		res += it->val;
 		it++;

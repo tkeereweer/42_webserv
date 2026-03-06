@@ -16,7 +16,7 @@ void	Request::_readLeftovers(std::list<t_reqToken>::iterator &it)
 	//create temp file
 	if (this->_bodyFilename == "")
 		_createTempFile();
-	std::ofstream	file(this->_bodyFilename.c_str());
+	std::ofstream	file(this->_bodyFilename.c_str(), std::ios_base::binary);
 
 	file.write(bodyOverflow.c_str(), bodyOverflow.size());
 	this->_bytesRead = bodyOverflow.size();

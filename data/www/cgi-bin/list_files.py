@@ -1,6 +1,6 @@
 import os
 
-UPLOAD_DIR = "data/upload"
+UPLOAD_DIR = "/home/mturgeon/rank5/webserv/data/upload"
 
 def list_files():
     # os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -32,7 +32,7 @@ def list_files():
     <main class="main-team">
         <h1 class="page-title">FILES</h1>
 
-        <form class="upload-row" action="../cgi-bin/upload_handle.php" method="POST" enctype="multipart/form-data">
+        <form class="upload-row" action="../cgi-bin/upload_handle.py" method="POST" enctype="multipart/form-data">
             <label for="myfile">Select a file:</label>
             <input type="file" id="myfile" name="myfile" onchange="document.getElementById('upload-btn').style.display='inline-block'" />
             <button type="submit" id="upload-btn" class="upload-btn">Upload</button>

@@ -59,6 +59,14 @@ void	Request::_lexInput(std::string const &str)
 			}
 			if (isCRLF(it))
 			{
+                if (this->_tokenList.back().type == CRLF)
+                {
+                    this->_tokenList.push_back(token(std::string("\r\n"), CRLF));
+                    it++;
+                    it++;
+                    this->_tokenList.push_back(token(std::string(it, str.end()), WORD));
+                    break;
+                }
 				this->_tokenList.push_back(token(std::string("\r\n"), CRLF));
 				it++;
 				continue;
