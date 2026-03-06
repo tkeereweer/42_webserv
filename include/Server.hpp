@@ -25,15 +25,14 @@ class	Server: public Config
 		std::vector<CGI>			_cgiVec; //more logical here as you can choose to have some virtual hosts have access to some CGIs or not.
 		std::vector<std::string>	_parentEnv;
 
-		int			matchLocation(std::string URI) const;
-		bool		isMethodAllowed(t_method method, Location &loc) const;
-		void		_getQueryParams(Request &req);
-		std::string	buildPath(std::string URI, Location &loc) const;
-		void		handleDir(Client &client, Location &loc, std::string dir) const;
-		void		handleGET(Client &client, Location &loc, std::string path, int epollFD);
-		void		handlePOST(Location &loc, Client &client, std::string path, int epollFD);
-		void		handleDELETE(Client &client, std::string& path) const;
-		void		uploadFile(Location &loc, Client &client);
+		int		matchLocation(std::string URI) const;
+		bool	isMethodAllowed(t_method method, Location &loc) const;
+		void	_getQueryParams(Request &req);
+		void	handleDir(Client &client, Location &loc, std::string dir);
+		void	handleGET(Client &client, Location &loc, std::string path, int epollFD);
+		void	handlePOST(Location &loc, Client &client, std::string path, int epollFD);
+		void	handleDELETE(Location &loc, Client &client, std::string& path);
+		void	uploadFile(Location &loc, Client &client);
 
 		Server(void);
 	public:
@@ -53,8 +52,9 @@ class	Server: public Config
 		void	addSocket(t_socket socket);
 		void	addLocation(Location location);
 
-		void	dispatchRequest(Client &client, int epollFD);
-		void	addCgiToEpoll(CGI &cgi, int epollFD) const;
+		void		dispatchRequest(Client &client, int epollFD);
+		void		addCgiToEpoll(CGI &cgi, int epollFD) const;
+		std::string	buildPath(std::string URI, Location &loc) const;
 };
 
 #endif

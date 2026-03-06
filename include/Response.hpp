@@ -44,15 +44,15 @@ class Response
 		~Response(void);
 		Response    &operator=(Response const &rhs);
 
-		void    buildErrorResponse(short code);
-		void    build405Response(bool getAllowed, bool postAllowed, bool deleteAllowed);
-		void    buildRouteResponse(std::string localPath);
-		void    buildRedirResponse(std::string redirPath);
+		void    buildErrorResponse(short code, Server *server, Location *loc);
+		void    build405Response(bool getAllowed, bool postAllowed, bool deleteAllowed, Server *server, Location *loc);
+		void    buildRouteResponse(std::string localPath, Server *server, Location *loc);
+		void    buildRedirResponse(int redirCode, std::string redirPath);
 		void	buildPostResponse(std::string createdFile);
 		void    buildGetCGIResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath);
 		void	buildPostCgiResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath);
 		void    buildRawResponse(void);
-		void	buildDelResponse(Client& client, std::string& path);
+		void	buildDelResponse(Client& client, std::string& path, Server *server, Location *loc);
 
 		//getter
 		std::string 	&getRawResponse(void);

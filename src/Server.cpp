@@ -155,26 +155,26 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	_getQueryParams(req);
 	int	locIdx = matchLocation(req.getURI());
 	if (locIdx == -1)
-		return (resp.buildErrorResponse(404));
+		return (resp.buildErrorResponse(404, this, NULL));
 	Location	&loc = this->_locations[locIdx];
 	if (!loc.getRedir().second.empty())
-		return (client.getResponse().buildRedirResponse(loc.getRedir().second));
+		return (resp.buildRedirResponse(loc.getRedir().first, loc.getRedir().second));
 	else if (!this->_redirect.second.empty())
-		return (client.getResponse().buildRedirResponse(this->_redirect.second));
+		return (resp.buildRedirResponse(this->_redirect.first, this->_redirect.second));
 	if ((loc.getMaxBody() != -1 && req.getContentLength() > loc.getMaxBody())
 		|| (this->_maxBodySizeClientReq != -1 && req.getContentLength() > this->_maxBodySizeClientReq))
-		return (resp.buildErrorResponse(413));
+		return (resp.buildErrorResponse(413, this, &loc));
 	std::string	path = buildPath(req.getURI(), loc);
 	if (isDir(path.c_str()) || *(path.rbegin()) == '/')
 		return (handleDir(client, loc, path));
 	if (!isMethodAllowed(req.getMethod(), loc))
-		return (resp.build405Response(loc.getAcceptGET(), loc.getAcceptPOST(), loc.getAcceptDELETE()));
+		return (resp.build405Response(loc.getAcceptGET(), loc.getAcceptPOST(), loc.getAcceptDELETE(), this, &loc));
 	if (req.getMethod() == GET)
 		handleGET(client, loc, path, epollFD);
 	else if (req.getMethod() == POST)
 		handlePOST(loc, client, path, epollFD);
 	else
-		handleDELETE(client, path);
+		handleDELETE(loc, client, path);
 }
 
 /*******************************************************************************
@@ -184,7 +184,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 std::string	Server::buildPath(std::string URI, Location &loc) const
 {
     //this field should not end w/ a '/'
-	std::string	path = "/home/mturgeon/rank5/webserv"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
+	std::string	path = "/home/mkeerewe/42/rank05/webserv_perso"; //I modified this from "." to absolute path for my machine because wtf is going on i can't make them work
 	if (!loc.getRoot().empty())
 		path.append(loc.getRoot());
 	else if (!this->_root.empty())
@@ -193,27 +193,27 @@ std::string	Server::buildPath(std::string URI, Location &loc) const
 	return (path);
 }
 
-void	Server::handleDir(Client &client, Location &loc, std::string dir) const
+void	Server::handleDir(Client &client, Location &loc, std::string dir)
 {
 	std::string	path;
 
 	if (!loc.getIndex().empty()) //build location path first if it exists
-		return (client.getResponse().buildRouteResponse(buildPath(loc.getIndex(), loc)));
+		return (client.getResponse().buildRouteResponse(buildPath(loc.getIndex(), loc), this, &loc));
 	else if (!this->_index.empty()) //else, build default location path for server
-		return (client.getResponse().buildRouteResponse(buildPath(this->_index, loc)));
+		return (client.getResponse().buildRouteResponse(buildPath(this->_index, loc), this, &loc));
 	if (!path.empty())
-		return (client.getResponse().buildRouteResponse("/index.html")); //if failed, return homepage
+		return (client.getResponse().buildRouteResponse("/index.html", this, &loc)); //if failed, return homepage
 	else if (loc.getAutoIndex() == 1 || (loc.getAutoIndex() != 0 && this->_autoIndex == 1))
 	{
 		std::cout << "directory listing, for now just /index.html" << std::endl;
-		return (client.getResponse().buildRouteResponse("/index.html"));
+		return (client.getResponse().buildRouteResponse("/index.html", this, &loc));
 		// return directory listing
 	}
 	dir.append("index.html");
 	if (access(dir.c_str(), R_OK) == -1)
-		return (client.getResponse().buildErrorResponse(403));
+		return (client.getResponse().buildErrorResponse(403, this, &loc));
 	else
-		return (client.getResponse().buildRouteResponse("/index.html")); //is that what's supposed to happen ? I don't think I understood the right path...
+		return (client.getResponse().buildRouteResponse("/index.html", this, &loc)); //is that what's supposed to happen ? I don't think I understood the right path...
 }
 
 void	Server::handleGET(Client &client, Location &loc, std::string path, int epollFD)
@@ -225,17 +225,17 @@ void	Server::handleGET(Client &client, Location &loc, std::string path, int epol
 		{
 			std::cout << "access errno: " << strerror(errno) << std::endl;
 			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
-			return (client.getResponse().buildErrorResponse(404));
+			return (client.getResponse().buildErrorResponse(404, this, &loc));
 		}
         //handle GET Cgi
         if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
 			return (client.getResponse().buildGetCGIResponse(client, &loc, epollFD, *this, path)); //needs full path in there
-		return (client.getResponse().buildRouteResponse(path));
+		return (client.getResponse().buildRouteResponse(path, this, &loc));
 	}
 	catch (std::exception const &e)
 	{
 		std::cerr << e.what() << std::endl;
-		return (client.getResponse().buildErrorResponse(500));
+		return (client.getResponse().buildErrorResponse(500, this, &loc));
 	}
 }
 
@@ -243,7 +243,7 @@ void	Server::uploadFile(Location &loc, Client &client)
 {
 	Request			&req = client.getRequest();
 	std::ifstream	ifs;
-	std::string		uploadPath = "/home/mturgeon/rank5/webserv";
+	std::string		uploadPath = "/home/mkeerewe/42/rank05/webserv_perso";
 	std::string		fileName;
 	std::ofstream	ofs;
 	char			buffer[4056];
@@ -252,12 +252,12 @@ void	Server::uploadFile(Location &loc, Client &client)
 	uploadPath.append(loc.getUploadStore());
 	fileName  = std::string(req.getURI(), req.getURI().find_last_of('/') + 1);
 	if (fileName.empty())
-		return (client.getResponse().buildErrorResponse(400));
+		return (client.getResponse().buildErrorResponse(400, this, &loc));
 	uploadPath += "/" + fileName;
 	ifs.open(req.getBodyFilename().c_str(), std::ios_base::in | std::ios_base::binary);
 	ofs.open(uploadPath.c_str(), std::ios_base::out | std::ios_base::binary);
 	if (!ifs.is_open() || !ofs.is_open())
-		return (client.getResponse().buildErrorResponse(500));
+		return (client.getResponse().buildErrorResponse(500, this, &loc));
 	while (!ifs.eof() && !ifs.bad())
 	{
 		ifs.read(buffer, sizeof(buffer));
@@ -276,26 +276,26 @@ void	Server::handlePOST(Location &loc, Client &client, std::string path, int epo
         if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
 			return (client.getResponse().buildPostCgiResponse(client, &loc, epollFD, *this, path));
 		if (loc.getUploadStore().empty())
-			return (client.getResponse().buildErrorResponse(403));
+			return (client.getResponse().buildErrorResponse(403, this, &loc));
 		return (uploadFile(loc, client));
 	}
 	catch(const std::exception& e)
 	{
-		return (client.getResponse().buildErrorResponse(500));
+		return (client.getResponse().buildErrorResponse(500, this, &loc));
 	}
 }
 
 
-void	Server::handleDELETE(Client &client, std::string& path) const
+void	Server::handleDELETE(Location &loc, Client &client, std::string& path)
 {
 	try
 	{
-		return (client.getResponse().buildDelResponse(client, path));
+		return (client.getResponse().buildDelResponse(client, path, this, &loc));
 	}
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
-		return (client.getResponse().buildErrorResponse(500));
+		return (client.getResponse().buildErrorResponse(500, this, &loc));
 	}
 	
 

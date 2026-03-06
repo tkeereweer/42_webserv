@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>502 — Bad Gateway</title>
+        <title>400 — Bad Request</title>
         <link rel="stylesheet" href="../css/style.css" />
     </head>
     <body>
@@ -13,10 +13,11 @@
             >
         </header>
         <main class="main-error">
-            <div class="error-code error-5xx">502</div>
-            <div class="error-message">Bad Gateway</div>
+            <h1 class="error-code">400</h1>
+            <h2 class="error-message">Bad Request</h2>
             <p class="error-desc">
-                CGI return invalid. That's still our fault we just suck at a different language.
+                The server could not understand the request due to invalid
+                syntax.
             </p>
             <a href="/index.html" class="error-back">← Home</a>
         </main>

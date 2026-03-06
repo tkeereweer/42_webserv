@@ -276,8 +276,8 @@ void	Webserv::newClient(int listenFd)
 
 void	Webserv::testPrint(int clientFd, Client &client)
 {
-	// std::cout << client.getRequest() << std::endl;
-	// std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
+	std::cout << client.getRequest() << std::endl;
+	std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
 	(void)client;
 	_clientMap[clientFd].client.clearReadBuffer();
 }
@@ -309,7 +309,7 @@ void	Webserv::handleRequest(int clientFd)
 		catch(const std::exception& e)
 		{
 			std::cerr << e.what() << '\n';
-			client.getResponse().buildErrorResponse(400);
+			client.getResponse().buildErrorResponse(400, this->_clientMap[clientFd].server, NULL);
 			lexReturn = -1; //to get into write response logic
 		}
 	}
@@ -391,7 +391,7 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 			closeClient(cgi.getClientFD());
 		this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2);
-		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502);
+		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502, &server, &cgi.getLocation());
 		_destroyCGI(cgi.getWriteFD(), server);
 	}
 	ssize_t bytesRead = read(fileFD, buffer, sizeof(buffer) - 1);
@@ -410,7 +410,7 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 	else
 	{
 		this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2);
-		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502);
+		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502, &server, &cgi.getLocation());
 		_destroyCGI(cgi.getWriteFD(), server);
 		struct epoll_event	event;
 		event.events = EPOLLOUT;
@@ -427,7 +427,7 @@ void	Webserv::_cgiError(CGI &cgi)
 	{
 		struct epoll_event	event;
 		this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
-		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502);
+		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502, this->_clientMap[cgi.getClientFD()].server, &cgi.getLocation());
 		event.events = EPOLLOUT;
 		event.data.fd = cgi.getClientFD();
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
@@ -642,12 +642,12 @@ void    Webserv::handleTimeouts(void)
 		//check if 1) request/response complete 2) timestamp initialized === first receive/send happend 3) timeout status
 		if (!reqFlag && (recvStamp.tv_sec != 0 || recvStamp.tv_usec != 0) && getTimeDiff(recvStamp, now) > QUERY_TIMEOUT)
 		{
-			client.getResponse().buildErrorResponse(408);
+			client.getResponse().buildErrorResponse(408, it->second.server, NULL);
 			closeClient(client.getFd());
 		}
 		if (!responseFlag && (sendStamp.tv_sec != 0 || sendStamp.tv_usec != 0) && getTimeDiff(sendStamp, now) > QUERY_TIMEOUT)
 		{
-			client.getResponse().buildErrorResponse(408);
+			client.getResponse().buildErrorResponse(408, it->second.server, NULL);
 			closeClient(client.getFd());
 		}
 	}
@@ -659,8 +659,8 @@ void    Webserv::handleTimeouts(void)
 			cgiOutStamp = cgi.getOutTimestamp();
 			if (this->_clientMap[cgi.getClientFD()].client.getCgiResponseState() == 1 && (cgiOutStamp.tv_sec != 0 || cgiOutStamp.tv_usec != 0) && getTimeDiff(cgiOutStamp, now) > QUERY_TIMEOUT)
 			{
-				this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(503);
-				// erase cgi from cgi map
+				this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(503, &this->_servers[j], &cgi.getLocation());
+				// TODO erase cgi from cgi map
 			}
 		}
 	}
