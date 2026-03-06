@@ -110,13 +110,18 @@ class Request
 		std::string const	&getCookies(void) const;
 		std::string const	&getBodyFilename(void) const;
 		struct timeval		getRecvTimestamp(void) const;
+		bool				getHeaderFlag(void) const;
 		bool				getReqFlag(void) const;
 		std::string			&getQueryParam(void);
+		long long			getBytesRead(void) const;
 
 		//setters
 		void				setRecvTimestamp(struct timeval time);
 		void                setURI(std::string path);
 		void                setQueryParam(std::string params);
+		void				setReqFlag(bool state);
+
+		void				addBytesRead(long long size);
 };
 
 std::ostream    &operator<<(std::ostream &stream, Request const &rhs);

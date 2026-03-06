@@ -5,7 +5,8 @@ Request::Request(void):
 	_contentLength(0),
 	_reqComplete(false),
 	_reqLineValid(false), 
-	_reqHeadersValid(false)
+	_reqHeadersValid(false),
+	_bytesRead(0)
 	{
 		this->_recvTimestamp.tv_sec = 0;
 		this->_recvTimestamp.tv_usec = 0;
@@ -56,6 +57,7 @@ Request	&Request::operator=(Request const &rhs)
 		this->_tokenList = rhs._tokenList;
 		this->_recvTimestamp = rhs._recvTimestamp;
 		this->_queryParam = rhs._queryParam;
+		this->_bytesRead = rhs._bytesRead;
 	}
 	return (*this);
 }
@@ -95,8 +97,8 @@ int	Request::lexRawData(std::string &data)
 		return (-1);
 	data.clear(); //issue here where we have deleted token list and we then clear data, losing info
 
-	//pop back in data last potentially unread token then pop_back()
-	if (!this->_tokenList.empty() && (this->_tokenList.back().type == WORD || this->_tokenList.back().type == SPACE))
+	//pop back in data last potentially unread token then pop_back() when headers not complete
+	if (!this->_reqHeadersValid && !this->_tokenList.empty() && (this->_tokenList.back().type == WORD || this->_tokenList.back().type == SPACE))
 	{
 		data.append(this->_tokenList.back().val.begin(), this->_tokenList.back().val.end());
 		this->_tokenList.pop_back();
@@ -163,6 +165,16 @@ std::string	&Request::getQueryParam(void)
 	return (this->_queryParam);
 }
 
+bool	Request::getHeaderFlag(void) const
+{
+	return (this->_reqHeadersValid);
+}
+
+long long	Request::getBytesRead(void) const
+{
+	return (this->_bytesRead);
+}
+
 //setters
 void    Request::setRecvTimestamp(struct timeval time)
 {
@@ -176,6 +188,16 @@ void	Request::setURI(std::string path)
 void	Request::setQueryParam(std::string params)
 {
 	this->_queryParam = params;
+}
+
+void	Request::setReqFlag(bool state)
+{
+	this->_reqComplete = state;
+}
+
+void	Request::addBytesRead(long long size)
+{
+	this->_bytesRead += size;
 }
 
 

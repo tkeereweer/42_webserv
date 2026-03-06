@@ -291,12 +291,6 @@ void	Response::buildDelResponse(Client &client, std::string& path)
 	std::cout<<"path: "<< path << std::endl;
 	std::cout<<"filename: "<< filename << std::endl;
 
-	// if (filename.length() < 16 || filename.substr(0, 10) != "data/upload" || filename.substr(11, 13) != "/..")
-	// {
-	// 	return (buildErrorResponse(403));
-	// 	this->_returnCode = 403; //permission denied
-	// }
-	(void)client;
     errno = 0;
 	if (unlink(path.c_str()) == -1)
 	{

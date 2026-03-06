@@ -9,6 +9,7 @@ void	Request::_createNextAvailableFile(struct dirent *name, DIR *tmp)
 	std::string	nameToFind = "wbsrv_rqst_";
 
 	//exit loop if no file found or intmax number of temp files
+    errno = 0;
 	while (name && next_num < std::numeric_limits<int>::max())
 	{
 		nameToFind = "wbsrv_rqst_";

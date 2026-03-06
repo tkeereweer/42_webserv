@@ -295,10 +295,13 @@ void	Webserv::handleRequest(int clientFd)
 	client.getRequest().setRecvTimestamp(now);
 	int	lexReturn = -2;
 
- 	if (bytesRead > 0)
-	{
-		buffer[bytesRead] = '\0';
-		client.appendReadBuffer(std::string(buffer, bytesRead));//data string
+ 	if (bytesRead < 1)
+		return (closeClient(clientFd));
+
+	buffer[bytesRead] = '\0';
+	client.appendReadBuffer(std::string(buffer, bytesRead));//data string
+	if (!client.getRequest().getHeaderFlag())
+	{	
 		try
 		{
 			lexReturn = client.getRequest().lexRawData(client.getReadBuffer());
@@ -309,44 +312,48 @@ void	Webserv::handleRequest(int clientFd)
 			client.getResponse().buildErrorResponse(400);
 			lexReturn = -1; //to get into write response logic
 		}
-		if (lexReturn > 0) //write in tempfile logic
+	}
+	else
+	{
+		int tempFD = open(client.getRequest().getBodyFilename().c_str(), O_WRONLY | O_APPEND);
+		write(tempFD, client.getReadBuffer().c_str(), client.getReadBuffer().size());
+		close(tempFD);
+		client.getRequest().addBytesRead(client.getReadBuffer().size());
+		client.getReadBuffer().clear();
+		if (client.getRequest().getContentLength() - client.getRequest().getBytesRead() <= 0)
 		{
-			std::ofstream tmpFile(client.getRequest().getBodyFilename().c_str());
-			tmpFile.write(client.getReadBuffer().c_str(), client.getReadBuffer().size());
-			if (lexReturn - client.getReadBuffer().size() <= 0)
-				lexReturn = -1;
+			lexReturn = -1;
+			client.getRequest().setReqFlag(true);
 		}
-		if (lexReturn == -1)
+	}
+	if (lexReturn == -1)
+	{
+		testPrint(clientFd, client); //put request dipsatcher here, build body here
+		this->_clientMap[clientFd].server->dispatchRequest(client, this->_epollFd); //CGI added to epoll ctl in this function
+
+		if (this->_clientMap[clientFd].client.getCgiResponseState() == 0)
 		{
-			testPrint(clientFd, client); //put request dipsatcher here, build body here
-			this->_clientMap[clientFd].server->dispatchRequest(client, this->_epollFd); //CGI added to epoll ctl in this function
-	 
-			if (this->_clientMap[clientFd].client.getCgiResponseState() == 0)
+			struct epoll_event event;
+			event.events = EPOLLOUT;
+			event.data.fd = clientFd;
+			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientFd, &event) == -1)
 			{
-				struct epoll_event event;
-				event.events = EPOLLOUT;
-				event.data.fd = clientFd;
-				if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientFd, &event) == -1)
-				{
-					_clientMap.erase(clientFd);
-					close(clientFd);
-					throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
-				}
+				_clientMap.erase(clientFd);
+				close(clientFd);
+				throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
 			}
-			else
+		}
+		else
+		{
+			struct epoll_event event;
+			if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, &event) == -1)
 			{
-				struct epoll_event event;
-				if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, &event) == -1)
-				{
-					_clientMap.erase(clientFd);
-					close(clientFd);
-					throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
-				}
+				_clientMap.erase(clientFd);
+				close(clientFd);
+				throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
 			}
 		}
 	}
-	else
-		closeClient(clientFd);
 }
 
 void    Webserv::_destroyCGI(int fd, Server &server)//readFD or writeFD of CGI
