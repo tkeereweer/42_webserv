@@ -138,6 +138,13 @@ void    Response::buildErrorResponse(short code, Server *server, Location *loc)
 		case (500):
 			this->_returnCode = 500;
 			this->_reasonPhrase = "Internal Server Error";
+			struct stat	buf;
+			if (stat("/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/500.html", &buf) == 0)
+			{
+				std::cout << "500 error page file doesnt exist\n"; 
+				this->_bodyFilepath = "";
+				break;
+			}  //get out of infinite loop if error page doesn't exist
 			if (this->_bodyFilepath.empty())
 				this->_bodyFilepath = "/home/mkeerewe/42/rank05/webserv_perso/data/www/default-errors/500.html";
 			break ;
