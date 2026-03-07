@@ -21,7 +21,6 @@ std::string	resolvePath(std::string relPath)
 	if (relPath[0] == '/')
 		relPath = &relPath[1];
 	std::string	resultingPath = exeRoot + relPath;
-    std::cout << "resultingPath: " << resultingPath << std::endl;
 	return (resultingPath);
 }
 

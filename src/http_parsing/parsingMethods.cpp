@@ -232,7 +232,7 @@ void		Request::_parseRequestLine(std::list<t_reqToken>::iterator &it)
 {
 	std::string	method;
 	if (it->val != "GET" && it->val != "POST" && it->val != "DELETE")
-		throw(std::runtime_error("wrong method"));
+		throw(std::runtime_error("wrong method")); //TODO make it identifiable for a 405 error, 400 as of now
 	method = it->val;
 	it++;
 	if (it->type != SPACE)
