@@ -1,5 +1,6 @@
 #include "../include/Webserv.hpp"
 
+std::string	resolvePath(std::string relPath);
 
 /*******************************************************************************
 *						CTOR/DTOR

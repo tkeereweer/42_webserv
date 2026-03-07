@@ -1,5 +1,7 @@
 #include "../include/Server.hpp"
 
+std::string	resolvePath(std::string relPath);
+
 /*******************************************************************************
 *						CTOR/DTOR
 *******************************************************************************/
@@ -165,6 +167,8 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 		|| (this->_maxBodySizeClientReq != -1 && req.getContentLength() > this->_maxBodySizeClientReq))
 		return (resp.buildErrorResponse(413, this, &loc));
 	std::string	path = buildPath(req.getURI(), loc);
+	if (access(path.c_str(), F_OK) == -1)
+		return (resp.buildErrorResponse(404, this, &loc));
 	if (isDir(path.c_str()) || *(path.rbegin()) == '/')
 		return (handleDir(client, loc, path));
 	if (!isMethodAllowed(req.getMethod(), loc))
@@ -183,13 +187,16 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 
 std::string	Server::buildPath(std::string URI, Location &loc) const
 {
-    //this field should not end w/ a '/'
-	std::string	path = "/home/mturgeon/rank5/webserv"; //TODO relative path
+	//this field should not end w/ a '/'
+	std::string	path;
 	if (!loc.getRoot().empty())
-		path.append(loc.getRoot());
+		path = resolvePath(loc.getRoot());
 	else if (!this->_root.empty())
-		path.append(this->_root);
-	path.append(URI);
+		path = resolvePath(this->_root);
+	if (path == "")
+		path = resolvePath(URI);
+	else
+		path.append(URI);
 	return (path);
 }
 
@@ -200,16 +207,10 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir)
 		return (client.getResponse().buildRouteResponse(buildPath("/" + loc.getIndex(), loc), this, &loc));
 	else if (!this->_index.empty()) //else, build default location path for server
 		return (client.getResponse().buildRouteResponse(buildPath("/" + this->_index, loc), this, &loc));
-	// else if (!path.empty())
-	// 	return (client.getResponse().buildRouteResponse("/index.html", this, &loc)); //if failed, return homepage
 	else if (loc.getAutoIndex() == 1 || (loc.getAutoIndex() != 0 && this->_autoIndex == 1))
-	{
-        //build path with dir
 		return (client.getResponse().buildDirectoryListingResponse(dir, this, &loc));
-		// return directory listing
-	}
-	dir.append("index.html");
-    std::string	path = buildPath(dir, loc);
+	dir.append("index.html"); //why?
+	std::string	path = buildPath(dir, loc);
 	if (access(path.c_str(), R_OK) == -1)
 		return (client.getResponse().buildErrorResponse(403, this, &loc));
 	else
@@ -227,8 +228,8 @@ void	Server::handleGET(Client &client, Location &loc, std::string path, int epol
 			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
 			return (client.getResponse().buildErrorResponse(404, this, &loc));
 		}
-        //handle GET Cgi
-        if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
+		//handle GET Cgi
+		if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
 			return (client.getResponse().buildGetCGIResponse(client, &loc, epollFD, *this, path)); //needs full path in there
 		return (client.getResponse().buildRouteResponse(path, this, &loc));
 	}
@@ -272,8 +273,8 @@ void	Server::handlePOST(Location &loc, Client &client, std::string path, int epo
 	try
 	{
 		Request	&req = client.getRequest();
-        //handle POST Cgi
-        if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
+		//handle POST Cgi
+		if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
 			return (client.getResponse().buildPostCgiResponse(client, &loc, epollFD, *this, path));
 		if (loc.getUploadStore().empty())
 			return (client.getResponse().buildErrorResponse(403, this, &loc));

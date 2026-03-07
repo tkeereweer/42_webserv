@@ -332,13 +332,18 @@ void	Response::buildDirectoryListingResponse(std::string &dir, Server *server, L
 {
 	std::string	pageName;
 	std::string	content;
-
+	std::string dirDisplayed = dir; //not full path but actual URI requested
+	if (dir[dir.size() - 1] == '/')
+		dirDisplayed.erase(dirDisplayed.size() - 1);
+	dirDisplayed = std::string(dirDisplayed.begin() + dirDisplayed.find_last_of("/") + 1, dirDisplayed.end());
+	if (dirDisplayed == "")
+		dirDisplayed = "/";
 	this->_protocol = "HTTP/1.0";
 	this->_returnCode = 200;
 	this->_reasonPhrase = "OK";
 	this->_contentType = "text/html; charset=utf-8";
-	content = "<!DOCTYPE html><html><head><title>Index of " + dir + "</title></head><body><h1>Index of " + dir + "</h1><hr><pre>\n";
-	if (dir != "/") //don't do the following if there are no pages up the tree
+	content = "<!DOCTYPE html><html><head><title>Index of " + dirDisplayed + "</title></head><body><h1>Index of " + dirDisplayed + "</h1><hr><pre>\n";
+	if (dirDisplayed != "/") //don't do the following if there are no pages up the tree
 		content += "<a href=\"../\">../</a>\n";
 
 	errno = 0;
