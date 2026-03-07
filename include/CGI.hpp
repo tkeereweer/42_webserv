@@ -91,6 +91,7 @@ class CGI
 		struct timeval	getOutTimestamp(void) const;
 		ssize_t     	getBytesWritten(void) const;
 		int				getStatus(void) const;
+		int				getInFileFD(void) const;
 
 		//setters
 		void	setCGIContentLength(long long length);

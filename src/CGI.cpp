@@ -65,17 +65,25 @@ CGI::CGI(std::vector<std::string> env, Client &client, Location *loc, std::strin
 	_outComplete(false),
 	_outHeadersValid(false)
 {
+	this->_inFileFd = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
+	if (this->_inFileFd == -1)
+		throw (std::runtime_error(std::strerror(errno)));
+		// TODO handle error here, already done with throw??
 	//add what's below when switching back to relative paths
 	// std::string dot(".");
 	// this->_scriptPath.insert(this->_scriptPath.begin(), dot.begin(), dot.end());
 	int	inPipe[2];
 	int outPipe[2];
 	if (pipe(inPipe) == -1)
+	{
+		close(this->_inFileFd);
 		throw (std::runtime_error(std::strerror(errno)));
+	}
 	if (pipe(outPipe) == -1)
 	{
 		close(inPipe[0]);
 		close(inPipe[1]);
+		close(this->_inFileFd);
 		throw (std::runtime_error(std::strerror(errno)));
 	}
 
@@ -86,7 +94,14 @@ CGI::CGI(std::vector<std::string> env, Client &client, Location *loc, std::strin
 	//create child
 	this->_pid = fork();
 	if (this->_pid == -1)
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		close(outPipe[0]);
+		close(outPipe[1]);
+		close(this->_inFileFd);
 		throw (std::runtime_error(std::strerror(errno)));
+	}
 	if (this->_pid == 0)
 		_createChildProcess(inPipe, outPipe, childEnv);
 	close(inPipe[0]);
@@ -95,9 +110,6 @@ CGI::CGI(std::vector<std::string> env, Client &client, Location *loc, std::strin
 
 	this->_readFd = outPipe[0];
 	this->_writeFd = inPipe[1]; //only for post method
-	this->_inFileFd = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
-	if (this->_inFileFd == -1)
-		throw (std::runtime_error(std::strerror(errno)));
 
 	this->_outTimestamp.tv_usec = 0;
 	this->_outTimestamp.tv_sec = 0;
@@ -262,6 +274,8 @@ std::string CGI::pathfinder(std::string prog)
 
 void	CGI::_createChildProcess(int *inPipe, int *outPipe, char **childEnv)
 {
+	if (this->_inFileFd != -1)
+		close(this->_inFileFd);
 	if (inPipe != NULL)
 	{
 		dup2(inPipe[0], STDIN_FILENO);
@@ -351,6 +365,11 @@ struct timeval	CGI::getOutTimestamp(void) const
 int	CGI::getStatus(void) const
 {
 	return (this->_status);
+}
+
+int	CGI::getInFileFD(void) const
+{
+	return (this->_inFileFd);
 }
 
 void	CGI::setCGIContentLength(long long length)

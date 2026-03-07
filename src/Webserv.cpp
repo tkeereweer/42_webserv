@@ -384,19 +384,19 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 	char	    buffer[4056];
 	
 	//logic to change as we're either reading directly
-	int     fileFD = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
-	if (fileFD == -1)
-	{
-		struct epoll_event	event;
-		event.events = EPOLLOUT;
-		event.data.fd = cgi.getClientFD();
-		if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
-			closeClient(cgi.getClientFD());
-		this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2);
-		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502, &server, &cgi.getLocation());
-		_destroyCGI(cgi.getWriteFD(), server);
-	}
-	ssize_t bytesRead = read(fileFD, buffer, sizeof(buffer) - 1);
+	// int     fileFD = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
+	// if (fileFD == -1)
+	// {
+	// 	struct epoll_event	event;
+	// 	event.events = EPOLLOUT;
+	// 	event.data.fd = cgi.getClientFD();
+	// 	if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
+	// 		closeClient(cgi.getClientFD());
+	// 	this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2);
+	// 	this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502, &server, &cgi.getLocation());
+	// 	_destroyCGI(cgi.getWriteFD(), server);
+	// }
+	ssize_t bytesRead = read(cgi.getInFileFD(), buffer, sizeof(buffer) - 1);
 
 	if (bytesRead > 0)
 	{
@@ -411,6 +411,7 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 	}
 	else
 	{
+		close(cgi.getInFileFD());
 		this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2);
 		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502, &server, &cgi.getLocation());
 		_destroyCGI(cgi.getWriteFD(), server);
@@ -420,7 +421,7 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 			closeClient(cgi.getClientFD());
 	}
-	close(fileFD);
+	// close(fileFD);
 }
 
 void	Webserv::_cgiError(CGI &cgi)

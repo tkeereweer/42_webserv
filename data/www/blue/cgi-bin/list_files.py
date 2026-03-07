@@ -1,6 +1,6 @@
 import os
 
-UPLOAD_DIR = "/home/mturgeon/rank5/webserv/data/upload"
+UPLOAD_DIR = "/home/mkeerewe/42/rank05/webserv_perso/data/upload"
 
 def list_files():
     # os.makedirs(UPLOAD_DIR, exist_ok=True)
