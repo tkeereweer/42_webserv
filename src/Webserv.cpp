@@ -647,6 +647,7 @@ int	getTimeDiff(timeval t1, timeval t2)
 	return ((dSeconds) * 1000 + dUseconds / 1000.0) + 0.5; //+0.5 is a rounding technique to be sure we round the nearest integer.
 }
 
+//TODO: implement a timeout if CGI is stuck in infinite loop. Just .erase() as waitpid(WNOHANG) in CGI destructor
 void    Webserv::handleTimeouts(void)
 {
 	struct timeval	now;

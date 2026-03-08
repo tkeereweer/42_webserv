@@ -122,12 +122,7 @@ CGI::CGI(CGI const &src)
 
 CGI::~CGI(void)
 {
-	// if (this->_readFd >= 0)
-    // 	close(this->_readFd);
-	// if (this->_writeFd >= 0)
-	// 	close(this->_writeFd);
-    // if process is hanging, call kill()
-	// close(this->_inFileFd);
+	waitpid(this->_pid, NULL, WNOHANG); //WNOHANG: returns immediately if no child has exited
 }
 
 CGI	&CGI::operator=(CGI const &rhs)
