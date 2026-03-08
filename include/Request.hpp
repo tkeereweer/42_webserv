@@ -122,6 +122,29 @@ class Request
 		void				setReqFlag(bool state);
 
 		void				addBytesRead(long long size);
+		
+		//custom exceptions for finer error handling in handleRequest
+		class ErrorNum: public std::exception
+		{
+			private:
+				std::string _message;
+				short		_num;
+			public:
+				ErrorNum(std::string msg, short num) throw(): _message(msg), _num(num){}
+				~ErrorNum(void) throw(){}
+				virtual const char *what() const throw(){return (this->_message.c_str());}
+				short	getCode(void) const {return (this->_num);}
+		};
+
+		class Error405: public std::exception
+		{
+			private:
+				std::string _message;
+			public:
+				Error405(std::string msg) throw(): _message(msg){}
+				~Error405(void) throw(){}
+				virtual const char *what() const throw(){return (this->_message.c_str());}
+		};
 };
 
 std::ostream    &operator<<(std::ostream &stream, Request const &rhs);

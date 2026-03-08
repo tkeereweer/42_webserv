@@ -56,9 +56,9 @@ void    Response::build405Response(bool getAllowed, bool postAllowed, bool delet
 	this->_protocol = "HTTP/1.0";
 	this->_returnCode = 405;
 	this->_reasonPhrase = "Method Not Allowed";
-	if ((it = loc->getErrorPages().find(405)) != loc->getErrorPages().end())
+	if (loc && (it = loc->getErrorPages().find(405)) != loc->getErrorPages().end())
 		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
-	else if ((it = server->getErrorPages().find(405)) != server->getErrorPages().end())
+	else if (loc && server && (it = server->getErrorPages().find(405)) != server->getErrorPages().end())
 		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
 	else
 		this->_bodyFilepath = resolvePath("data/www/default-errors/405.html");
@@ -90,7 +90,7 @@ void    Response::buildErrorResponse(short code, Server *server, Location *loc)
 	this->_bodyFilepath.clear();
 	if (loc && (it = loc->getErrorPages().find(code)) != loc->getErrorPages().end()) //problem here when loc is NULL
 		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
-	else if ((it = server->getErrorPages().find(code)) != server->getErrorPages().end())
+	else if (server && (it = server->getErrorPages().find(code)) != server->getErrorPages().end())
 		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
 	switch (code)
 	{
@@ -136,6 +136,12 @@ void    Response::buildErrorResponse(short code, Server *server, Location *loc)
 			if (this->_bodyFilepath.empty())
 				this->_bodyFilepath = resolvePath("data/www/default-errors/413.html");
 			break ;
+        case (414):
+			this->_returnCode = 414;
+			this->_reasonPhrase = "Payload Too Large";
+			if (this->_bodyFilepath.empty())
+				this->_bodyFilepath = resolvePath("data/www/default-errors/414.html");
+			break ;
 		case (500):
 			this->_returnCode = 500;
 			this->_reasonPhrase = "Internal Server Error";
@@ -160,6 +166,12 @@ void    Response::buildErrorResponse(short code, Server *server, Location *loc)
 			this->_reasonPhrase = "Service Unavailable";
 			if (this->_bodyFilepath.empty())
 				this->_bodyFilepath = resolvePath("data/www/default-errors/503.html");
+			break ;
+        case (505):
+			this->_returnCode = 505;
+			this->_reasonPhrase = "Service Unavailable";
+			if (this->_bodyFilepath.empty())
+				this->_bodyFilepath = resolvePath("data/www/default-errors/505.html");
 			break ;
 		default:
 			throw (std::runtime_error("no matching error code handled"));

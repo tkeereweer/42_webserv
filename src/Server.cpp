@@ -154,6 +154,9 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	Response	&resp = client.getResponse();
 
 
+	//when error already built, exit straight away
+	if (resp.getRespFlag())
+		return;
 	_getQueryParams(req);
 	int	locIdx = matchLocation(req.getURI());
 	if (locIdx == -1)

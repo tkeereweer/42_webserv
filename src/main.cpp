@@ -27,7 +27,6 @@ std::string	resolvePath(std::string relPath)
 int	main(int argc, char *argv[], char **envp)
 {
 	Webserv		webserv(envp);
-	// const char	*config_file = "./config/default.conf";
     std::string output = resolvePath("config/default.conf");
     const char *config_file = output.c_str();
 
@@ -37,7 +36,7 @@ int	main(int argc, char *argv[], char **envp)
 	{
 		webserv.getConfig(config_file);
 		std::cout << "Parsed config file: " << std::endl;
-		std::cout << webserv << std::endl;
+		// std::cout << webserv << std::endl;
 		webserv.openSockets();
 		webserv.launchServer();
 	}
@@ -46,6 +45,7 @@ int	main(int argc, char *argv[], char **envp)
 		std::cerr << e.what() << std::endl;
 		for (std::map<int, Server*>::iterator it = webserv.getServerMap().begin(); it != webserv.getServerMap().end(); it++)
 			close(it->first);
+        return (1);
 	}
 	return (0);
 }

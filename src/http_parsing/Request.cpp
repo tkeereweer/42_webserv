@@ -84,14 +84,8 @@ int	Request::lexRawData(std::string &data)
 	if (rit == this->_tokenList.rend())
 		return (0);
 	//throw exception only if parsing interupted on bad grammar
-	try
-	{   
-		_parse();
-	}
-	catch(std::exception const &e)
-	{
-		throw(std::runtime_error(e.what()));
-	}
+    // no need to catch and rethrow?
+	_parse();
 
 	if (this->_reqComplete)
 		return (-1);

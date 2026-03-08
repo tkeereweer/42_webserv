@@ -210,12 +210,14 @@ void	Webserv::launchServer(void)
 		{
 			// activityNotif(readyEvents[i]);
 
+			//error handling: throws only on epoll fail--> end program in main
 			if (isListenSocket(readyEvents[i].data.fd))
 				newClient(readyEvents[i].data.fd);
 			else if ((idx = isCgiFd(readyEvents[i].data.fd)) != -1)
 			{
 				int servIdx = idx >> 16;
 				int cgiIdx = idx & std::numeric_limits<int>::max();
+				//both no throw
 				if (readyEvents[i].events & EPOLLOUT)
 					_handleCgiInput(this->_servers[servIdx].getCgiVec()[cgiIdx], this->_servers[servIdx]); //fd is CGI.writeFD
 				else
@@ -234,6 +236,7 @@ void	Webserv::launchServer(void)
 		handleTimeouts();
 	}
 	handleTimeouts(); //for the case where epoll_wait times out but still hanging requests
+	//TODO: clean client closing and exit when epoll timeouts
 }
 
 
@@ -241,6 +244,7 @@ void	Webserv::launchServer(void)
 *						CLIENT HELPERS
 *******************************************************************************/
 
+//TODO: all exceptions here are not caught
 void	Webserv::newClient(int listenFd)
 {
 	struct sockaddr	clientAddr;
@@ -249,16 +253,24 @@ void	Webserv::newClient(int listenFd)
 
 	int	clientFd = accept(listenFd, &clientAddr, &addrSize);
 	if (clientFd == -1)
-		throw(std::runtime_error(std::strerror(errno)));
+	{
+		//TODO: is this right ?
+		std::cout << "client not accepted" << std::endl;
+		return;
+		// throw(std::runtime_error(std::strerror(errno)));
+	}
 
 	int flags = fcntl(clientFd, F_GETFL, 0);
 	if (flags == -1 || fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) == -1)
 	{
+		//TODO: is this right ?
 		close(clientFd);
-		throw(std::runtime_error(std::strerror(errno)));
+		std::cerr << "fcntl fail" << std::endl;
+		return ;
+		// throw(std::runtime_error(std::strerror(errno)));
 	}
 
-	_clientMap[clientFd].client = Client(clientFd); // operator [] adds new entry if key does not exist yet
+	_clientMap[clientFd].client = Client(clientFd);
 	_clientMap[clientFd].server = _serverMap[listenFd];
 
 	struct epoll_event event;
@@ -308,10 +320,20 @@ void	Webserv::handleRequest(int clientFd)
 		{
 			lexReturn = client.getRequest().lexRawData(client.getReadBuffer());
 		}
+		catch(const Request::Error405 &e)
+		{
+			client.getResponse().build405Response(true, true, true, this->_clientMap[clientFd].server, NULL);
+			lexReturn = -1; //to get into write response logic
+		}
+		catch(const Request::ErrorNum &e)
+		{
+			client.getResponse().buildErrorResponse(e.getCode(), this->_clientMap[clientFd].server, NULL);
+			lexReturn = -1; //to get into write response logic
+		}
 		catch(const std::exception& e)
 		{
 			std::cerr << e.what() << '\n';
-			client.getResponse().buildErrorResponse(400, this->_clientMap[clientFd].server, NULL);
+			client.getResponse().buildErrorResponse(500, this->_clientMap[clientFd].server, NULL);
 			lexReturn = -1; //to get into write response logic
 		}
 	}
@@ -345,7 +367,7 @@ void	Webserv::handleRequest(int clientFd)
 				throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
 			}
 		}
-		else
+		else //remove clientFD from epoll while we are reading the content from the CGI
 		{
 			struct epoll_event event;
 			if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, &event) == -1)
@@ -383,6 +405,7 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 	long long   contentLength = client.getRequest().getContentLength();
 	char	    buffer[4056];
 	
+	//TODO: do we need this ?
 	//logic to change as we're either reading directly
 	// int     fileFD = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
 	// if (fileFD == -1)
@@ -567,9 +590,8 @@ void	Webserv::handleResponse(int clientFd)
 	size_t			remaining = client.getResponse().getToRead() - (client.getBytesSent());
 	struct timeval  now;
 
-	std::cout << "ptr in handle response: " << ptr << "its size: " << strlen(ptr) <<  std::endl;
 	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
-	gettimeofday(&now, NULL); //might cause trouble as forbidden function (stdtime works cuz timeout ~ 30-60s)
+	gettimeofday(&now, NULL); //(stdtime could work cuz timeout ~ 30-60s)
 	client.getResponse().setSendTimestamp(now);
 
 	if (bytesSentNow > 0)

@@ -16,10 +16,11 @@ void	Request::_parse(void)
 		}
 		catch(const std::exception& e)
 		{
-			std::string errorMsg = "BAD REQUEST: ";
-			errorMsg += e.what();
 			if (it != this->_tokenList.end())
-				throw (std::runtime_error(errorMsg.c_str()));
+			{
+				std::cerr << e.what();
+				throw; //this might do something called slicing ? do std::cerr<< e.what(); throw; instead ?
+			}
 			return ;
 		}
 		return ;		
@@ -74,12 +75,12 @@ std::string	Request::_parseFSegment(std::list<t_reqToken>::iterator &it)
 	while (it->type == WORD || it->type == COLON)
 	{
 		if (!isPchar(it->val))
-			throw(std::runtime_error("invalid char in fsegment"));
+			throw(Request::ErrorNum("invalid char in fsegment", 400));
 		res += it->val;
 		it++;
 	}
 	if (res == "")
-		throw(std::runtime_error("invalid fsegment"));
+		throw(Request::ErrorNum("invalid fsegment", 400));
 	return (res);
 }
 
@@ -95,7 +96,7 @@ std::string	Request::_parsePath(std::list<t_reqToken>::iterator &it)
 		res += _parseSegment(it);
 	}
 	if (res == "")
-		throw (std::runtime_error("path: empty or invalid char in path"));
+		throw (Request::ErrorNum("path: empty or invalid char in path", 400));
 	return (res);
 }
 
@@ -106,7 +107,7 @@ std::string	Request::_parseParam(std::list<t_reqToken>::iterator &it)
 	while(it->type == WORD || it->type == COLON)
 	{
 		if (!isPchar(it->val))
-			throw(std::runtime_error("invalid char in param"));
+			throw(Request::ErrorNum("invalid char in param", 400));
 		res += it->val;
 		it++;
 	}
@@ -136,7 +137,7 @@ std::string	Request::_parseQuery(std::list<t_reqToken>::iterator &it)
 		res += it->val;
 		it++;
 		if (!isUchar(it->val))
-			throw(std::runtime_error("invalid char in query"));
+			throw(Request::ErrorNum("invalid char in query", 400));
 		res += it->val;
 		it++;
 	}
@@ -157,13 +158,16 @@ std::string	Request::_parseAbsPath(std::list<t_reqToken>::iterator &it)
 	return (res);	
 }
 
+//TODO error code 414 if URI too long
 void    Request::_parseURI(std::list<t_reqToken>::iterator &it)
 {
 	if (it->type != SLASH)
-		throw(std::runtime_error("URI: doesn't start with SLASH"));
+		throw (Request::ErrorNum("URI: doesn't start with SLASH", 400));
 	it++;
 	this->_URI += "/";
 	this->_URI += _parseAbsPath(it);
+	if (this->_URI.size() > 300)
+		throw (Request::ErrorNum("URI too long", 414)); //TODO: decide max URI length, 350 here for test purposes
 	return ;
 }
 
@@ -171,14 +175,14 @@ void    Request::_parseSimpleRequest(void)
 {
 	std::list<t_reqToken>::iterator it = this->_tokenList.begin();
 	if (it->val != "GET")
-		throw(std::runtime_error("not simple request"));
+		throw(Request::Error405("not simple request"));
 	it++;
 	if (it->type != SPACE)
-		throw(std::runtime_error("not simple request"));
+		throw(Request::ErrorNum("not simple request", 400));
 	it++;
 	_parseURI(it);
 	if (it->type != CRLF)
-		throw(std::runtime_error("not simple request"));
+		throw(Request::ErrorNum("not simple request", 400));
 	this->_method = GET;
 	this->_tokenList.erase(this->_tokenList.begin(), it);
 	this->_reqComplete = true;
@@ -194,10 +198,14 @@ void	verifyHTTPWord(std::string str)
 	std::string	secondHalf(it, str.end());
 
 	if (firstHalf.size() == 0 || secondHalf.size() == 0)
-		throw (std::runtime_error("wrong HTTP version"));
+		throw (Request::ErrorNum("wrong HTTP version", 400));
 	if (firstHalf.find_first_not_of("0123456789") != std::string::npos
 		|| secondHalf.find_first_not_of("0123456789") != std::string::npos)
-		throw (std::runtime_error("one or more char not digit in HTTP version num"));
+		throw (Request::ErrorNum("one or more char not digit in HTTP version num", 400));
+	if (firstHalf != "1" && firstHalf != "2")
+		throw (Request::ErrorNum("unsupported HTTP version", 505));
+	if (secondHalf != "0" && secondHalf != "1")
+		throw (Request::ErrorNum("unsupported HTTP version", 505));
 	return;
 }
 
@@ -212,15 +220,15 @@ void	Request::_parseHTTPVersion(std::list<t_reqToken>::iterator &it)
 		return;
 	}
 	if (it->val != "HTTP")
-		throw (std::runtime_error("wrong HTTP version"));
+		throw (Request::ErrorNum("wrong HTTP version", 400));
 	res += it->val;
 	it++;
 	if (it->type != SLASH)
-		throw (std::runtime_error("wrong HTTP version"));
+		throw (Request::ErrorNum("wrong HTTP version", 400));
 	res += it->val;
 	it++;
 	if (it->type != WORD)
-		throw (std::runtime_error("wrong HTTP version"));
+		throw (Request::ErrorNum("wrong HTTP version", 400));
 	verifyHTTPWord(it->val); //throws exception
 	res += it->val;
 	it++;
@@ -232,19 +240,23 @@ void		Request::_parseRequestLine(std::list<t_reqToken>::iterator &it)
 {
 	std::string	method;
 	if (it->val != "GET" && it->val != "POST" && it->val != "DELETE")
-		throw(std::runtime_error("wrong method")); //TODO make it identifiable for a 405 error, 400 as of now
+	{
+		if (it->val.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ") != std::string::npos)
+			throw(Request::ErrorNum("request line: invalid syntax for method", 400));
+		throw(Request::Error405("wrong method"));
+	}
 	method = it->val;
 	it++;
 	if (it->type != SPACE)
-		throw(std::runtime_error("request line: no space after method"));
+		throw(Request::ErrorNum("request line: no space after method", 400));
 	it++;
 	_parseURI(it); //throws exception
 	if (it->type != SPACE)
-		throw(std::runtime_error("not full request"));
+		throw(Request::ErrorNum("not full request", 400));
 	it++;
 	_parseHTTPVersion(it); //throws exception
 	if (it->type != CRLF)
-		throw(std::runtime_error("full request not CRLF terminated"));
+		throw(Request::ErrorNum("full request not CRLF terminated", 400));
 	it++;
 	if (method == "GET")
 		this->_method = GET;
@@ -320,7 +332,7 @@ std::string	Request::_parseContentCoding(std::list<t_reqToken>::iterator &it)
 		return (res);
 	}
 	if (!isToken(it->val))
-		throw (std::runtime_error("wrong char in content-encoding"));
+		throw (Request::ErrorNum("wrong char in content-encoding", 400));
 	res += it->val;
 	it++;
 	return (res);
@@ -336,15 +348,13 @@ bool	Request::_parseContentEncoding(std::list<t_reqToken>::iterator &it)
 		return (false);
 	it++;
 	if (it->type != COLON)
-		throw(std::runtime_error("invalid header: content-encoding"));
+		throw(Request::ErrorNum("invalid header: content-encoding", 400));
 	it++;
-	// if (it->type != SPACE)
-	// 	throw(std::runtime_error("invalid header: content-encoding")); //whitespace optional in header ?
 	while (it->type == SPACE)
 		it++;
 	res += _parseContentCoding(it);
 	if (it->type != CRLF)
-		throw(std::runtime_error("invalid header: content-encoding"));
+		throw(Request::ErrorNum("invalid header: content-encoding", 400));
 	this->_contentEncoding = res;
 	return (true);
 }
@@ -359,25 +369,23 @@ bool	Request::_parseContentLength(std::list<t_reqToken>::iterator &it)
 		return (false);
 	it++;
 	if (it->type != COLON)
-		throw(std::runtime_error("invalid header: content-length"));
+		throw(Request::ErrorNum("invalid header: content-length", 400));
 	it++;
-	// if (it->type != SPACE)
-	// 	throw(std::runtime_error("invalid header: content-length"));
 	while (it->type == SPACE)
 		it++;
 	if (it->type != WORD || it->val.size() == 0)
-		throw(std::runtime_error("invalid header: content-length"));
+		throw(Request::ErrorNum("invalid header: content-length", 400));
 	for (std::string::iterator ite = it->val.begin(); ite != it->val.end(); ite++)
 	{
 		if (!isdigit(*ite))
-			throw(std::runtime_error("invalid header: content-length"));
+			throw(Request::ErrorNum("invalid header: content-length", 400));
 	}
 	res += it->val;
 	it++;
 	if (it->type != CRLF)
-		throw(std::runtime_error("invalid header: content-length"));
+		throw(Request::ErrorNum("invalid header: content-length", 400));
 	if (this->_contentLength != 0)
-		throw(std::runtime_error("more than 1 content-length header !"));
+		throw(Request::ErrorNum("more than 1 content-length header !", 400));
 	this->_contentLength = atoll(res.c_str());
 	return (true);
 }
@@ -403,15 +411,15 @@ std::string	Request::_parseMediaType(std::list<t_reqToken>::iterator &it)
 	std::string	res = "";
 
 	if (!isToken(it->val))
-		throw (std::runtime_error("wrong char in media type"));
+		throw (Request::ErrorNum("wrong char in media type", 400));
 	res += it->val;
 	it++;
 	if (it->type != SLASH)
-		throw (std::runtime_error("wrong media type format, expected '/'"));
+		throw (Request::ErrorNum("wrong media type format, expected '/'", 400));
 	res += it->val;
 	it++;
 	if (!isToken(it->val))
-			throw (std::runtime_error("expected valid parameter"));
+			throw (Request::ErrorNum("expected valid parameter", 400));
 	res += it->val;
 	it++;
 	while (it->type == SEMI_COLON)
@@ -421,7 +429,7 @@ std::string	Request::_parseMediaType(std::list<t_reqToken>::iterator &it)
 		while (it->type == SPACE)
 			it++;
 		if (!isParameter(it->val))
-			throw (std::runtime_error("expected valid parameter"));
+			throw (Request::ErrorNum("expected valid parameter", 400));
 		res += it->val;
 		it++;
 	}
@@ -438,15 +446,13 @@ bool	Request::_parseContentType(std::list<t_reqToken>::iterator &it)
 		return (false);
 	it++;
 	if (it->type != COLON)
-		throw(std::runtime_error("invalid header: content-type"));
+		throw(Request::ErrorNum("invalid header: content-type", 400));
 	it++;
-	// if (it->type != SPACE)
-	// 	throw(std::runtime_error("invalid header: content-type"));
 	while (it->type == SPACE)
 		it++;
 	res += _parseMediaType(it);
 	if (it->type != CRLF)
-		throw(std::runtime_error("invalid header: content-type"));
+		throw(Request::ErrorNum("invalid header: content-type", 400));
 	this->_contentType = res;
 	return (true);
 }
@@ -479,21 +485,21 @@ bool	Request::_parseCookies(std::list<t_reqToken>::iterator &it)
 		return (false);
 	it++;
 	if (it->type != COLON)
-		throw(std::runtime_error("invalid header: cookies"));
+		throw(Request::ErrorNum("invalid header: cookies", 400));
 	it++;
 	if (it->type != SPACE)
-		throw(std::runtime_error("invalid header: cookies"));
+		throw(Request::ErrorNum("invalid header: cookies", 400));
 	while (it->type == SPACE)
 		it++;
 	if (!isCookie(it->val))
-		throw(std::runtime_error("invalid header: cookies"));
+		throw(Request::ErrorNum("invalid header: cookies", 400));
 	res += it->val;
 	it++;
 	while (it->type == SEMI_COLON)
 	{
 		it++;
 		if (!isCookie(it->val))
-			throw(std::runtime_error("invalid header: cookies"));
+			throw(Request::ErrorNum("invalid header: cookies", 400));
 		res += it->val;
 		it++;
 	}
@@ -509,7 +515,7 @@ bool	isValidForHeaders(std::string &str)
 	{
 		if ((*it >= 0 && *it < 32)
 			|| *it > 126)
-			throw(std::runtime_error("invalid char in some header body"));
+			throw(Request::ErrorNum("invalid char in some header body", 400));
 	}
 	return (true);
 }
@@ -529,6 +535,7 @@ static bool	isHeader(std::list<t_reqToken>::iterator &it)
 	return (true);
 }
 
+//TODO error 431 if header too long (hardcode values)
 void	Request::_parseFullRequest(std::list<t_reqToken>::iterator &it)
 {
 	//throws exception when request line not full
@@ -550,7 +557,7 @@ void	Request::_parseFullRequest(std::list<t_reqToken>::iterator &it)
 			}
 			catch(const std::exception& e)
 			{
-				throw(std::runtime_error("not header in header part"));
+				throw(Request::ErrorNum("not header in header part", 400));
 			}
 			if (it == this->_tokenList.end())
 				break;

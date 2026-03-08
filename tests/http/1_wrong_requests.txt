@@ -1,0 +1,6 @@
+#test10: "400" - Missing colon in header
+
+GET /index.html HTTP/1.1
+Host example.com
+
+#endtest10
