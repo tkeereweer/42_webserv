@@ -48,6 +48,7 @@ def handle_upload():
     filename, content = parse_multipart(raw)
 
     if not filename or content is None:
+        print("Status: 200")
         print("Content-Type: text/html\n")
         print("""<!doctype html>
 <html lang="en">
@@ -90,6 +91,7 @@ def handle_upload():
     with open(dest, 'wb') as f:
         f.write(content)
 
+    print("Status: 200")
     print("Content-Type: text/html\n")
     print("""<!doctype html>
 <html lang="en">

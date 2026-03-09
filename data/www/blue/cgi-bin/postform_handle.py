@@ -129,7 +129,8 @@ PAGE_TEMPLATE = """<!doctype html>
 </html>"""
 
 if __name__ == "__main__":
-    print("Content-Type: text/html\n")
+    print("Content-Type: text/html")
+    print("Status: 200\n")
 
     try:
         handle_post()
