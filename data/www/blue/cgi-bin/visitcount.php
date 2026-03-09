@@ -111,6 +111,7 @@ write_csv(CSV_FILE, $rows);
 $body = (string) $rows[$uuid]['count'];
 
 echo "Content-Type: text/plain\n";
+echo "Status: 200\n";
 echo "Content-Length: " . strlen($body) . "\n";
 if ($set_cookie_header !== null) {
     echo $set_cookie_header . "\n";
