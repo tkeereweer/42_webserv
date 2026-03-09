@@ -111,5 +111,5 @@ implied *LWS
 - build tester container: docker build -t test-env -f Dockerfile.tester . *in the stress-test directory*
 - build server container: docker build -t serv-env -f Dockerfile.server .
 - start server: docker run -it --rm --network=test-network -p 9090:9090 --name=server -v /home/mturgeon/rank5/webserv:/webserv serv-env bash
-- start tester: docker run -it --rm --network=test-network --name=tester -v /home/mturgeon/rank5/webserv/tests/stress_tests/data:/data test-env bash
+- start tester: docker run -it --rm --network=test-network --name=tester -v /home/mturgeon/rank5/webserv/tests/stress_test/data:/data test-env bash
 - run the tests as bash commands in the containers

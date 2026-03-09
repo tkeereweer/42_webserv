@@ -170,8 +170,8 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 		|| (this->_maxBodySizeClientReq != -1 && req.getContentLength() > this->_maxBodySizeClientReq))
 		return (resp.buildErrorResponse(413, this, &loc));
 	std::string	path = buildPath(req.getURI(), loc);
-	if (access(path.c_str(), F_OK) == -1)
-		return (resp.buildErrorResponse(404, this, &loc));
+	// if (access(path.c_str(), F_OK) == -1)
+	// 	return (resp.buildErrorResponse(404, this, &loc)); //TODO: make a decision about this line
 	if (isDir(path.c_str()) || *(path.rbegin()) == '/')
 		return (handleDir(client, loc, path));
 	if (!isMethodAllowed(req.getMethod(), loc))
@@ -212,7 +212,7 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir)
 		return (client.getResponse().buildRouteResponse(buildPath("/" + this->_index, loc), this, &loc));
 	else if (loc.getAutoIndex() == 1 || (loc.getAutoIndex() != 0 && this->_autoIndex == 1))
 		return (client.getResponse().buildDirectoryListingResponse(dir, this, &loc));
-	dir.append("index.html"); //why?
+	dir.append("index.html"); //TODO: verify that dir ends with a "/"
 	std::string	path = buildPath(dir, loc);
 	if (access(path.c_str(), R_OK) == -1)
 		return (client.getResponse().buildErrorResponse(403, this, &loc));

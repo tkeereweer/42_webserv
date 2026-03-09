@@ -254,20 +254,16 @@ void	Webserv::newClient(int listenFd)
 	int	clientFd = accept(listenFd, &clientAddr, &addrSize);
 	if (clientFd == -1)
 	{
-		//TODO: is this right ?
 		std::cout << "client not accepted" << std::endl;
 		return;
-		// throw(std::runtime_error(std::strerror(errno)));
 	}
 
 	int flags = fcntl(clientFd, F_GETFL, 0);
 	if (flags == -1 || fcntl(clientFd, F_SETFL, flags | O_NONBLOCK) == -1)
 	{
-		//TODO: is this right ?
 		close(clientFd);
 		std::cerr << "fcntl fail" << std::endl;
 		return ;
-		// throw(std::runtime_error(std::strerror(errno)));
 	}
 
 	_clientMap[clientFd].client = Client(clientFd);
@@ -279,8 +275,8 @@ void	Webserv::newClient(int listenFd)
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1)
 	{
 		_clientMap.erase(clientFd);
-		close(clientFd);
-		throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
+		close(clientFd); //TODO: refine throwing logic on epoll error
+		throw(std::runtime_error(std::strerror(errno)));
 	}
 	gettimeofday(&now, NULL);
 	_clientMap[clientFd].client.getRequest().setRecvTimestamp(now);
@@ -318,6 +314,7 @@ void	Webserv::handleRequest(int clientFd)
 	{	
 		try
 		{
+            std::cout << client.getReadBuffer() << std::endl;
 			lexReturn = client.getRequest().lexRawData(client.getReadBuffer());
 		}
 		catch(const Request::Error405 &e)
@@ -490,6 +487,8 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 		this->_clientMap[cgi.getClientFD()].client.getResponse().setContentType(cgi.getContentType());
 		if (cgi.getStatus() != -1)
 			this->_clientMap[cgi.getClientFD()].client.getResponse().setReturnCode(cgi.getStatus());
+        if (!cgi.getSetCookie().empty()) //set cookie
+            this->_clientMap[cgi.getClientFD()].client.getResponse().setSetCookie(cgi.getSetCookie());
 		if (cgi.getContentLength() != -1)
 		{
 			std::stringstream	stream;

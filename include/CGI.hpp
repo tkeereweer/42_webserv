@@ -44,6 +44,7 @@ class CGI
 		std::list<t_cgiToken>	_CGItokenList;
 		long long				_contentLength;
 		std::string				_contentType;
+		std::string				_setCookie;
 		int						_status;
 		//flag to indicate we got to the end of output headers
 		bool	_outComplete;
@@ -64,6 +65,7 @@ class CGI
 		bool		_parseContentType(std::list<t_cgiToken>::iterator &it);
 		bool		_parseStatus(std::list<t_cgiToken>::iterator &it);
 		std::string	_parseMediaType(std::list<t_cgiToken>::iterator &it);
+		bool	    _parseSetCookies(std::list<t_cgiToken>::iterator &it);
 		void		_readLeftovers(std::list<t_cgiToken>::iterator &it);
 
 		CGI(void);
@@ -87,6 +89,7 @@ class CGI
 		ssize_t			getBytesSent(void) const;
 		long long		getContentLength(void) const;
 		std::string		getContentType(void) const;
+		std::string		getSetCookie(void) const;
 		Location		&getLocation(void);
 		struct timeval	getOutTimestamp(void) const;
 		ssize_t     	getBytesWritten(void) const;

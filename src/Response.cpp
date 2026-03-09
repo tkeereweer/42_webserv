@@ -455,3 +455,8 @@ void	Response::setReturnCode(short code)
 {
 	this->_returnCode = code;
 }
+
+void	Response::setSetCookie(const std::string &setCookie)
+{
+    this->_setCookie = setCookie;
+}

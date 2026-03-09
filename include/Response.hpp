@@ -35,7 +35,7 @@ class Response
 		bool    		_responseComplete;
 		struct timeval	_sendTimestamp;
 
-        void    _writeFileToResponse(std::string filepath);
+		void    _writeFileToResponse(std::string filepath);
 
 	
 	public:
@@ -53,7 +53,7 @@ class Response
 		void	buildPostCgiResponse(Client &client, Location *loc, int epollFD, Server &server, std::string scriptPath);
 		void    buildRawResponse(void);
 		void	buildDelResponse(Client& client, std::string& path, Server *server, Location *loc);
-        void	buildDirectoryListingResponse(std::string &dir, Server *server, Location *loc);
+		void	buildDirectoryListingResponse(std::string &dir, Server *server, Location *loc);
 
 		//getter
 		std::string 	&getRawResponse(void);
@@ -70,6 +70,7 @@ class Response
 		void	setContentType(std::string type);
 		void	setToRead(size_t bytes);
 		void	setReturnCode(short code);
+		void	setSetCookie(const std::string &setCookie);
 };
 
 #endif

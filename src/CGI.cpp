@@ -25,9 +25,6 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
 {
 	//don't build input pipe but append queryString as query_string=<value here> to end of servEnv.
 
-	//add what's below when switching back to relative paths
-	// std::string dot(".");
-	// this->_scriptPath.insert(this->_scriptPath.begin(), dot.begin(), dot.end());
 	int outPipe[2];
 	if (pipe(outPipe) == -1)
 		throw (std::runtime_error(std::strerror(errno)));
@@ -122,7 +119,7 @@ CGI::CGI(CGI const &src)
 
 CGI::~CGI(void)
 {
-	waitpid(this->_pid, NULL, WNOHANG); //WNOHANG: returns immediately if no child has exited
+	// waitpid(this->_pid, NULL, WNOHANG); //WNOHANG: returns immediately if no child has exited
 }
 
 CGI	&CGI::operator=(CGI const &rhs)
@@ -142,6 +139,7 @@ CGI	&CGI::operator=(CGI const &rhs)
 		this->_queryString = rhs._queryString;
 		this->_contentLength = rhs._contentLength;
 		this->_contentType = rhs._contentType;
+        this->_setCookie = rhs._setCookie;
 		this->_outComplete = rhs._outComplete;
 		this->_outHeadersValid = rhs._outHeadersValid;
 		this->_outTimestamp = rhs._outTimestamp;
@@ -215,8 +213,6 @@ void	CGI::_setupEnvGET(std::string queryString, std::vector<std::string> env, ch
 		(*childEnv)[idx] = new char[cookies.length() + 1];
 		std::strcpy((*childEnv)[idx], cookies.c_str());
 	}
-	// if (client.getRequest().getContentLength() == 0) //get do not have contentLenght?
-	// 	throw (std::runtime_error("bad request"));
 	if (!queryString.empty())
 	{
 		std::string	qString("QUERY_STRING=");
@@ -345,6 +341,11 @@ long long	CGI::getContentLength(void) const
 std::string	CGI::getContentType(void) const
 {
 	return (this->_contentType);
+}
+
+std::string CGI::getSetCookie(void) const
+{
+    return (this->_setCookie);
 }
 
 Location	&CGI::getLocation(void)

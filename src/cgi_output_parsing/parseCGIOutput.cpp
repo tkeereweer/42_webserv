@@ -142,6 +142,29 @@ bool	CGI::_parseStatus(std::list<t_cgiToken>::iterator &it)
 	return (true);
 }
 
+//this function transfers as-is the cookie header
+bool	CGI::_parseSetCookies(std::list<t_cgiToken>::iterator &it)
+{
+	std::string res = "";
+
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), tolower);
+	if (it->val != "set-cookie")
+		return (false);
+	it++;
+	if (it->type != CGI_COLON)
+		throw(std::runtime_error("invalid header: Set-Cookie"));
+	it++;
+	while (it->type == CGI_SPACE)
+		it++;
+	while (it->type != CGI_LB)
+	{
+		res += it->val;
+		it++;
+	}
+	this->_setCookie = res;
+	return (true);
+}
+
 void	CGI::_readLeftovers(std::list<t_cgiToken>::iterator &it)
 {
 	this->_outBuff.clear();
@@ -158,7 +181,8 @@ void	CGI::_parseCGIOutput(std::list<t_cgiToken>::iterator &it)
 		//throw exception if header format not respected --> in body overshoots in bad requests handled
 		if (!(_parseContentLength(it)
 			|| _parseContentType(it)
-			|| _parseStatus(it)))
+			|| _parseStatus(it)
+			|| _parseSetCookies(it))) //_parseSetCookie as-is so no grammar checking !
 		{
 			try
 			{

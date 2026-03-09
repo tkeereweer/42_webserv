@@ -13,8 +13,8 @@ class	Client
 		Request     _request;
 		Response	_response;
 		size_t		_bytesSent;
-        bool        _requestDone;
-        int	        _cgiResponseState;
+		bool        _requestDone;
+		int	        _cgiResponseState;
 
 	public:
 		Client(void);
