@@ -157,7 +157,8 @@ std::string	Request::_parseAbsPath(std::list<t_reqToken>::iterator &it)
 	return (res);	
 }
 
-//TODO error code 414 if URI too long
+//error 414 is sent for URIs > 2k-8k depending on servers.
+//set to 250 to succeed parsing test
 void    Request::_parseURI(std::list<t_reqToken>::iterator &it)
 {
 	if (it->type != SLASH)
@@ -165,8 +166,8 @@ void    Request::_parseURI(std::list<t_reqToken>::iterator &it)
 	it++;
 	this->_URI += "/";
 	this->_URI += _parseAbsPath(it);
-	if (this->_URI.size() > 300)
-		throw (Request::ErrorNum("URI too long", 414)); //TODO: decide max URI length, 350 here for test purposes
+	if (this->_URI.size() > 2000)
+		throw (Request::ErrorNum("URI too long", 414));
 	return ;
 }
 

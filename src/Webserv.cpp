@@ -316,7 +316,7 @@ void	Webserv::handleRequest(int clientFd)
 	{	
 		try
 		{
-            std::cout << client.getReadBuffer() << std::endl;
+             std::cout << client.getReadBuffer() << std::endl;
 			lexReturn = client.getRequest().lexRawData(client.getReadBuffer());
 		}
 		catch(const Request::Error405 &e)
