@@ -60,7 +60,6 @@ def handle_get_request():
         row = [first_name, last_name, sex, email, marketing, annoying, clean_about]
         f.write("\t".join(row) + "\n")
 
-
 PAGE_TEMPLATE = """<!doctype html>
 <html lang="en">
     <head>

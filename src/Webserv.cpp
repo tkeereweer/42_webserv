@@ -117,6 +117,7 @@ void	Webserv::openSockets(void)
 	struct	addrinfo	hints;
 	struct addrinfo 	*ptr;
 	int					yes = 1;
+	int					N_LISTEN = 250;
 
 	std::memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -148,7 +149,7 @@ void	Webserv::openSockets(void)
 			freeaddrinfo(res);
 			if (ptr == NULL)
 				throw(std::runtime_error(std::strerror(errno)));
-			if (listen(sFd, 15) == -1)
+			if (listen(sFd, N_LISTEN) == -1)
 				throw(std::runtime_error(std::strerror(errno)));
 			std::cout << "Listening Socket with fd: "<< sFd << " is listening at " << it->ipAddr << " on port " << it->port << std::endl;
 			this->_serverMap.insert(std::pair<int, Server*>(sFd, &(this->_servers[i])));
@@ -198,17 +199,17 @@ void	Webserv::activityNotif(struct epoll_event	readyEvent)
 void	Webserv::launchServer(void)
 {
 	int					readyFds;
-	struct epoll_event	readyEvents[10];
+	struct epoll_event	readyEvents[200];
 	long				idx = 0;
 
 	this->_epollFd = this->setupEpoll();
 	while (1)
 	{
 		// std::cout << "\nWaiting for connections" << std::endl;
-		readyFds = epoll_wait(_epollFd, readyEvents, 10, -1);
-		for (int i  = 0; i < readyFds; i++)
+		readyFds = epoll_wait(_epollFd, readyEvents, 200, -1);
+		for (int i = 0; i < readyFds; i++)
 		{
-			// activityNotif(readyEvents[i]);
+			activityNotif(readyEvents[i]);
 
 			//error handling: throws only on epoll fail--> end program in main
 			if (isListenSocket(readyEvents[i].data.fd))
@@ -313,6 +314,7 @@ void	Webserv::handleRequest(int clientFd)
 		return (closeClient(clientFd));
 
 	buffer[bytesRead] = '\0';
+	std::cout << "Recv from client (" << clientFd << ") : " << std::string(buffer);
 	client.appendReadBuffer(std::string(buffer, bytesRead));//data string
 	if (!client.getRequest().getHeaderFlag())
 	{	
@@ -384,7 +386,7 @@ void    Webserv::_destroyCGI(int fd, Server &server)//readFD or writeFD of CGI
 {
 	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, fd, NULL);
 	close(fd);
-	long cgiID = isCgiFd(fd) & 16;
+	long cgiID = isCgiFd(fd) & std::numeric_limits<int>::max();
 	if (fd == server.getCgiVec()[cgiID].getWriteFD())
 		close(server.getCgiVec()[cgiID].getReadFD());
 	int	status;
@@ -483,13 +485,14 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 	}
 	if (lexReturn != 0 && this->_clientMap[cgi.getClientFD()].client.getResponse().getContentType().empty())//first time done header parsing 
 	{
-		if (cgi.getContentType().empty() || (maxOutSize != -1 && cgi.getContentLength() > maxOutSize) || (maxOutSize == -1 && cgi.getContentLength() == -1))
+		if (cgi.getContentType().empty() || (maxOutSize != -1 && cgi.getContentLength() > maxOutSize) || (maxOutSize == -1 && cgi.getContentLength() == -1) || cgi.getStatus() == -1)
 		{
 			return (-2);
 		}
 		this->_clientMap[cgi.getClientFD()].client.getResponse().setContentType(cgi.getContentType());
 		if (cgi.getStatus() != -1)
 			this->_clientMap[cgi.getClientFD()].client.getResponse().setReturnCode(cgi.getStatus());
+			// stop cgi if status 4xx or 5xx and build errror response
 		if (cgi.getContentLength() != -1)
 		{
 			std::stringstream	stream;
@@ -590,6 +593,7 @@ void	Webserv::handleResponse(int clientFd)
 	size_t			remaining = client.getResponse().getToRead() - (client.getBytesSent());
 	struct timeval  now;
 
+	std::cout << "Sending" << std::string(ptr) <<  " to client (" << clientFd << ")" << std::endl;
 	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
 	gettimeofday(&now, NULL); //(stdtime could work cuz timeout ~ 30-60s)
 	client.getResponse().setSendTimestamp(now);
