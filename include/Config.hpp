@@ -27,7 +27,7 @@ class	Config
 		bool						getAcceptPOST(void) const;
 		bool						getAcceptDELETE(void) const;
 		std::string					getRoot(void) const;
-		bool						getAutoIndex(void) const;
+		int						getAutoIndex(void) const;
 		std::string					getIndex(void) const;
 		long long					getMaxBody(void) const;
 		std::map<int, std::string>	&getErrorPages(void);
@@ -38,7 +38,7 @@ class	Config
 		void	setAcceptPOST(bool accept);
 		void	setAcceptDELETE(bool accept);
 		void	setRoot(std::string root);
-		void	setAutoIndex(bool on);
+		void	setAutoIndex(int on);
 		void	setIndex(std::string file);
 		void	setMaxBody(long long maxBody);
 		void	addErrorPage(int code, std::string page);

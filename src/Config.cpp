@@ -70,7 +70,7 @@ std::string	Config::getRoot(void) const
 	return (this->_root);
 }
 
-bool    Config::getAutoIndex(void) const
+int    Config::getAutoIndex(void) const
 {
 	return (this->_autoIndex);
 }
@@ -120,7 +120,7 @@ void	Config::setRoot(std::string root)
 	this->_root = root;
 }
 
-void	Config::setAutoIndex(bool on)
+void	Config::setAutoIndex(int on)
 {
 	this->_autoIndex = on;
 }

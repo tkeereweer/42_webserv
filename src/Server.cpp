@@ -247,7 +247,7 @@ void	Server::uploadFile(Location &loc, Client &client)
 {
 	Request			&req = client.getRequest();
 	std::ifstream	ifs;
-	std::string		uploadPath = "/home/mturgeon/rank5/webserv";
+	std::string		uploadPath = resolvePath("");
 	std::string		fileName;
 	std::ofstream	ofs;
 	char			buffer[4056];
@@ -315,7 +315,7 @@ void	Server::addCgiToEpoll(CGI &cgi, int epollFD) const
 	fcntl(cgi.getReadFD(), F_SETFL, O_NONBLOCK);
 	if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getReadFD(), &ev) == -1)
 	{
-
+		//TODO
 	}
 
 	if (cgi.getWriteFD() != -1)
@@ -325,7 +325,7 @@ void	Server::addCgiToEpoll(CGI &cgi, int epollFD) const
 		fcntl(cgi.getWriteFD(), F_SETFL, O_NONBLOCK);
 		if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getWriteFD(), &ev) == -1)
 		{
-			
+			//TODO
 		}
 	}
 }

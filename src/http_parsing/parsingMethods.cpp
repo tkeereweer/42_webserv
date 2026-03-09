@@ -18,7 +18,7 @@ void	Request::_parse(void)
 		{
 			if (it != this->_tokenList.end())
 			{
-				std::cerr << e.what();
+				// std::cerr << e.what();
 				throw; //this might do something called slicing ? do std::cerr<< e.what(); throw; instead ?
 			}
 			return ;
@@ -35,8 +35,7 @@ bool	isPchar(std::string	&str)
 		if (*it != 33
 			&& (*it < 36 || *it > 46)
 			&& (*it < 48 || *it > 58)
-			&& *it != 65
-			&& (*it < 69 || *it > 90)
+			&& (*it < 65 || *it > 90)
 			&& *it != 95
 			&& (*it < 97 || *it > 122))
 		return (false);

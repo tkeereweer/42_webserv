@@ -1,3 +1,3 @@
 #!/bin/bash
 
-siege -v -c 100 -i -f urls.txt
+siege -v -c 200 -t 1M -f urls.txt
