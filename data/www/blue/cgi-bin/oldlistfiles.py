@@ -14,6 +14,7 @@ def list_files():
     elif "error" in qs:
         message = '<p class="message error">Error: {}</p>'.format(qs["error"][0])
 
+    print("Status: 200")
     print("Content-Type: text/html\n")
     print("""<!doctype html>
 <html lang="en">

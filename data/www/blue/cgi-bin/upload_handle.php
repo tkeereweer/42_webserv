@@ -9,7 +9,8 @@ if (!is_dir($upload_dir)) {
 
 // Check if a file was submitted
 if (!isset($_FILES['myfile']) || $_FILES['myfile']['error'] !== UPLOAD_ERR_OK) {
-    header("Content-Type: text/html");
+    echo "Status: 200\n";
+    echo "Content-Type: text/html\n\n";
     echo "<html><body><h2>Error: no file received.</h2>";
     echo "<a href='../cgi-bin/list_files.py'>Back</a></body></html>";
     exit;
@@ -21,11 +22,11 @@ $tmp      = $_FILES['myfile']['tmp_name'];
 
 if (move_uploaded_file($tmp, $dest)) {
     // Redirect back to the file list (avoids "resubmit form?" on refresh)
-    header("Status: 302 Found");
-    header("Location: /cgi-bin/list_files.py");
-    echo "";
+    echo "Status: 302 Found\n";
+    echo "Location: /cgi-bin/list_files.py\n\n";
 } else {
-    header("Content-Type: text/html");
+    echo "Status: 200\n";
+    echo "Content-Type: text/html\n\n";
     echo "<html><body><h2>Error: could not save file.</h2>";
     echo "<a href='../cgi-bin/list_files.py'>Back</a></body></html>";
 }

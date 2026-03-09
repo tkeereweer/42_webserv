@@ -123,6 +123,7 @@ PAGE_TEMPLATE = """<!doctype html>
 </html>"""
 
 if __name__ == "__main__":
+    print("Status: 200")
     print("Content-Type: text/html\n")
 
     try:

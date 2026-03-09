@@ -6,6 +6,7 @@ def list_files():
     # os.makedirs(UPLOAD_DIR, exist_ok=True)
     files = sorted(os.listdir(UPLOAD_DIR))
 
+    print("Status: 200")
     print("Content-Type: text/html\n")
     print("""<!doctype html>
 <html lang="en">
