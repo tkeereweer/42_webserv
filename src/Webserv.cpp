@@ -310,7 +310,7 @@ void	Webserv::handleRequest(int clientFd)
 		return (closeClient(clientFd));
 
 	buffer[bytesRead] = '\0';
-	std::cout << "Recv from client (" << clientFd << ") : " << std::string(buffer);
+	// std::cout << "Recv from client (" << clientFd << ") : " << std::string(buffer);
 	client.appendReadBuffer(std::string(buffer, bytesRead));//data string
 	if (!client.getRequest().getHeaderFlag())
 	{	
@@ -429,6 +429,7 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 		{
 			epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
 			close(cgi.getWriteFD());
+			close(cgi.getInFileFD());
 		}
 	}
 	else
@@ -443,7 +444,6 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 			closeClient(cgi.getClientFD());
 	}
-	// close(fileFD);
 }
 
 void	Webserv::_cgiError(CGI &cgi)
@@ -592,7 +592,7 @@ void	Webserv::handleResponse(int clientFd)
 	size_t			remaining = client.getResponse().getToRead() - (client.getBytesSent());
 	struct timeval  now;
 
-	std::cout << "Sending" << std::string(ptr) <<  " to client (" << clientFd << ")" << std::endl;
+	// std::cout << "Sending" << std::string(ptr) <<  " to client (" << clientFd << ")" << std::endl;
 	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
 	gettimeofday(&now, NULL); //(stdtime could work cuz timeout ~ 30-60s)
 	client.getResponse().setSendTimestamp(now);

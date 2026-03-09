@@ -21,6 +21,7 @@ void	Request::_createNextAvailableFile(struct dirent *name, DIR *tmp)
 		next_num++;
 		numWrite.str("");
 	}
+	closedir(tmp);
 	if (errno != 0)
 		throw(std::runtime_error(strerror(errno)));
 	if (num == std::numeric_limits<int>::max())
@@ -47,15 +48,22 @@ void    Request::_createTempFile(void)
 
 	struct dirent *name = readdir(tmp);
 	if (!name && errno != 0)
+	{
+		closedir(tmp);
 		throw(std::runtime_error(strerror(errno)));
+	}
     errno = 0;
 	while (name && strncmp(name->d_name, "wbsrv_rqst_", strlen("wbsrv_rqst_")))
 		name = readdir(tmp);
 	if (errno != 0)
+	{
+		closedir(tmp);
 		throw(std::runtime_error(strerror(errno)));
+	}
 	//no temp file, create from 0
 	if (!name)
 	{
+		closedir(tmp);
 		std::ofstream file("/tmp/wbsrv_rqst_0");
 		if (!file)
 			throw(std::runtime_error("can't open file"));
