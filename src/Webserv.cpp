@@ -1,5 +1,8 @@
 #include "../include/Webserv.hpp"
 
+extern volatile sig_atomic_t	g_signum;
+extern int						g_sigPipe[2];
+
 std::string	resolvePath(std::string relPath);
 
 /*******************************************************************************
@@ -7,7 +10,7 @@ std::string	resolvePath(std::string relPath);
 *******************************************************************************/
 
 
-Webserv::Webserv(char **envp)
+Webserv::Webserv(char **envp): _epollFd(-1)
 {
 	for (int i = 0; envp[i] != NULL; i++)
 	{
@@ -89,6 +92,11 @@ std::map<int, Server*>	&Webserv::getServerMap(void)
 	return (this->_serverMap);
 }
 
+int	Webserv::getEpollFd(void) const
+{
+	return (this->_epollFd);
+}
+
 void	Webserv::addServer(Server server)
 {
 	this->_servers.push_back(server);
@@ -160,15 +168,16 @@ void	Webserv::openSockets(void)
 
 int	Webserv::setupEpoll(void) const
 {
-	int	epollFd;
+	int					epollFd;
+	struct epoll_event	event;
 
+	event.events = EPOLLIN;
 	if ((epollFd = epoll_create(1)) == -1)
+		throw(std::runtime_error(std::strerror(errno)));
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, g_sigPipe[0], &event) == -1)
 		throw(std::runtime_error(std::strerror(errno)));
 	for (std::map<int, Server*>::const_iterator it = this->_serverMap.begin(); it != this->_serverMap.end(); it++)
 	{
-		struct epoll_event	event;
-
-		event.events = EPOLLIN;
 		event.data.fd = it->first;
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, it->first, &event) == -1)
 			throw(std::runtime_error(std::strerror(errno)));
@@ -207,6 +216,11 @@ void	Webserv::launchServer(void)
 	{
 		// std::cout << "\nWaiting for connections" << std::endl;
 		readyFds = epoll_wait(_epollFd, readyEvents, 200, -1);
+		if (g_signum == SIGINT)
+		{
+			_cleanExit();
+			break;
+		}
 		for (int i = 0; i < readyFds; i++)
 		{
 			activityNotif(readyEvents[i]);
@@ -237,7 +251,7 @@ void	Webserv::launchServer(void)
 		}
 		handleTimeouts();
 	}
-	handleTimeouts(); //for the case where epoll_wait times out but still hanging requests
+	// handleTimeouts(); //for the case where epoll_wait times out but still hanging requests
 	//TODO: clean client closing and exit when epoll timeouts
 }
 
@@ -379,18 +393,34 @@ void	Webserv::handleRequest(int clientFd)
 	}
 }
 
-void    Webserv::_destroyCGI(int fd, Server &server)//readFD or writeFD of CGI
+void    Webserv::_destroyCGI(CGI &cgi, Server &server)//readFD or writeFD of CGI
 {
-	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, fd, NULL);
-	close(fd);
-	long cgiID = isCgiFd(fd) & std::numeric_limits<int>::max();
-	if (fd == server.getCgiVec()[cgiID].getWriteFD())
-		close(server.getCgiVec()[cgiID].getReadFD());
+	if (cgi.getWriteFD() != -1)
+	{
+		close(cgi.getWriteFD());
+		cgi.getWriteFD() = -1;
+	}
+	if (cgi.getReadFD() != -1)
+	{
+		close(cgi.getReadFD());
+		cgi.getReadFD() = -1;
+	}
+	if (cgi.getInFileFD() != -1)
+	{
+		close(cgi.getInFileFD());
+		cgi.getInFileFD() = -1;
+	}
 	//check waitpid return and kill process if still running
-	int state = waitpid(server.getCgiVec()[cgiID].getPID(), NULL, WNOHANG); //non blocking with WNOHANG
+	int state = waitpid(cgi.getPID(), NULL, WNOHANG); //non blocking with WNOHANG
 	if (state == 0)
-		kill(server.getCgiVec()[cgiID].getPID(), SIGKILL);
-	std::vector<CGI>::iterator remove(server.getCgiVec().begin() + (cgiID));
+		kill(cgi.getPID(), SIGKILL);
+	size_t	i;
+	for (i = 0; i < server.getCgiVec().size(); i++)
+	{
+		if (&(server.getCgiVec()[i]) == &cgi)
+			break;
+	}
+	std::vector<CGI>::iterator	remove(server.getCgiVec().begin() + i);
 	server.getCgiVec().erase(remove);
 	return ;
 }
@@ -432,21 +462,27 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 		{
 			epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
 			close(cgi.getWriteFD());
+			cgi.getWriteFD() = -1;
 			close(cgi.getInFileFD());
+			cgi.getInFileFD() = -1;
 		}
 	}
 	else
 	{
 		std::cout << "in error reading from file cgi input" << std::endl;
 		close(cgi.getInFileFD());
+		cgi.getInFileFD() = -1;
 		this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2);
 		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502, &server, &cgi.getLocation());
-		_destroyCGI(cgi.getWriteFD(), server);
+		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
+		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
+		_destroyCGI(cgi, server);
 		struct epoll_event	event;
 		event.events = EPOLLOUT;
 		event.data.fd = cgi.getClientFD();
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 			closeClient(cgi.getClientFD());
+		//TODO build error 500
 	}
 }
 
@@ -468,7 +504,8 @@ void	Webserv::_cgiError(CGI &cgi)
 	{
 		closeClient(cgi.getClientFD());
 	}
-	_destroyCGI(cgi.getReadFD(), *(this->_clientMap[cgi.getClientFD()].server));
+	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
+	_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
 }
 
 int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
@@ -510,7 +547,8 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 			if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 			{
 				closeClient(cgi.getClientFD());
-				_destroyCGI(cgi.getReadFD(), *(this->_clientMap[cgi.getClientFD()].server));
+				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
+				_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
 				return (-3);
 			}
 		}
@@ -557,7 +595,8 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 				struct epoll_event	event;
 				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
 				this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2); //cgi response done
-				_destroyCGI(cgi.getReadFD(), *(this->_clientMap[cgi.getClientFD()].server));
+				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
+				_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
 			}
 		}
 		else
@@ -577,7 +616,8 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 				event.data.fd = cgi.getClientFD();
 				if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 					closeClient(cgi.getClientFD());
-				_destroyCGI(cgi.getReadFD(), *(this->_clientMap[cgi.getClientFD()].server));
+				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
+				_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
 				return ;
 			}
 			this->_clientMap[cgi.getClientFD()].client.getResponse().getEntityBody().append(cgi.getOutBuff());
@@ -587,7 +627,6 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 				return (_cgiError(cgi));
 		}
 	}
-
 }
 
 void	Webserv::_handleErrorPipe(CGI &cgi)
@@ -600,7 +639,7 @@ void	Webserv::_handleErrorPipe(CGI &cgi)
 		//exceve error, cleanup time and build error response
 		Client	&client = this->_clientMap[cgi.getClientFD()].client;
 		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getErrorFD(), &event); //add client here dubass
-		_destroyCGI(cgi.getReadFD(), *(this->_clientMap[cgi.getClientFD()].server));
+		_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
 		//ad client back
 		event.events = EPOLLOUT;
 		event.data.fd = cgi.getClientFD();
@@ -744,9 +783,32 @@ void    Webserv::handleTimeouts(void)
 				std::cout << "CGI timed out" << std::endl;
 				this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(503, &this->_servers[j], &cgi.getLocation());
 				std::vector<CGI>::iterator toErase = this->_servers[j].getCgiVec().begin() + i;
-				_destroyCGI(cgi.getReadFD(), this->_servers[j]);
+				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
+				_destroyCGI(cgi, this->_servers[j]);
 				this->_servers[j].getCgiVec().erase(toErase);
 			}
 		}
 	}
+}
+
+void	Webserv::_cleanExit(void)
+{
+	for (size_t j = 0; j < this->_servers.size(); j++)
+	{
+		for (size_t i = 0; i < this->_servers[j].getCgiVec().size(); i++)
+		{
+			_destroyCGI(this->_servers[j].getCgiVec()[i], this->_servers[j]);
+		}
+	}
+	for (std::map<int, Server*>::iterator it = this->_serverMap.begin(); it !=  this->_serverMap.end(); it++)
+	{
+		close(it->first);
+	}
+	this->_serverMap.clear();
+	for (std::map<int, t_connection>::iterator it = this->_clientMap.begin(); it != this->_clientMap.end(); it++)
+	{
+		close(it->first);
+	}
+	this->_clientMap.clear();
+	close(this->_epollFd);
 }
