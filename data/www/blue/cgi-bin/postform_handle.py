@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from urllib.parse import parse_qs
 
 # Configuration
@@ -129,6 +130,7 @@ PAGE_TEMPLATE = """<!doctype html>
 </html>"""
 
 if __name__ == "__main__":
+    # time.sleep(10)
     print("Content-Type: text/html")
     print("Status: 200\n")
 

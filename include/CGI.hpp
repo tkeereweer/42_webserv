@@ -30,6 +30,7 @@ class CGI
 		Location					*_loc;
 		int							_clientFd;
 		int							_pid;
+		int							_errorFD;
 		int							_writeFd;
 		int 						_readFd;
 		int							_inFileFd; //tempfile where the body is stored.
@@ -53,7 +54,7 @@ class CGI
 		long long		_bytesRead;
 		struct timeval	_outTimestamp;
 
-		void		_createChildProcess(int *inPipe, int *outPipe, char **childEnv);
+		void		_createChildProcess(int *inPipe, int *outPipe, char **childEnv, int *errorPipe);
 		void	    _setupEnvPOST(std::vector<std::string> env, char ***childEnv, Client &client);
 		void	    _setupEnvGET(std::string queryString, std::vector<std::string> env, char ***childEnv, Client &client);
 		std::string	_getProgPath(std::string& scriptpath);
@@ -83,6 +84,7 @@ class CGI
 		//getters
 		int				getClientFD(void) const;
 		int 			getPID(void) const;
+		int				&getErrorFD(void);
 		int				getWriteFD(void) const;
 		int				getReadFD(void) const;
 		std::string		&getOutBuff(void);

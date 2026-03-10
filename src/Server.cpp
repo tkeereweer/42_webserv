@@ -306,26 +306,15 @@ void	Server::handleDELETE(Location &loc, Client &client, std::string& path)
 
 }
 
-
+//adds errorFD to epoll so it can then add the right fds if execve succeeded
 void	Server::addCgiToEpoll(CGI &cgi, int epollFD) const
 {
 	epoll_event	ev;
 	ev.events = EPOLLIN;
-	ev.data.fd = cgi.getReadFD();
-	fcntl(cgi.getReadFD(), F_SETFL, O_NONBLOCK);
-	if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getReadFD(), &ev) == -1)
+	ev.data.fd = cgi.getErrorFD();
+	fcntl(cgi.getErrorFD(), F_SETFL, O_NONBLOCK);
+	if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getErrorFD(), &ev) == -1)
 	{
 		//TODO
-	}
-
-	if (cgi.getWriteFD() != -1)
-	{
-		ev.events = EPOLLOUT;
-		ev.data.fd = cgi.getWriteFD();
-		fcntl(cgi.getWriteFD(), F_SETFL, O_NONBLOCK);
-		if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getWriteFD(), &ev) == -1)
-		{
-			//TODO
-		}
 	}
 }

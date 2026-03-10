@@ -9,8 +9,8 @@
 
 
 
-# define QUERY_TIMEOUT 30000 //30s == 30000ms between 2 reads and write is the standard on firefox. If lower, test value for debugging quicker
-# define CGI_TIMEOUT 30000
+# define QUERY_TIMEOUT 30000000 //30s == 30000ms between 2 reads and write is the standard on firefox. If lower, test value for debugging quicker
+# define CGI_TIMEOUT 30000000
 
 typedef enum	e_conf_type
 {
@@ -74,6 +74,7 @@ class	Webserv
 		long        isCgiFd(int fd);
 		void		_handleCgiInput(CGI &cgi, Server &server);
 		void		_handleCgiOutput(CGI &cgi, Server &server);
+        void	    _handleErrorPipe(CGI &cgi);
 		void		_cgiError(CGI &cgi);
 		int			_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize);
 		void        _destroyCGI(int fd, Server &server);

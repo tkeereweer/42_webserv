@@ -7,17 +7,18 @@ CGI::CGI(void) {}
 
 void	freeEnv(char **env);
 
-//constructor for get method CGI with query_string argument
+//constructor for GET method CGI with query_string argument
 CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, Location *loc, std::string scriptPath):
 	_loc(loc),
 	_clientFd(client.getFd()),
+	_errorFD(-1),
 	_writeFd(-1),
 	_inFileFd(-1),
-    _bytesWritten(0),
-    _bytesSent(0),
-    _scriptPath(scriptPath),
-    _cgiEnv(env),
-    _queryString(queryString),
+	_bytesWritten(0),
+	_bytesSent(0),
+	_scriptPath(scriptPath),
+	_cgiEnv(env),
+	_queryString(queryString),
 	_contentLength(-1),
 	_status(-1),
 	_outComplete(false),
@@ -25,59 +26,89 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
 {
 	//don't build input pipe but append queryString as query_string=<value here> to end of servEnv.
 
+	int errorPipe[2];
 	int outPipe[2];
-	if (pipe(outPipe) == -1)
+	if (pipe(errorPipe) == -1)
 		throw (std::runtime_error(std::strerror(errno)));
+	fcntl(errorPipe[1], F_SETFD, FD_CLOEXEC);
+	if (pipe(outPipe) == -1)
+	{
+		close(errorPipe[0]);
+		close(errorPipe[1]);
+		throw (std::runtime_error(std::strerror(errno)));
+	}
 
 	//setup environment variables
 	char	**childEnv;
 	_setupEnvGET(queryString, env, &childEnv, client);
 
-		std::string	progPath = _getProgPath(this->_scriptPath);
-		std::cout<<"PROGPATH:"<<progPath<<std::endl;
+	std::string	progPath = _getProgPath(this->_scriptPath);
+	std::cout<<"PROGPATH:"<<progPath<<std::endl;
 
 	//create child
 	this->_pid = fork();
 	if (this->_pid == -1)
+	{
+		close(errorPipe[0]);
+		close(errorPipe[1]);
+		close(outPipe[0]);
+		close(outPipe[1]);
 		throw (std::runtime_error(std::strerror(errno)));
+	}
+	//take creation timestamp
 	if (this->_pid == 0)
-		_createChildProcess(NULL, outPipe, childEnv);
+		_createChildProcess(NULL, outPipe, childEnv, errorPipe);
+
+	close(errorPipe[1]);
 	close(outPipe[1]);
 	freeEnv(childEnv);
+	this->_errorFD = errorPipe[0];
 	this->_readFd = outPipe[0];
 	this->_outTimestamp.tv_usec = 0;
 	this->_outTimestamp.tv_sec = 0;
 }
 
-//constructor for post method CGI
+//constructor for POST method CGI
 CGI::CGI(std::vector<std::string> env, Client &client, Location *loc, std::string scriptPath):
 	_loc(loc),
 	_clientFd(client.getFd()),
-    _bytesWritten(0),
-    _bytesSent(0),
-    _scriptPath(scriptPath),
-    _cgiEnv(env),
+	_errorFD(-1),
+	_writeFd(-1),
+	_inFileFd(-1),
+	_bytesWritten(0),
+	_bytesSent(0),
+	_scriptPath(scriptPath),
+	_cgiEnv(env),
 	_contentLength(-1),
 	_status(-1),
 	_outComplete(false),
 	_outHeadersValid(false)
 {
+	//open body file
 	this->_inFileFd = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
 	if (this->_inFileFd == -1)
 		throw (std::runtime_error(std::strerror(errno)));
-		// TODO handle error here, already done with throw??
-	//add what's below when switching back to relative paths
-	// std::string dot(".");
-	// this->_scriptPath.insert(this->_scriptPath.begin(), dot.begin(), dot.end());
+
+	int errorPipe[2];
 	int	inPipe[2];
 	int outPipe[2];
-	if (pipe(inPipe) == -1)
+	if (pipe(errorPipe) == -1)
 	{
 		close(this->_inFileFd);
 		throw (std::runtime_error(std::strerror(errno)));
 	}
+	fcntl(errorPipe[1], F_SETFD, FD_CLOEXEC);
+	if (pipe(inPipe) == -1)
+	{
+		close(this->_inFileFd);
+		close(errorPipe[0]);
+		close(errorPipe[1]);
+		throw (std::runtime_error(std::strerror(errno)));
+	}
 	if (pipe(outPipe) == -1)
 	{
+		close(errorPipe[0]);
+		close(errorPipe[1]);
 		close(inPipe[0]);
 		close(inPipe[1]);
 		close(this->_inFileFd);
@@ -96,18 +127,21 @@ CGI::CGI(std::vector<std::string> env, Client &client, Location *loc, std::strin
 		close(inPipe[1]);
 		close(outPipe[0]);
 		close(outPipe[1]);
+		close(errorPipe[0]);
+		close(errorPipe[1]);
 		close(this->_inFileFd);
 		throw (std::runtime_error(std::strerror(errno)));
 	}
 	if (this->_pid == 0)
-		_createChildProcess(inPipe, outPipe, childEnv);
+		_createChildProcess(inPipe, outPipe, childEnv, errorPipe);
+
+	close(errorPipe[1]);
 	close(inPipe[0]);
 	close(outPipe[1]);
 	freeEnv(childEnv);
-
+	this->_errorFD = errorPipe[0];
 	this->_readFd = outPipe[0];
 	this->_writeFd = inPipe[1]; //only for post method
-
 	this->_outTimestamp.tv_usec = 0;
 	this->_outTimestamp.tv_sec = 0;
 }
@@ -117,10 +151,7 @@ CGI::CGI(CGI const &src)
 	*this = src;
 }
 
-CGI::~CGI(void)
-{
-	// waitpid(this->_pid, NULL, WNOHANG); //WNOHANG: returns immediately if no child has exited
-}
+CGI::~CGI(void){}
 
 CGI	&CGI::operator=(CGI const &rhs)
 {
@@ -129,17 +160,18 @@ CGI	&CGI::operator=(CGI const &rhs)
 		this->_loc = rhs._loc;
 		this->_clientFd = rhs._clientFd;
 		this->_pid = rhs._pid;
+		this->_errorFD = rhs._errorFD;
 		this->_writeFd = rhs._writeFd;
 		this->_readFd = rhs._readFd;
 		this->_inFileFd = rhs._inFileFd;
 		this->_outBuff = rhs._outBuff;
 		this->_bytesSent = rhs._bytesSent;
-        this->_bytesWritten = rhs._bytesWritten;
+		this->_bytesWritten = rhs._bytesWritten;
 		this->_cgiEnv = rhs._cgiEnv;
 		this->_queryString = rhs._queryString;
 		this->_contentLength = rhs._contentLength;
 		this->_contentType = rhs._contentType;
-        this->_setCookie = rhs._setCookie;
+		this->_setCookie = rhs._setCookie;
 		this->_outComplete = rhs._outComplete;
 		this->_outHeadersValid = rhs._outHeadersValid;
 		this->_outTimestamp = rhs._outTimestamp;
@@ -182,7 +214,10 @@ void	CGI::_setupEnvPOST(std::vector<std::string> env, char ***childEnv, Client &
 		std::strcpy((*childEnv)[childEnvSize - 3], cookies.c_str());
 	}
 	if (client.getRequest().getContentLength() == 0)
+	{
+		//close pipes here !
 		throw (std::runtime_error("bad request"));
+	}
 	std::string	contentLength("CONTENT_LENGTH=");
 	std::stringstream sstr;
 	sstr << client.getRequest().getContentLength();
@@ -263,8 +298,9 @@ std::string CGI::_pathfinder(std::string prog)
 	throw(std::runtime_error("path not found for: " + prog));
 }
 
-void	CGI::_createChildProcess(int *inPipe, int *outPipe, char **childEnv)
+void	CGI::_createChildProcess(int *inPipe, int *outPipe, char **childEnv, int *errorPipe)
 {
+	close(errorPipe[0]);
 	if (this->_inFileFd != -1)
 		close(this->_inFileFd);
 	if (inPipe != NULL)
@@ -281,13 +317,16 @@ void	CGI::_createChildProcess(int *inPipe, int *outPipe, char **childEnv)
 	char		*argv[] = {	path,
 							const_cast<char*>(this->_scriptPath.c_str()),
 							NULL};
+	errno = 0;
 	if (this->_cgiEnv.empty() || execve(path, argv, childEnv) == -1)
 	{
+		write(errorPipe[1], &errno, sizeof(errno));
 		freeEnv(childEnv);
 		if (inPipe != NULL)
 			close(inPipe[0]);
 		close(outPipe[1]);
-		exit(1);
+		close(errorPipe[1]);
+		exit(127);
 	}
 }
 
@@ -306,6 +345,11 @@ int			CGI::getClientFD(void) const
 int 		CGI::getPID(void) const
 {
 	return (this->_pid);
+}
+
+int			&CGI::getErrorFD(void)
+{
+	return (this->_errorFD);
 }
 
 int			CGI::getWriteFD(void) const
@@ -345,7 +389,7 @@ std::string	CGI::getContentType(void) const
 
 std::string CGI::getSetCookie(void) const
 {
-    return (this->_setCookie);
+	return (this->_setCookie);
 }
 
 Location	&CGI::getLocation(void)
@@ -390,5 +434,5 @@ void	CGI::addBytesWritten(ssize_t bytes)
 
 void    CGI::setOutTimestamp(struct timeval tv)
 {
-    this->_outTimestamp = tv;
+	this->_outTimestamp = tv;
 }

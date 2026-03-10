@@ -146,7 +146,7 @@ void    Response::buildErrorResponse(short code, Server *server, Location *loc)
 			this->_returnCode = 500;
 			this->_reasonPhrase = "Internal Server Error";
 			struct stat	buf;
-			if (stat(resolvePath("data/www/default-errors/500.html").c_str(), &buf) == 0)
+			if (stat(resolvePath("data/www/default-errors/500.html").c_str(), &buf) != 0)
 			{
 				std::cout << "500 error page file doesnt exist\n"; 
 				this->_bodyFilepath = "";
