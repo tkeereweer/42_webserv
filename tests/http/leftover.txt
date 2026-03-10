@@ -1,0 +1,98 @@
+#test69: "404" - GET on non existent file
+
+GET /nonExistent.txt HTTP/1.1
+Host: example.com
+
+#endtest69
+
+#test70: "403" - GET on existent file in forbidden dir
+
+GET /src/main.cpp HTTP/1.1
+Host: example.com
+
+#endtest70
+
+#test71: "403" - GET on forbidden file
+
+GET /data/upload/forbidden.txt HTTP/1.1
+Host: example.com
+
+#endtest71
+
+#test72: "405" - POST to forbidden dir
+
+POST /src HTTP/1.1
+Host: example.com
+Content-Length: 16
+Content-Type: application/json
+
+{"data": "value"}
+
+#endtest72
+
+#test73: "405" - DELETE in forbidden dir
+
+DELETE /condifg/shouldntdelete.conf HTTP/1.1
+Host: example.com
+
+#endtest73
+
+#test74: "405" - POST with massive content length
+
+POST /data/upload HTTP/1.1
+Host: example.com
+Content-Length: 80000001
+Content-Type: application/json
+
+{"data": "value"}
+
+#endtest74
+
+#test75: "301/302" -
+
+Host: example.com
+
+#endtest75
+
+#test76: "200" - OK std
+
+GET /data/www/blue/index.html HTTP/1.1
+Host: example.com
+
+#endtest76
+
+#test77: "201" - file created
+
+POST /data/upload HTTP/1.1
+Host: example.com
+Content-Length: 16
+Content-Type: application/json
+
+{"data": "value"}
+
+#endtest77
+
+#test77: "204" - file deleted
+
+DELETE /data/upload/fileToDelete.txt HTTP/1.1
+Host: example.com
+
+#endtest77
+
+#test75: "301/302" -
+
+Host: example.com
+
+#endtest75
+
+301/302 - Redirect
+
+GET on a route that has a return 301 URL directive
+
+500 - Internal Server Error
+
+CGI script that crashes or exits non-zero
+
+504 / timeout behavior
+
+CGI that hangs (tests your CGI timeout handling)

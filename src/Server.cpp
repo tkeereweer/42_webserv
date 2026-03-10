@@ -227,8 +227,11 @@ void	Server::handleGET(Client &client, Location &loc, std::string path, int epol
 		Request	&req = client.getRequest();
 		if (access(path.c_str(), R_OK) == -1)
 		{
-			std::cout << "access errno: " << strerror(errno) << std::endl;
-			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
+			// std::cout << "access errno: " << strerror(errno) << std::endl;
+			// std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
+			if (errno == EACCES || errno == EPERM || errno == EROFS)
+				return (client.getResponse().buildErrorResponse(403, this, &loc));
+			// std::cout << "FAILED 403 " << strerror(errno) << std::endl;
 			return (client.getResponse().buildErrorResponse(404, this, &loc));
 		}
 		//handle GET Cgi
@@ -276,6 +279,7 @@ void	Server::handlePOST(Location &loc, Client &client, std::string path, int epo
 	try
 	{
 		Request	&req = client.getRequest();
+		std::cout << "path:"<< req.getURI() << std::endl;
 		//handle POST Cgi
 		if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
 			return (client.getResponse().buildPostCgiResponse(client, &loc, epollFD, *this, path));

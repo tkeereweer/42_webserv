@@ -209,7 +209,7 @@ void	Webserv::launchServer(void)
 		readyFds = epoll_wait(_epollFd, readyEvents, 200, -1);
 		for (int i = 0; i < readyFds; i++)
 		{
-			activityNotif(readyEvents[i]);
+			// activityNotif(readyEvents[i]);
 
 			//error handling: throws only on epoll fail--> end program in main
 			if (isListenSocket(readyEvents[i].data.fd))
@@ -281,14 +281,14 @@ void	Webserv::newClient(int listenFd)
 	}
 	gettimeofday(&now, NULL);
 	_clientMap[clientFd].client.getRequest().setRecvTimestamp(now);
-	std::cout << "New client with fd: " << clientFd << std::endl;
+	// std::cout << "New client with fd: " << clientFd << std::endl;
 }
 
 
 void	Webserv::testPrint(int clientFd, Client &client)
 {
-	std::cout << client.getRequest() << std::endl;
-	std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
+	// std::cout << "\n" << client.getRequest() << std::endl;
+	// std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
 	(void)client;
 	_clientMap[clientFd].client.clearReadBuffer();
 }
@@ -316,7 +316,7 @@ void	Webserv::handleRequest(int clientFd)
 	{	
 		try
 		{
-             std::cout << client.getReadBuffer() << std::endl;
+            // std::cout << client.getReadBuffer() << std::endl;
 			lexReturn = client.getRequest().lexRawData(client.getReadBuffer());
 		}
 		catch(const Request::Error405 &e)
@@ -613,7 +613,7 @@ void	Webserv::closeClient(int clientFd)
 	epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
 	_clientMap.erase(clientFd);
 	close(clientFd);
-	std::cout << "Client disconnected with fd: " << clientFd << std::endl;
+	// std::cout << "Client disconnected with fd: " << clientFd << std::endl;
 }
 
 
