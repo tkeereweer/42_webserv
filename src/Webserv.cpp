@@ -330,7 +330,7 @@ void	Webserv::handleRequest(int clientFd)
 	{	
 		try
 		{
-             std::cout << client.getReadBuffer() << std::endl;
+			 std::cout << client.getReadBuffer() << std::endl;
 			lexReturn = client.getRequest().lexRawData(client.getReadBuffer());
 		}
 		catch(const Request::Error405 &e)
@@ -410,11 +410,10 @@ void    Webserv::_destroyCGI(CGI &cgi, Server &server)//readFD or writeFD of CGI
 		close(cgi.getInFileFD());
 		cgi.getInFileFD() = -1;
 	}
-	int	status;
 	//check waitpid return and kill process if still running
-    int state = waitpid(cgi.getPID(), NULL, WNOHANG); //non blocking with WNOHANG
-    if (state == 0)
-        kill(cgi.getPID(), SIGKILL);
+	int state = waitpid(cgi.getPID(), NULL, WNOHANG); //non blocking with WNOHANG
+	if (state == 0)
+		kill(cgi.getPID(), SIGKILL);
 	size_t	i;
 	for (i = 0; i < server.getCgiVec().size(); i++)
 	{
@@ -476,6 +475,7 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 		event.data.fd = cgi.getClientFD();
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 			closeClient(cgi.getClientFD());
+		//TODO build error 500
 	}
 }
 
@@ -524,8 +524,8 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 		if (cgi.getStatus() != -1)
 			this->_clientMap[cgi.getClientFD()].client.getResponse().setReturnCode(cgi.getStatus());
 			// stop cgi if status 4xx or 5xx and build errror response
-        if (!cgi.getSetCookie().empty()) //set cookie
-            this->_clientMap[cgi.getClientFD()].client.getResponse().setSetCookie(cgi.getSetCookie());
+		if (!cgi.getSetCookie().empty()) //set cookie
+			this->_clientMap[cgi.getClientFD()].client.getResponse().setSetCookie(cgi.getSetCookie());
 		if (cgi.getContentLength() != -1)
 		{
 			std::stringstream	stream;
@@ -558,7 +558,6 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 	ssize_t	bytesRead = read(cgi.getReadFD(), buffer, sizeof(buffer) - 1);
 	//logic for timeout handling
 	gettimeofday(&now, NULL);
-	sleep(15);
 	cgi.setOutTimestamp(now);
 	if (bytesRead != -1)
 	{
