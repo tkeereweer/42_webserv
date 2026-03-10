@@ -298,7 +298,7 @@ void	CGI::_createChildProcess(int *inPipe, int *outPipe, char **childEnv)
 *******************************************************************************/
 
 //getters
-int			CGI::getClientFD(void) const
+int			&CGI::getClientFD(void)
 {
 	return (this->_clientFd);
 }
@@ -308,12 +308,12 @@ int 		CGI::getPID(void) const
 	return (this->_pid);
 }
 
-int			CGI::getWriteFD(void) const
+int			&CGI::getWriteFD(void)
 {
 	return (this->_writeFd);
 }
 
-int			CGI::getReadFD(void) const
+int			&CGI::getReadFD(void)
 {
 	return (this->_readFd);
 }
@@ -363,7 +363,7 @@ int	CGI::getStatus(void) const
 	return (this->_status);
 }
 
-int	CGI::getInFileFD(void) const
+int	&CGI::getInFileFD(void)
 {
 	return (this->_inFileFd);
 }

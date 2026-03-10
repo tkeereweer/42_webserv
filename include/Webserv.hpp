@@ -82,7 +82,8 @@ class	Webserv
 		void		_handleCgiOutput(CGI &cgi, Server &server);
 		void		_cgiError(CGI &cgi);
 		int			_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize);
-		void        _destroyCGI(int fd, Server &server);
+		void        _destroyCGI(CGI &cgi, Server &server);
+		void		_cleanExit(void);
 
 
 		void	testPrint(int clientFd, Client &client);
@@ -96,6 +97,7 @@ class	Webserv
 
 		std::vector<Server>		&getServers(void);
 		std::map<int, Server*>	&getServerMap(void);
+		int						getEpollFd(void) const;
 
 		void	addServer(Server server);
 

@@ -81,10 +81,10 @@ class CGI
 		void	closeCgi(int epollFD);
 
 		//getters
-		int				getClientFD(void) const;
+		int				&getClientFD(void);
 		int 			getPID(void) const;
-		int				getWriteFD(void) const;
-		int				getReadFD(void) const;
+		int				&getWriteFD(void);
+		int				&getReadFD(void);
 		std::string		&getOutBuff(void);
 		ssize_t			getBytesSent(void) const;
 		long long		getContentLength(void) const;
@@ -94,7 +94,7 @@ class CGI
 		struct timeval	getOutTimestamp(void) const;
 		ssize_t     	getBytesWritten(void) const;
 		int				getStatus(void) const;
-		int				getInFileFD(void) const;
+		int				&getInFileFD(void);
 
 		//setters
 		void	setCGIContentLength(long long length);
