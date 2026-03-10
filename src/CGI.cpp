@@ -33,7 +33,7 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
 	char	**childEnv;
 	_setupEnvGET(queryString, env, &childEnv, client);
 
-		std::string	progPath = getProgPath(this->_scriptPath);
+		std::string	progPath = _getProgPath(this->_scriptPath);
 		std::cout<<"PROGPATH:"<<progPath<<std::endl;
 
 	//create child
@@ -223,15 +223,15 @@ void	CGI::_setupEnvGET(std::string queryString, std::vector<std::string> env, ch
 	(*childEnv)[childEnvSize - 1] = NULL;
 }
 
-std::string	CGI::getProgPath(std::string& scriptPath)
+std::string	CGI::_getProgPath(std::string& scriptPath)
 {
 	std::string ext = scriptPath.substr(scriptPath.find_last_of('.'));
 	std::string prog;
 	if (ext == ".py")
-		return (pathfinder("python3"));
+		return (_pathfinder("python3"));
 		// return "/usr/bin/python3";
 	else if (ext == ".php")
-		return (pathfinder("php"));
+		return (_pathfinder("php"));
 		// return "/usr/bin/php";
 	else
 		throw(std::runtime_error(".py or .php only"));
@@ -239,7 +239,7 @@ std::string	CGI::getProgPath(std::string& scriptPath)
 	
 }
 
-std::string CGI::pathfinder(std::string prog)
+std::string CGI::_pathfinder(std::string prog)
 {
 	std::vector<std::string>::iterator	it;
 
@@ -275,7 +275,7 @@ void	CGI::_createChildProcess(int *inPipe, int *outPipe, char **childEnv)
 	dup2(outPipe[1], STDOUT_FILENO);
 	close(outPipe[0]);
 
-	std::string	progPath = getProgPath(this->_scriptPath);
+	std::string	progPath = _getProgPath(this->_scriptPath);
 
 	char		*path = const_cast<char*>(progPath.c_str());
 	char		*argv[] = {	path,

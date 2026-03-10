@@ -9,7 +9,8 @@
 
 
 
-# define QUERY_TIMEOUT 500000 //30s == 30000ms between 2 reads and write is the standard on firefox. If lower, test value for debugging quicker
+# define QUERY_TIMEOUT 30000 //30s == 30000ms between 2 reads and write is the standard on firefox. If lower, test value for debugging quicker
+# define CGI_TIMEOUT 30000
 
 typedef enum	e_conf_type
 {
@@ -71,13 +72,6 @@ class	Webserv
 		
 		// HandleCgi
 		long        isCgiFd(int fd);
-		void		launchCgi(int clientFd);
-		void		createPipes(int inPipe[], int outPipe[]);
-		CGI		    &populateCgiStruct(int clientFd, pid_t pid, int *inPipe, int *outPipe, std::map<int, CGI>& _cgiMap);
-		void		childProcessCgi(int *inPipe, int *outPipe, int clientFd);
-		char**		setupEnv(int clientFd);
-		void		freeEnv(char **env);
-		void		addCgiToEpoll(CGI &cgi);
 		void		_handleCgiInput(CGI &cgi, Server &server);
 		void		_handleCgiOutput(CGI &cgi, Server &server);
 		void		_cgiError(CGI &cgi);

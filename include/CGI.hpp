@@ -56,8 +56,8 @@ class CGI
 		void		_createChildProcess(int *inPipe, int *outPipe, char **childEnv);
 		void	    _setupEnvPOST(std::vector<std::string> env, char ***childEnv, Client &client);
 		void	    _setupEnvGET(std::string queryString, std::vector<std::string> env, char ***childEnv, Client &client);
-		std::string	getProgPath(std::string& scriptpath);
-		std::string	pathfinder(std::string prog);
+		std::string	_getProgPath(std::string& scriptpath);
+		std::string	_pathfinder(std::string prog);
 
 		void		_lexInput(std::string const &str);
 		void		_parseCGIOutput(std::list<t_cgiToken>::iterator &it);

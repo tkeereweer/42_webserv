@@ -316,7 +316,7 @@ void	Webserv::handleRequest(int clientFd)
 	{	
 		try
 		{
-             std::cout << client.getReadBuffer() << std::endl;
+			 std::cout << client.getReadBuffer() << std::endl;
 			lexReturn = client.getRequest().lexRawData(client.getReadBuffer());
 		}
 		catch(const Request::Error405 &e)
@@ -386,12 +386,10 @@ void    Webserv::_destroyCGI(int fd, Server &server)//readFD or writeFD of CGI
 	long cgiID = isCgiFd(fd) & std::numeric_limits<int>::max();
 	if (fd == server.getCgiVec()[cgiID].getWriteFD())
 		close(server.getCgiVec()[cgiID].getReadFD());
-	int	status;
-	waitpid(server.getCgiVec()[cgiID].getPID(), &status, WNOHANG); //non blocking 
-	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-	{
-		// script error,  return appropriate code
-	}
+	//check waitpid return and kill process if still running
+	int state = waitpid(server.getCgiVec()[cgiID].getPID(), NULL, WNOHANG); //non blocking with WNOHANG
+	if (state == 0)
+		kill(server.getCgiVec()[cgiID].getPID(), SIGKILL);
 	std::vector<CGI>::iterator remove(server.getCgiVec().begin() + (cgiID));
 	server.getCgiVec().erase(remove);
 	return ;
@@ -490,8 +488,8 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 		if (cgi.getStatus() != -1)
 			this->_clientMap[cgi.getClientFD()].client.getResponse().setReturnCode(cgi.getStatus());
 			// stop cgi if status 4xx or 5xx and build errror response
-        if (!cgi.getSetCookie().empty()) //set cookie
-            this->_clientMap[cgi.getClientFD()].client.getResponse().setSetCookie(cgi.getSetCookie());
+		if (!cgi.getSetCookie().empty()) //set cookie
+			this->_clientMap[cgi.getClientFD()].client.getResponse().setSetCookie(cgi.getSetCookie());
 		if (cgi.getContentLength() != -1)
 		{
 			std::stringstream	stream;
@@ -669,6 +667,7 @@ void    Webserv::handleTimeouts(void)
 		reqFlag = client.getRequest().getReqFlag();
 		responseFlag = client.getResponse().getRespFlag();
 
+		//recv/send timeouts
 		//check if 1) request/response complete 2) timestamp initialized === first receive/send happend 3) timeout status
 		if (!reqFlag && (recvStamp.tv_sec != 0 || recvStamp.tv_usec != 0) && getTimeDiff(recvStamp, now) > QUERY_TIMEOUT)
 		{
@@ -681,16 +680,19 @@ void    Webserv::handleTimeouts(void)
 			closeClient(client.getFd());
 		}
 	}
+	//cgi timeout
 	for (size_t j = 0; j != this->_servers.size(); j++)
 	{
 		for (size_t i = 0; i != this->_servers[j].getCgiVec().size(); i++)
 		{
 			CGI	&cgi = this->_servers[j].getCgiVec()[i];
 			cgiOutStamp = cgi.getOutTimestamp();
-			if (this->_clientMap[cgi.getClientFD()].client.getCgiResponseState() == 1 && (cgiOutStamp.tv_sec != 0 || cgiOutStamp.tv_usec != 0) && getTimeDiff(cgiOutStamp, now) > QUERY_TIMEOUT)
+			if (this->_clientMap[cgi.getClientFD()].client.getCgiResponseState() == 1 && (cgiOutStamp.tv_sec != 0 || cgiOutStamp.tv_usec != 0) && getTimeDiff(cgiOutStamp, now) > CGI_TIMEOUT)
 			{
 				this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(503, &this->_servers[j], &cgi.getLocation());
-				// TODO erase cgi from cgi map
+				std::vector<CGI>::iterator toErase = this->_servers[j].getCgiVec().begin() + i;
+				_destroyCGI(cgi.getReadFD(), this->_servers[j]);
+				this->_servers[j].getCgiVec().erase(toErase);
 			}
 		}
 	}
