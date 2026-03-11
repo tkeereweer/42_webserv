@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dynamic POST - At your Webservice</title>
+        <link rel="stylesheet" href="../css/style.css" />
+        <style>
+            /* Specific styles for the response display */
+            #response-container {
+                margin-top: 20px;
+                padding: 15px;
+                border: 1px dashed #2a3d26;
+                background: #131a10;
+                color: #87c67a;
+                font-family: monospace;
+                display: none; /* Hidden until data arrives */
+                white-space: pre-wrap;
+            }
+            .form-group { margin-bottom: 1rem; }
+            label { display: block; margin-bottom: 0.25rem; }
+        </style>
+    </head>
+    <body>
+        <header>
+            <span class="header-title"><a href="/index.html">At your Webservice</a></span>
+        </header>
+        <main>
+            <h2>CGI Fetch Test</h2>
+            
+            <form id="cgiForm">
+                <button type="button" id="submitBtn" class="card">Send to CGI</button>
+            </form>
+
+            <div id="response-container">
+                <strong>Server Response:</strong>
+                <div id="output"></div>
+            </div>
+
+            <a href="/index.html" class="back-home">← Home</a>
+        </main>
+
+        <script>
+            document.getElementById('submitBtn').addEventListener('click', async () => {
+                const form = document.getElementById('cgiForm');
+                const formData = new FormData(form);
+                const outputDiv = document.getElementById('output');
+                const container = document.getElementById('response-container');
+
+                outputDiv.textContent = "Loading...";
+                container.style.display = 'block';
+
+                try {
+                    const response = await fetch('../cgi-bin/test.py', {
+                        method: 'GET',
+                        // body: formData
+                    });
+
+                    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+                    // Get the body as standard text
+                    const data = await response.text();
+                    outputDiv.textContent = data;
+                } catch (error) {
+                    outputDiv.textContent = "Error: " + error.message;
+                }
+            });
+        </script>
+    </body>
+</html>
