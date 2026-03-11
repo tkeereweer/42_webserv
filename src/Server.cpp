@@ -169,7 +169,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	if ((loc.getMaxBody() != -1 && req.getContentLength() > loc.getMaxBody())
 		|| (this->_maxBodySizeClientReq != -1 && req.getContentLength() > this->_maxBodySizeClientReq))
 		return (resp.buildErrorResponse(413, this, &loc));
-	std::string	path = buildPath(req.getURI(), loc);
+	std::string	path = buildPath(req.getURI(), &loc);
 	// if (access(path.c_str(), F_OK) == -1)
 	// 	return (resp.buildErrorResponse(404, this, &loc)); //TODO: make a decision about this line
 	if (isDir(path.c_str()) || *(path.rbegin()) == '/')
@@ -188,12 +188,12 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 *						HANDLE GET/POST/DELETE
 *******************************************************************************/
 
-std::string	Server::buildPath(std::string URI, Location &loc) const
+std::string	Server::buildPath(std::string URI, Location *loc) const
 {
 	//this field should not end w/ a '/'
 	std::string	path;
-	if (!loc.getRoot().empty())
-		path = resolvePath(loc.getRoot());
+	if (loc && !loc->getRoot().empty())
+		path = resolvePath(loc->getRoot());
 	else if (!this->_root.empty())
 		path = resolvePath(this->_root);
 	if (path == "")
@@ -207,13 +207,13 @@ std::string	Server::buildPath(std::string URI, Location &loc) const
 void	Server::handleDir(Client &client, Location &loc, std::string dir)
 {
 	if (!loc.getIndex().empty()) //build location path first if it exists
-		return (client.getResponse().buildRouteResponse(buildPath("/" + loc.getIndex(), loc), this, &loc));
+		return (client.getResponse().buildRouteResponse(buildPath("/" + loc.getIndex(), &loc), this, &loc));
 	else if (!this->_index.empty()) //else, build default location path for server
-		return (client.getResponse().buildRouteResponse(buildPath("/" + this->_index, loc), this, &loc));
+		return (client.getResponse().buildRouteResponse(buildPath("/" + this->_index, &loc), this, &loc));
 	else if (loc.getAutoIndex() == 1 || (loc.getAutoIndex() != 0 && this->_autoIndex == 1))
 		return (client.getResponse().buildDirectoryListingResponse(dir, this, &loc));
 	dir.append("index.html"); //TODO: verify that dir ends with a "/"
-	std::string	path = buildPath(dir, loc);
+	std::string	path = buildPath(dir, &loc);
 	if (access(path.c_str(), R_OK) == -1)
 		return (client.getResponse().buildErrorResponse(403, this, &loc));
 	else
