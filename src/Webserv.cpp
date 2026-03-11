@@ -231,7 +231,7 @@ void	Webserv::launchServer(void)
 			else if ((idx = isCgiFd(readyEvents[i].data.fd)) != -1)
 			{
 				int servIdx = idx >> 16;
-				int cgiIdx = idx & std::numeric_limits<int>::max();
+				int cgiIdx = idx & 0xFFFF;
 				if (this->_servers[servIdx].getCgiVec()[cgiIdx].getErrorFD() == readyEvents[i].data.fd)
 					_handleErrorPipe(this->_servers[servIdx].getCgiVec()[cgiIdx]);
 				else if (readyEvents[i].events & EPOLLOUT)
