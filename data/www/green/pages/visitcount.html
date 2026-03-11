@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Visit Counter - At your Webservice</title>
+        <link rel="stylesheet" href="../css/style.css" />
+        <style>
+            #response-container {
+                margin-top: 20px;
+                padding: 15px;
+                border: 1px dashed #2a3d26;
+                background: #131a10;
+                color: #87c67a;
+                font-family: monospace;
+                display: none;
+                white-space: pre-wrap;
+            }
+
+            #counter-display {
+                margin-top: 20px;
+                padding: 20px;
+                border: 1px dashed #2a3d26;
+                background: #131a10;
+                color: #87c67a;
+                font-family: monospace;
+                text-align: center;
+            }
+
+            #counter-display .count-label {
+                font-size: 0.85rem;
+                color: #567055;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                margin-bottom: 8px;
+            }
+
+            #counter-display .count-value {
+                font-size: 3rem;
+                font-weight: bold;
+                color: #87c67a;
+                text-shadow: 0 0 10px #87c67a66;
+                letter-spacing: 0.05em;
+            }
+
+            .blink {
+                animation: blink-cursor 1s step-end infinite;
+            }
+            @keyframes blink-cursor {
+                0%, 100% { opacity: 1; }
+                50%       { opacity: 0; }
+            }
+
+            .form-group { margin-bottom: 1rem; }
+            label { display: block; margin-bottom: 0.25rem; }
+        </style>
+    </head>
+    <body>
+        <header>
+            <span class="header-title"><a href="/index.html">At your Webservice</a></span>
+        </header>
+        <main>
+            <h2>Visit Counter</h2>
+
+            <div id="counter-display">
+                <div class="count-label">Total Visits (in 24h or since last cookie wipe)</div>
+                <div class="count-value" id="count-value">—<span class="blink">_</span></div>
+            </div>
+
+            <div id="response-container">
+                <strong>Raw Server Response:</strong>
+                <div id="output"></div>
+            </div>
+
+            <form id="visitForm" style="margin-top: 20px;">
+                <button type="button" id="refreshBtn" class="card">Refresh Count</button>
+            </form>
+
+            <a href="/index.html" class="back-home">← Home</a>
+        </main>
+
+        <script>
+            async function fetchVisitCount() {
+                const outputDiv  = document.getElementById('output');
+                const container  = document.getElementById('response-container');
+                const countValue = document.getElementById('count-value');
+
+                countValue.innerHTML = '<span style="color:#567055">loading…</span><span class="blink">_</span>';
+
+                try {
+                    const response = await fetch('../cgi-bin/visitcount.php', {
+                        method: 'GET'
+                    });
+
+                    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+                    const data = await response.text();
+
+                    // Try to parse a plain number out of the response
+                    const match = data.match(/\d+/);
+                    if (match) {
+                        countValue.innerHTML = match[0] + '<span class="blink">_</span>';
+                    } else {
+                        countValue.innerHTML = '?<span class="blink">_</span>';
+                    }
+
+                    // Show raw output for debugging
+                    outputDiv.textContent = data;
+                    container.style.display = 'block';
+
+                } catch (error) {
+                    countValue.innerHTML = 'ERR<span class="blink">_</span>';
+                    outputDiv.textContent = 'Error: ' + error.message;
+                    container.style.display = 'block';
+                }
+            }
+
+            // Load on page ready
+            document.addEventListener('DOMContentLoaded', fetchVisitCount);
+
+            // Manual refresh button
+            document.getElementById('refreshBtn').addEventListener('click', fetchVisitCount);
+        </script>
+    </body>
+</html>
