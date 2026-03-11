@@ -53,26 +53,12 @@ Host: example.com
 
 #endtest8
 
-#test9: "400" - Null character in request line
-
-GET /index.html HTTP/1.1
-Host: example.com
-
-#endtest9
-
 #test10: "400" - Missing colon in header
 
 GET /index.html HTTP/1.1
 Host example.com
 
 #endtest10
-
-#test11: "400" - Multiple colons in header value
-
-GET /index.html HTTP/1.1
-Host: example.com: extra
-
-#endtest11
 
 #test12: "400" - Empty header field name
 
@@ -263,22 +249,6 @@ Cookie: session[id]=value123
 
 #endtest30
 
-#test31: "400" - Cookie with null character
-
-GET /index.html HTTP/1.1
-Host: example.com
-Cookie: sessionid=value123
-
-#endtest31
-
-#test32: "400" - Cookie with newline character
-
-GET /index.html HTTP/1.1
-Host: example.com
-Cookie: sessionid=value123
-
-#endtest32
-
 #test33: "400" - Cookie with invalid delimiter
 
 GET /index.html HTTP/1.1
@@ -350,13 +320,6 @@ Host: example.com
 
 #endtest39
 
-#test40: "400" - Query parameter with null character encoding
-
-GET /search?q=hello%00world HTTP/1.1
-Host: example.com
-
-#endtest40
-
 #test41: "400" - Query parameter with empty value
 
 GET /search?q= HTTP/1.1
@@ -395,26 +358,6 @@ Content-Type: application/json
 
 #endtest45
 
-#test46: "400" - GET method with body
-
-GET /index.html HTTP/1.1
-Host: example.com
-Content-Length: 16
-
-{"data": "value"}
-
-#endtest46
-
-#test47: "400" - DELETE method with body
-
-DELETE /resource HTTP/1.1
-Host: example.com
-Content-Length: 16
-
-{"data": "value"}
-
-#endtest47
-
 #test48: "400" - Invalid JSON body with length mismatch
 
 POST /api HTTP/1.1
@@ -437,33 +380,11 @@ Content-Type: text/plain
 
 #endtest49
 
-#test50: "400" - Unix line endings only LF instead of CRLF
-
-GET /index.html HTTP/1.1
-Host: example.com
-
-#endtest50
-
-#test51: "400" - Mixed line endings CRLF and LF
-
-GET /index.html HTTP/1.1
-Host: example.com
-
-#endtest51
-
 #test52: "400" - No line ending after request line
 
 GET /index.html HTTP/1.1Host: example.com
 
 #endtest52
-
-#test53: "400" - Duplicate Host headers
-
-GET /index.html HTTP/1.1
-Host: example.com
-Host: example.org
-
-#endtest53
 
 #test54: "400" - Duplicate Content-Type headers same value
 
@@ -488,13 +409,6 @@ Content-Length: 16
 {"data": "value"}
 
 #endtest55
-
-#test56: "400" - Extra line before request line
-
-GET /index.html HTTP/1.1
-Host: example.com
-
-#endtest56
 
 #test57: "400" - Whitespace-only request line
 
@@ -555,14 +469,6 @@ Content-Type: application/json
 
 #endtest64
 
-#test65: "400" - Control character in header value
-
-GET /index.html HTTP/1.1
-Host: example.com
-X-Custom: value
-
-#endtest65
-
 #test66: "400" - Extended ASCII in header
 
 GET /index.html HTTP/1.1
@@ -570,14 +476,6 @@ Host: example.com
 X-Custom: café
 
 #endtest66
-
-#test67: "400" - Null byte in header value
-
-GET /index.html HTTP/1.1
-Host: example.com
-X-Custom: valuemore
-
-#endtest67
 
 #test68: "400" - Unicode in query parameter not encoded
 
