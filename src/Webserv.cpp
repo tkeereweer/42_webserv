@@ -655,21 +655,22 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 
 void	Webserv::_handleErrorPipe(CGI &cgi)
 {
-	int	err;
+	int					err;
 	struct epoll_event	event;
-	size_t n = read(cgi.getErrorFD(), &err, sizeof(err));
+	size_t				n = read(cgi.getErrorFD(), &err, sizeof(err));
+	Client				&client = this->_clientMap[cgi.getClientFD()].client;
+
 	if (n > 0)
 	{
 		//exceve error, cleanup time and build error response
-		Client	&client = this->_clientMap[cgi.getClientFD()].client;
-		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getErrorFD(), &event); //add client here dubass
+		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getErrorFD(), &event);
 		_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
-		//ad client back
 		event.events = EPOLLOUT;
 		event.data.fd = cgi.getClientFD();
 		if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 		{
-			//TODO
+			closeClient(cgi.getClientFD());
+			return;
 		}
 		return (client.getResponse().buildErrorResponse(500, this->_clientMap[cgi.getClientFD()].server, &cgi.getLocation()));
 	}
@@ -681,7 +682,14 @@ void	Webserv::_handleErrorPipe(CGI &cgi)
 		event.data.fd = cgi.getWriteFD();
 		if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getWriteFD(), &event) == -1)
 		{
-			//TODO
+			event.events = EPOLLOUT;
+			event.data.fd = cgi.getClientFD();
+			if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
+			{
+				closeClient(cgi.getClientFD());
+				return;
+			}
+			return (client.getResponse().buildErrorResponse(500, this->_clientMap[cgi.getClientFD()].server, &cgi.getLocation()));
 		}
 	}
 	if (cgi.getReadFD() != -1)
@@ -690,7 +698,16 @@ void	Webserv::_handleErrorPipe(CGI &cgi)
 		event.data.fd = cgi.getReadFD();
 		if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getReadFD(), &event) == -1)
 		{
-			//TODO
+			if (cgi.getWriteFD() != -1)
+				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), &event);
+			event.events = EPOLLOUT;
+			event.data.fd = cgi.getClientFD();
+			if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
+			{
+				closeClient(cgi.getClientFD());
+				return;
+			}
+			return (client.getResponse().buildErrorResponse(500, this->_clientMap[cgi.getClientFD()].server, &cgi.getLocation()));
 		}
 	}
 	close(cgi.getErrorFD());
