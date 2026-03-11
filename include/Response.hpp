@@ -63,6 +63,7 @@ class Response
 		bool			getRespFlag(void) const;
 		size_t			getToRead(void) const;
 		std::string		&getEntityBody(void);
+		short			getReturnCode(void) const;
 
 		//setter
 		void	setSendTimestamp(struct timeval timestamp);

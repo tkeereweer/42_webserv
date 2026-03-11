@@ -175,7 +175,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	if (isDir(path.c_str()) || *(path.rbegin()) == '/')
 		return (handleDir(client, loc, path));
 	if (!isMethodAllowed(req.getMethod(), loc))
-		return (resp.build405Response(loc.getAcceptGET(), loc.getAcceptPOST(), loc.getAcceptDELETE(), this, &loc));
+		return (resp.build405Response(isMethodAllowed(GET, loc), isMethodAllowed(POST, loc), isMethodAllowed(DELETE, loc), this, &loc));
 	if (req.getMethod() == GET)
 		handleGET(client, loc, path, epollFD);
 	else if (req.getMethod() == POST)
@@ -310,26 +310,15 @@ void	Server::handleDELETE(Location &loc, Client &client, std::string& path)
 
 }
 
-
+//adds errorFD to epoll so it can then add the right fds if execve succeeded
 void	Server::addCgiToEpoll(CGI &cgi, int epollFD) const
 {
 	epoll_event	ev;
 	ev.events = EPOLLIN;
-	ev.data.fd = cgi.getReadFD();
-	fcntl(cgi.getReadFD(), F_SETFL, O_NONBLOCK);
-	if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getReadFD(), &ev) == -1)
+	ev.data.fd = cgi.getErrorFD();
+	fcntl(cgi.getErrorFD(), F_SETFL, O_NONBLOCK);
+	if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getErrorFD(), &ev) == -1)
 	{
 		//TODO
-	}
-
-	if (cgi.getWriteFD() != -1)
-	{
-		ev.events = EPOLLOUT;
-		ev.data.fd = cgi.getWriteFD();
-		fcntl(cgi.getWriteFD(), F_SETFL, O_NONBLOCK);
-		if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getWriteFD(), &ev) == -1)
-		{
-			//TODO
-		}
 	}
 }

@@ -117,7 +117,7 @@ PAGE_TEMPLATE = """<!doctype html>
                     </div>
                 </form>
             </section>
-            <p><a href="/index.html">← Back to Home</a></p>
+            <a href="/index.html" class="back-home">← Home</a>
         </main>
     </body>
 </html>"""

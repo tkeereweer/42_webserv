@@ -127,6 +127,29 @@ std::string	Request::_parseParams(std::list<t_reqToken>::iterator &it)
 	return (res);	
 }
 
+bool    validQuerySequence(std::string &str)
+{
+    if (*str.begin() == '=' || *str.rbegin() == '=')
+        return (false);
+    for (std::string::iterator it = str.begin(); it != str.end(); it++)
+    {
+        if (*it == '&' && *(it + 1) == '&')
+            return (false);
+        if (*it == '%')
+        {
+            std::string encoded(it + 1, it + 3);
+            if (encoded.find_first_not_of("0123456789ABCDEF") != std::string::npos)
+                throw (Request::ErrorNum("Invalid encoding in query string", 400));
+            std::stringstream sstr(encoded);
+            int hexToInt;
+            sstr >> std::hex >> hexToInt;
+            if (hexToInt < 32 || hexToInt > 126)
+                throw (Request::ErrorNum("Invalid encoded range in query string", 400));
+        }
+    }
+    return (true);
+}
+
 std::string	Request::_parseQuery(std::list<t_reqToken>::iterator &it)
 {
 	std::string	res = "";
@@ -135,8 +158,12 @@ std::string	Request::_parseQuery(std::list<t_reqToken>::iterator &it)
 	{
 		res += it->val;
 		it++;
+        if (it->type != WORD)
+            throw(Request::ErrorNum("invalid char in query", 400));
 		if (!isUchar(it->val))
 			throw(Request::ErrorNum("invalid char in query", 400));
+        if (!validQuerySequence(it->val))
+            throw(Request::ErrorNum("incorrect query string", 400));
 		res += it->val;
 		it++;
 	}
@@ -183,8 +210,10 @@ void    Request::_parseSimpleRequest(void)
 	_parseURI(it);
 	if (it->type != CRLF)
 		throw(Request::ErrorNum("not simple request", 400));
+	it++;
+	if (it != this->_tokenList.end())
+		throw(Request::ErrorNum("not simple request", 400));
 	this->_method = GET;
-	this->_tokenList.erase(this->_tokenList.begin(), it);
 	this->_reqComplete = true;
 	return;
 }
@@ -387,12 +416,16 @@ bool	Request::_parseContentLength(std::list<t_reqToken>::iterator &it)
 	if (this->_contentLength != 0)
 		throw(Request::ErrorNum("more than 1 content-length header !", 400));
 	this->_contentLength = atoll(res.c_str());
+	if (this->_contentLength < 1)
+		throw (Request::ErrorNum("content-lenght < 1", 400));
 	return (true);
 }
 
 bool	isParameter(std::string &str)
 {
 	std::string::iterator it = str.begin();
+	if (str.find('=') == std::string::npos)
+		throw (Request::ErrorNum("missing '=' in content-type parameter", 400));
 	advance(it, str.find('=', 0));
 	std::string firstHalf(str.begin(), it);
 	it++;
@@ -460,6 +493,8 @@ bool	Request::_parseContentType(std::list<t_reqToken>::iterator &it)
 bool	isCookie(std::string &str)
 {
 	std::string::iterator it = str.begin();
+	if (str.find('=') == std::string::npos)
+		throw (Request::ErrorNum("missing = in cookie value", 400));
 	advance(it, str.find('=', 0));
 	std::string firstHalf(str.begin(), it);
 	it++;
@@ -513,20 +548,36 @@ bool	isValidForHeaders(std::string &str)
 {
 	for (std::string::iterator it = str.begin(); it != str.end(); it++)
 	{
-		if ((*it >= 0 && *it < 32)
+		if (!isascii(*it)
+			|| (*it >= 0 && *it < 32)
 			|| *it > 126)
 			throw(Request::ErrorNum("invalid char in some header body", 400));
 	}
 	return (true);
 }
 
+bool	isValidForHeaderName(std::string str)
+{
+	//transform to lower case, split on "-" and check that only ascii alphanum 
+	std::transform(str.begin(), str.end(), str.begin(), tolower);
+
+	if (str[0] == '-' || *str.rbegin() == '-')
+		throw (Request::ErrorNum("invalid char in header name", 400));
+	for (std::string::iterator it = str.begin(); it != str.end(); it++)
+	{
+		if (*it != '-' && !isdigit(*it) && !isalpha(*it))
+			throw(Request::ErrorNum("invalid char in header name", 400));
+	}
+	return (true);
+}
+
 static bool	isHeader(std::list<t_reqToken>::iterator &it)
 {
-	if (it->type != WORD)
-		return (false);
+	if (it->type != WORD || !isValidForHeaderName(it->val))
+		throw (std::runtime_error("unexpected token in random header"));//throw here !!!
 	it++;
 	if (it->type != COLON)
-		return (false);
+		throw (std::runtime_error("unexpected token in random header"));
 	it++;
 	while (it->type == SPACE)
 		it++;
@@ -579,8 +630,12 @@ void	Request::_parseFullRequest(std::list<t_reqToken>::iterator &it)
 	}
 	it++;
 	this->_reqHeadersValid = true;
-	if (it != this->_tokenList.end() && this->_method == POST && this->_contentLength > 0)
+	if (it != this->_tokenList.end() && this->_method == POST)
+	{
+		if (this->_contentType.empty() || this->_contentLength == 0)
+			throw (Request::ErrorNum("invalid POST request: missing content-length or content-type", 400));
 		_readLeftovers(it);
+	}
 	else
 		this->_reqComplete = true;
 	return ;

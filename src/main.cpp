@@ -1,5 +1,8 @@
 #include "../include/Webserv.hpp"
 
+volatile sig_atomic_t	g_signum = 0;
+int						g_sigPipe[2];
+
 std::string	findExeRoot(void);
 
 std::string exeRoot = findExeRoot();
@@ -24,6 +27,16 @@ std::string	resolvePath(std::string relPath)
 	return (resultingPath);
 }
 
+void	signalHandler(int signum)
+{
+	if (signum == SIGINT)
+	{
+		g_signum = SIGINT;
+		write(g_sigPipe[1], "a", 1);
+	}
+	return ;
+}
+
 int	main(int argc, char *argv[], char **envp)
 {
 	Webserv		webserv(envp);
@@ -32,6 +45,9 @@ int	main(int argc, char *argv[], char **envp)
 
 	if (argc > 1)
 		config_file = argv[1];
+	if (pipe(g_sigPipe) == -1)
+		return (1);
+	signal(SIGINT, &signalHandler);
 	try
 	{
 		webserv.getConfig(config_file);
@@ -39,12 +55,18 @@ int	main(int argc, char *argv[], char **envp)
 		// std::cout << webserv << std::endl;
 		webserv.openSockets();
 		webserv.launchServer();
+		close(g_sigPipe[0]);
+		close(g_sigPipe[1]);
 	}
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
+		if (webserv.getEpollFd() != -1)
+			close(webserv.getEpollFd());
 		for (std::map<int, Server*>::iterator it = webserv.getServerMap().begin(); it != webserv.getServerMap().end(); it++)
 			close(it->first);
+		close(g_sigPipe[0]);
+		close(g_sigPipe[1]);
         return (1);
 	}
 	return (0);

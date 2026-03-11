@@ -1,10 +1,18 @@
 import os
+from urllib.parse import parse_qs
 
-UPLOAD_DIR = "./data/upload"
+UPLOAD_DIR = "data/upload"
 
 def list_files():
     # os.makedirs(UPLOAD_DIR, exist_ok=True)
     files = sorted(os.listdir(UPLOAD_DIR))
+
+    qs = parse_qs(os.environ.get("QUERY_STRING", ""))
+    message = ""
+    if "success" in qs:
+        message = '<p class="message success">File uploaded successfully!</p>'
+    elif "error" in qs:
+        message = '<p class="message error">Error: {}</p>'.format(qs["error"][0])
 
     print("Status: 200")
     print("Content-Type: text/html\n")
@@ -16,45 +24,62 @@ def list_files():
     <title>At your Webservice — Files</title>
     <link rel="stylesheet" href="../css/style.css"/>
     <style>
-        .upload-row { display: flex; align-items: center; gap: 0.2rem; margin-bottom: 0.5rem; }
-        .upload-row input[type="file"] { margin-right: -0.5rem; }
-        .upload-btn { display: none; padding: 0.05rem 0.5rem; font-size: 0.8rem; line-height: 1; cursor: pointer; }
-        .files-heading { margin-top: 0.5rem; margin-bottom: 0.3rem; }
-        .file-list { list-style: none; padding: 0; margin-top: 0; }
-        .file-item { display: flex; align-items: center; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #ccc; }
-        .delete-btn { cursor: pointer; color: red; background: none; border: none; font-size: 1.1rem; font-weight: bold; padding: 0 0.4rem; }
-        .delete-btn:hover { opacity: 0.6; }
+        .files-container { display: flex; flex-direction: column; gap: 32px; width: 100%; max-width: 600px; }
+        .file-list { list-style: none; padding: 0; width: 100%; }
+        .file-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 0; border-bottom: 1px solid #313244;
+        }
+        .file-item:first-child { border-top: 1px solid #313244; }
+        .file-link { color: #cdd6f4; text-decoration: none; font-size: 0.95rem; transition: color 0.12s; }
+        .file-link:hover { color: #89b4fa; }
+        .delete-btn {
+            cursor: pointer; color: #6c7086; background: none; border: none;
+            font-family: inherit; font-size: 0.9rem; font-weight: 600;
+            letter-spacing: 0.05em; padding: 4px 8px; transition: color 0.12s;
+        }
+        .delete-btn:hover { color: #f38ba8; }
+        .empty-msg { color: #6c7086; font-size: 0.95rem; }
     </style>
 </head>
 <body>
     <header>
         <span class="header-title"><a href="/index.html">At your Webservice</a></span>
     </header>
-    <main class="main-team">
+    <main>
         <h1 class="page-title">FILES</h1>
+        <div class="files-container">""")
 
-        <form class="upload-row" action="../cgi-bin/upload_handle.py" method="POST" enctype="multipart/form-data">
-            <label for="myfile">Select a file:</label>
-            <input type="file" id="myfile" name="myfile" onchange="document.getElementById('upload-btn').style.display='inline-block'" />
-            <button type="submit" id="upload-btn" class="upload-btn">Upload</button>
-        </form>
+    if message:
+        print("            " + message)
 
-        <h2 class="files-heading">Uploaded Files</h2>""")
+    print("""            <form class="upload-form" action="/cgi-bin/upload_handle.py" method="POST" enctype="multipart/form-data">
+                <label class="file-label" for="myfile" id="file-label">Choose file</label>
+                <input type="file" id="myfile" name="myfile" />
+                <button type="submit" class="upload-btn" id="upload-btn" disabled>Upload</button>
+            </form>""")
 
     if not files:
-        print("        <p>No files uploaded yet.</p>")
+        print('            <p class="empty-msg">No files uploaded yet.</p>')
     else:
-        print('        <ul class="file-list">')
+        print('            <ul class="file-list">')
         for f in files:
             safe = f.replace("'", "\\'")
-            print('            <li class="file-item">')
-            print('                <span>{}</span>'.format(f))
-            print('                <button class="delete-btn" onclick="deleteFile(\'{}\')">&#x2715;</button>'.format(safe))
-            print('            </li>')
-        print('        </ul>')
+            print('                <li class="file-item">')
+            print('                    <a class="file-link" href="/upload/{}" download>{}</a>'.format(f, f))
+            print('                    <button class="delete-btn" onclick="deleteFile(\'{}\')">[ delete ]</button>'.format(safe))
+            print('                </li>')
+        print('            </ul>')
 
-    print("""    </main>
+    print("""        </div>
+        <a href="/index.html" class="back-home">← Home</a>
+    </main>
     <script>
+        document.getElementById('myfile').addEventListener('change', function() {
+            var hasFile = this.files.length > 0;
+            document.getElementById('file-label').textContent = hasFile ? this.files[0].name : 'Choose file';
+            document.getElementById('upload-btn').disabled = !hasFile;
+        });
         function deleteFile(filename) {
             fetch('/upload/' + encodeURIComponent(filename), { method: 'DELETE' })
                 .then(function(r) {

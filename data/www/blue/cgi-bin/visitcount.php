@@ -49,11 +49,19 @@ function write_csv(string $file, array $rows): void {
 
 /**
  * Get UUID from the COOKIE environment variable.
- * The var is always present and contains either a UUID or an empty string.
+ * Parses the cookie string to find the 'uuid' key.
  */
 function get_uuid_from_env(): ?string {
-    $val = trim((string) getenv('COOKIE')); // getenv returns false if unset; cast to string gives ''
-    return $val !== '' ? $val : null;
+    $cookie = trim((string) getenv('COOKIE'));
+    if ($cookie === '') return null;
+    foreach (explode(';', $cookie) as $part) {
+        $pair = explode('=', trim($part), 2);
+        if (count($pair) === 2 && trim($pair[0]) === 'uuid') {
+            $val = trim($pair[1]);
+            return $val !== '' ? $val : null;
+        }
+    }
+    return null;
 }
 
 /**

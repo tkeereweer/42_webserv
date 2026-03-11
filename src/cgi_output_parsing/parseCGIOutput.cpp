@@ -165,6 +165,28 @@ bool	CGI::_parseSetCookies(std::list<t_cgiToken>::iterator &it)
 	return (true);
 }
 
+bool	CGI::_parseLocationHeader(std::list<t_cgiToken>::iterator &it)
+{
+	std::string res = "";
+
+	std::transform(it->val.begin(), it->val.end(), it->val.begin(), tolower);
+	if (it->val != "Location")
+		return (false);
+	it++;
+	if (it->type != CGI_COLON)
+		throw(std::runtime_error("invalid header: Location"));
+	it++;
+	while (it->type == CGI_SPACE)
+		it++;
+	while (it->type != CGI_LB)
+	{
+		res += it->val;
+		it++;
+	}
+	this->_locationHeader = res;
+	return (true);
+}
+
 void	CGI::_readLeftovers(std::list<t_cgiToken>::iterator &it)
 {
 	this->_outBuff.clear();
@@ -182,7 +204,8 @@ void	CGI::_parseCGIOutput(std::list<t_cgiToken>::iterator &it)
 		if (!(_parseContentLength(it)
 			|| _parseContentType(it)
 			|| _parseStatus(it)
-			|| _parseSetCookies(it))) //_parseSetCookie as-is so no grammar checking !
+			|| _parseSetCookies(it)
+			|| _parseLocationHeader(it))) //_parseSetCookie as-is so no grammar checking !
 		{
 			try
 			{

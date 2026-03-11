@@ -30,6 +30,7 @@ class CGI
 		Location					*_loc;
 		int							_clientFd;
 		int							_pid;
+		int							_errorFD;
 		int							_writeFd;
 		int 						_readFd;
 		int							_inFileFd; //tempfile where the body is stored.
@@ -46,6 +47,7 @@ class CGI
 		std::string				_contentType;
 		std::string				_setCookie;
 		int						_status;
+		std::string				_locationHeader;
 		//flag to indicate we got to the end of output headers
 		bool	_outComplete;
 		bool	_outHeadersValid;
@@ -53,11 +55,11 @@ class CGI
 		long long		_bytesRead;
 		struct timeval	_outTimestamp;
 
-		void		_createChildProcess(int *inPipe, int *outPipe, char **childEnv);
+		void		_createChildProcess(int *inPipe, int *outPipe, char **childEnv, int *errorPipe);
 		void	    _setupEnvPOST(std::vector<std::string> env, char ***childEnv, Client &client);
 		void	    _setupEnvGET(std::string queryString, std::vector<std::string> env, char ***childEnv, Client &client);
-		std::string	getProgPath(std::string& scriptpath);
-		std::string	pathfinder(std::string prog);
+		std::string	_getProgPath(std::string& scriptpath);
+		std::string	_pathfinder(std::string prog);
 
 		void		_lexInput(std::string const &str);
 		void		_parseCGIOutput(std::list<t_cgiToken>::iterator &it);
@@ -66,6 +68,7 @@ class CGI
 		bool		_parseStatus(std::list<t_cgiToken>::iterator &it);
 		std::string	_parseMediaType(std::list<t_cgiToken>::iterator &it);
 		bool	    _parseSetCookies(std::list<t_cgiToken>::iterator &it);
+		bool		_parseLocationHeader(std::list<t_cgiToken>::iterator &it);
 		void		_readLeftovers(std::list<t_cgiToken>::iterator &it);
 
 		CGI(void);
@@ -81,10 +84,11 @@ class CGI
 		void	closeCgi(int epollFD);
 
 		//getters
-		int				getClientFD(void) const;
+		int				&getClientFD(void);
 		int 			getPID(void) const;
-		int				getWriteFD(void) const;
-		int				getReadFD(void) const;
+		int				&getErrorFD(void);
+		int				&getWriteFD(void);
+		int				&getReadFD(void);
 		std::string		&getOutBuff(void);
 		ssize_t			getBytesSent(void) const;
 		long long		getContentLength(void) const;
@@ -94,7 +98,8 @@ class CGI
 		struct timeval	getOutTimestamp(void) const;
 		ssize_t     	getBytesWritten(void) const;
 		int				getStatus(void) const;
-		int				getInFileFD(void) const;
+		int				&getInFileFD(void);
+		std::string		getLocationHeader(void) const;
 
 		//setters
 		void	setCGIContentLength(long long length);
