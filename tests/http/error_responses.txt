@@ -1,74 +1,10 @@
-#test69: "404" - GET on non existent file
+#test77: "201" - POST OK
 
-GET /nonExistent.txt HTTP/1.1
-Host: example.com
-
-#endtest69
-
-
-#test70: "403" - GET on existent file in forbidden dir
-
-GET /src/main.cpp HTTP/1.1
-Host: example.com
-
-#endtest70
-
-
-#test71: "403" - GET on forbidden file
-
-GET /data/upload/forbidden.txt HTTP/1.1
-Host: example.com
-
-#endtest71
-
-
-#test72: "405" - POST to forbidden dir
-
-POST / HTTP/1.1
-Host: example.com
-Content-Length: 10
-Content-Type: application/json
-
-{"data": "value"}
-
-#endtest72
-
-
-#test73: "405" - DELETE in forbidden dir
-
-DELETE /condifg/shouldntdelete.conf HTTP/1.1
-Host: example.com
-
-#endtest73
-
-
-
-
-
-#test76: "200" - OK std
-
-GET /data/www/blue/index.html HTTP/1.1
-Host: example.com
-
-#endtest76
-
-
-#test77: "201" - file created
-
-POST /data/upload HTTP/1.1
+POST /test.json HTTP/1.1
 Host: example.com
 Content-Type: application/json
-Content-Length: 16
+Content-Length: 18
 
 {"data": "value"}
 
 #endtest77
-
-
-#test78: "204" - file deleted
-
-DELETE /data/upload/fileToDelete.txt HTTP/1.1
-Host: example.com
-
-#endtest78
-
