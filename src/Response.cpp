@@ -304,7 +304,6 @@ void    Response::buildGetCGIResponse(Client &client, Location *loc, int epollFD
 	server.addCgiToEpoll(server.getCgiVec().back(), epollFD);
 	client.setCgiResponseState(1); //ongoing
 	this->_protocol = "HTTP/1.0";
-	this->_returnCode = 200;
 	this->_reasonPhrase = "OK";
 	return ;
 }
@@ -315,7 +314,6 @@ void Response::buildPostCgiResponse(Client &client, Location *loc, int epollFD, 
 	server.addCgiToEpoll(server.getCgiVec().back(), epollFD);
 	client.setCgiResponseState(1);
 	this->_protocol = "HTTP/1.0";
-	this->_returnCode = 200;
 	this->_reasonPhrase = "OK";
 	return ;
 }
@@ -426,6 +424,11 @@ size_t	Response::getToRead(void) const
 std::string	&Response::getEntityBody(void)
 {
 	return (this->_entityBody);
+}
+
+short	Response::getReturnCode(void) const
+{
+	return (this->_returnCode);
 }
 
 //setters

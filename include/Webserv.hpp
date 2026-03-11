@@ -78,6 +78,7 @@ class	Webserv
 		void		_cgiError(CGI &cgi);
 		int			_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize);
 		void        _destroyCGI(CGI &cgi, Server &server);
+		void		_buildOtherCode(CGI &cgi);
 		void		_cleanExit(void);
 
 

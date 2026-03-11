@@ -175,7 +175,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	if (isDir(path.c_str()) || *(path.rbegin()) == '/')
 		return (handleDir(client, loc, path));
 	if (!isMethodAllowed(req.getMethod(), loc))
-		return (resp.build405Response(loc.getAcceptGET(), loc.getAcceptPOST(), loc.getAcceptDELETE(), this, &loc));
+		return (resp.build405Response(isMethodAllowed(GET, loc), isMethodAllowed(POST, loc), isMethodAllowed(DELETE, loc), this, &loc));
 	if (req.getMethod() == GET)
 		handleGET(client, loc, path, epollFD);
 	else if (req.getMethod() == POST)

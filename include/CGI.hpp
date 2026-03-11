@@ -47,6 +47,7 @@ class CGI
 		std::string				_contentType;
 		std::string				_setCookie;
 		int						_status;
+		std::string				_locationHeader;
 		//flag to indicate we got to the end of output headers
 		bool	_outComplete;
 		bool	_outHeadersValid;
@@ -67,6 +68,7 @@ class CGI
 		bool		_parseStatus(std::list<t_cgiToken>::iterator &it);
 		std::string	_parseMediaType(std::list<t_cgiToken>::iterator &it);
 		bool	    _parseSetCookies(std::list<t_cgiToken>::iterator &it);
+		bool		_parseLocationHeader(std::list<t_cgiToken>::iterator &it);
 		void		_readLeftovers(std::list<t_cgiToken>::iterator &it);
 
 		CGI(void);
@@ -97,6 +99,7 @@ class CGI
 		ssize_t     	getBytesWritten(void) const;
 		int				getStatus(void) const;
 		int				&getInFileFD(void);
+		std::string		getLocationHeader(void) const;
 
 		//setters
 		void	setCGIContentLength(long long length);

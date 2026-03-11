@@ -412,6 +412,11 @@ int	&CGI::getInFileFD(void)
 	return (this->_inFileFd);
 }
 
+std::string	CGI::getLocationHeader(void) const
+{
+	return (this->_locationHeader);
+}
+
 void	CGI::setCGIContentLength(long long length)
 {
 	this->_contentLength = length;

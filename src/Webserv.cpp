@@ -508,6 +508,30 @@ void	Webserv::_cgiError(CGI &cgi)
 	_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
 }
 
+void	Webserv::_buildOtherCode(CGI &cgi)
+{
+	struct epoll_event	event;
+	Server				&server = *this->_clientMap[cgi.getClientFD()].server;
+
+	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), &event);
+	if (cgi.getStatus() == 300 || cgi.getStatus() == 301 || cgi.getStatus() == 302)
+	{
+		if (cgi.getLocationHeader().empty())
+			this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502, &server, &cgi.getLocation());
+		else
+			this->_clientMap[cgi.getClientFD()].client.getResponse().buildRedirResponse(cgi.getStatus(), cgi.getLocationHeader());
+	}
+	else if (cgi.getStatus() == 405)
+		this->_clientMap[cgi.getClientFD()].client.getResponse().build405Response(server.isMethodAllowed(GET, cgi.getLocation()), server.isMethodAllowed(POST, cgi.getLocation()), server.isMethodAllowed(DELETE, cgi.getLocation()), &server, &cgi.getLocation());
+	else
+		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(cgi.getStatus(), &server, &cgi.getLocation());
+	event.events = EPOLLOUT;
+	event.data.fd = cgi.getClientFD();
+	if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
+		closeClient(cgi.getClientFD());
+	_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
+}
+
 int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 {
 	int	lexReturn;
@@ -521,16 +545,16 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 		std::cout << e.what() << std::endl;
 		return (-2);
 	}
-	if (lexReturn != 0 && this->_clientMap[cgi.getClientFD()].client.getResponse().getContentType().empty())//first time done header parsing 
+	if (lexReturn != 0 && this->_clientMap[cgi.getClientFD()].client.getResponse().getReturnCode() == 0)//first time done header parsing 
 	{
-		if (cgi.getContentType().empty() || (maxOutSize != -1 && cgi.getContentLength() > maxOutSize) || (maxOutSize == -1 && cgi.getContentLength() == -1) || cgi.getStatus() == -1)
-		{
+		if (cgi.getStatus() == -1)
 			return (-2);
-		}
+		this->_clientMap[cgi.getClientFD()].client.getResponse().setReturnCode(cgi.getStatus());
+		if (cgi.getStatus() > 299)
+			return (_buildOtherCode(cgi), -3);
+		if (cgi.getContentType().empty() || (maxOutSize != -1 && cgi.getContentLength() > maxOutSize) || (maxOutSize == -1 && cgi.getContentLength() == -1) || cgi.getStatus() == -1)
+			return (-2);
 		this->_clientMap[cgi.getClientFD()].client.getResponse().setContentType(cgi.getContentType());
-		if (cgi.getStatus() != -1)
-			this->_clientMap[cgi.getClientFD()].client.getResponse().setReturnCode(cgi.getStatus());
-			// TODO stop cgi if status 4xx or 5xx and build errror response
 		if (!cgi.getSetCookie().empty()) //set cookie
 			this->_clientMap[cgi.getClientFD()].client.getResponse().setSetCookie(cgi.getSetCookie());
 		if (cgi.getContentLength() != -1)
@@ -576,7 +600,7 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 		maxOutSize = server.getMaxCGIOutput();
 	buffer[bytesRead] = '\0';
 	cgi.getOutBuff().append(buffer);
-	if (this->_clientMap[cgi.getClientFD()].client.getResponse().getContentType().empty())
+	if (this->_clientMap[cgi.getClientFD()].client.getResponse().getReturnCode() == 0)
 	{
 		if ((lexReturn = _setupCGIResponseHeaders(cgi, maxOutSize)) == -2)
 			return(cgi.setCGIContentLength(-1), _cgiError(cgi));
