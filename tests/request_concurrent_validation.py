@@ -517,7 +517,7 @@ def main():
     parser.add_argument("--host",    default="127.0.0.1", help="Server host (default: 127.0.0.1)")
     parser.add_argument("--port",    type=int, default=8080, help="Server port (default: 8080)")
     parser.add_argument("--timeout", type=float, default=300.0, help="Per-request timeout in seconds (default: 300)")
-    parser.add_argument("--file",    default="/home/sravizza/42/rank05/webserv_perso/tests/http/test.txt",
+    parser.add_argument("--file",    default="/home/sravizza/42/rank05/webserv_perso/tests/http/error_responses.txt",
                         help="Path to test file (default: wrong_requests.txt next to script)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Print full response detail per test")
     parser.add_argument("--filter",  type=str, default="", help="Run only tests whose description contains this string (case-insensitive)")
