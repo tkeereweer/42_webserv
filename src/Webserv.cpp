@@ -339,7 +339,7 @@ void	Webserv::handleRequest(int clientFd)
 	else
 	{
 		int tempFD = open(client.getRequest().getBodyFilename().c_str(), O_WRONLY | O_APPEND);
-		write(tempFD, client.getReadBuffer().c_str(), client.getReadBuffer().size());
+		write(tempFD, client.getReadBuffer().c_str(), client.getReadBuffer().size()); //add bytes in the tempfile and compare with content length
 		close(tempFD);
 		client.getRequest().addBytesRead(client.getReadBuffer().size());
 		client.getReadBuffer().clear();
