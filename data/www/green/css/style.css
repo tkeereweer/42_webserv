@@ -1,0 +1,446 @@
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap");
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    background-color: #1a2117;
+    color: #c8ddb8;
+    font-family:
+        "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    border-bottom: 1px solid #2a3d26;
+    padding: 16px 40px;
+    background-color: #131a10;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+header::before {
+    content: "//";
+    color: #567055;
+    font-size: 1rem;
+}
+
+.header-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.header-title a {
+    color: #c8ddb8;
+    text-decoration: none;
+}
+
+.header-title a:hover {
+    color: #87c67a;
+}
+
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    gap: 48px;
+    padding: 60px 40px;
+}
+
+.banner {
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.25;
+    color: #87c67a;
+    text-align: center;
+    white-space: pre;
+    letter-spacing: 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 780px;
+}
+
+.card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border: 1px solid #2a3d26;
+    height: 130px;
+    padding: 0 20px;
+    color: #c8ddb8;
+    text-decoration: none;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background-color: #131a10;
+    transition:
+        border-color 0.12s,
+        background-color 0.12s,
+        color 0.12s;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.card:hover {
+    border-color: #87c67a;
+    background-color: #1a2117;
+    color: #87c67a;
+}
+
+/* team page */
+
+.main-team {
+    justify-content: flex-start;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: #c8ddb8;
+    text-align: center;
+}
+
+.member-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    max-width: 780px;
+}
+
+.member {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 28px 0;
+    border-bottom: 1px solid #2a3d26;
+}
+
+.member:first-child {
+    border-top: 1px solid #2a3d26;
+}
+
+.member-pic {
+    width: 110px;
+    height: 110px;
+    object-fit: cover;
+    object-position: center;
+    flex-shrink: 0;
+    border: 1px solid #3a4f35;
+}
+
+.member-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.member-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #c8ddb8;
+    letter-spacing: 0.05em;
+}
+
+.member-role {
+    font-weight: 400;
+    color: #87c67a;
+}
+
+.member-desc {
+    font-size: 0.9rem;
+    color: #567055;
+    line-height: 1.5;
+}
+
+/* readme page */
+
+.readme {
+    width: 100%;
+    max-width: 780px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.readme-subtitle {
+    font-size: 0.9rem;
+    color: #567055;
+    font-style: italic;
+    padding-bottom: 32px;
+}
+
+.readme-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-top: 1px solid #2a3d26;
+    padding: 28px 0;
+}
+
+.readme-heading {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #87c67a;
+}
+
+.readme-section p {
+    font-size: 0.95rem;
+    color: #c8ddb8;
+    line-height: 1.7;
+}
+
+.code-block {
+    background-color: #131a10;
+    border: 1px solid #2a3d26;
+    padding: 14px 18px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: #73d983;
+    white-space: pre;
+}
+
+/* error pages */
+
+.main-error {
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+}
+
+.error-code {
+    font-size: 6rem;
+    font-weight: 600;
+    color: #87c67a;
+    letter-spacing: 0.05em;
+    line-height: 1;
+}
+
+.error-code.error-5xx {
+    color: #e06c75;
+}
+
+.error-message {
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #c8ddb8;
+}
+
+.error-desc {
+    font-size: 0.9rem;
+    color: #567055;
+    line-height: 1.6;
+    max-width: 400px;
+}
+
+.error-back {
+    margin-top: 16px;
+    display: inline-block;
+    border: 1px solid #2a3d26;
+    padding: 10px 24px;
+    color: #c8ddb8;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background-color: #131a10;
+    transition: border-color 0.12s, color 0.12s;
+}
+
+.error-back:hover {
+    border-color: #87c67a;
+    color: #87c67a;
+}
+
+.back-home {
+    display: inline-block;
+    border: 1px solid #2a3d26;
+    padding: 10px 24px;
+    color: #c8ddb8;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background-color: #131a10;
+    transition: border-color 0.12s, color 0.12s;
+}
+
+.back-home:hover {
+    border-color: #87c67a;
+    color: #87c67a;
+}
+
+/* form elements */
+
+input[type="text"],
+input[type="email"],
+select,
+textarea {
+    background-color: #131a10;
+    color: #c8ddb8;
+    border: 1px solid #2a3d26;
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 8px 12px;
+    width: 100%;
+    transition: border-color 0.12s;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #87c67a;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    color: #567055;
+    text-transform: uppercase;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 8px 0;
+    font-size: 0.9rem;
+    color: #567055;
+}
+
+.form-actions {
+    margin-top: 16px;
+}
+
+.submit-btn {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #2a3d26;
+    padding: 10px 24px;
+    background-color: #131a10;
+    color: #c8ddb8;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 0.12s, color 0.12s;
+}
+
+.submit-btn:hover {
+    border-color: #87c67a;
+    color: #87c67a;
+}
+
+/* upload form */
+
+input[type="file"] { display: none; }
+
+.upload-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.file-label {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #2a3d26;
+    padding: 10px 20px;
+    background-color: #131a10;
+    color: #c8ddb8;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: border-color 0.12s, color 0.12s;
+}
+
+.file-label:hover { border-color: #87c67a; color: #87c67a; }
+
+.upload-btn {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #2a3d26;
+    padding: 10px 24px;
+    background-color: #131a10;
+    color: #c8ddb8;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 0.12s, color 0.12s;
+}
+
+.upload-btn:hover:not(:disabled) { border-color: #87c67a; color: #87c67a; }
+
+.upload-btn:disabled {
+    color: #3a4f35;
+    border-color: #2a3d26;
+    cursor: not-allowed;
+}
+
+/* messages */
+
+.message {
+    font-size: 0.9rem;
+    padding: 10px 14px;
+    border: 1px solid;
+}
+
+.message.success { color: #73d983; border-color: #73d983; }
+.message.error   { color: #e06c75; border-color: #e06c75; }

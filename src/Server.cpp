@@ -212,7 +212,9 @@ void	Server::handleDir(Client &client, Location &loc, std::string dir)
 		return (client.getResponse().buildRouteResponse(buildPath("/" + this->_index, &loc), this, &loc));
 	else if (loc.getAutoIndex() == 1 || (loc.getAutoIndex() != 0 && this->_autoIndex == 1))
 		return (client.getResponse().buildDirectoryListingResponse(dir, this, &loc));
-	dir.append("index.html"); //TODO: verify that dir ends with a "/"
+	if (*(dir.rbegin()) != '/')
+		dir += "/";
+	dir.append("index.html");
 	std::string	path = buildPath(dir, &loc);
 	if (access(path.c_str(), R_OK) == -1)
 		return (client.getResponse().buildErrorResponse(403, this, &loc));
@@ -319,6 +321,12 @@ void	Server::addCgiToEpoll(CGI &cgi, int epollFD) const
 	fcntl(cgi.getErrorFD(), F_SETFL, O_NONBLOCK);
 	if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getErrorFD(), &ev) == -1)
 	{
-		//TODO
+		ev.events = EPOLLOUT;
+		ev.data.fd = cgi.getClientFD();
+		if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getClientFD(), &ev) == -1)
+		{
+			//TODO what here? should close client but that is Webserv member function (not accessible here)
+			return;
+		}
 	}
 }

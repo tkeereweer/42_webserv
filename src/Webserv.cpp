@@ -215,7 +215,7 @@ void	Webserv::launchServer(void)
 	while (1)
 	{
 		// std::cout << "\nWaiting for connections" << std::endl;
-		readyFds = epoll_wait(_epollFd, readyEvents, 200, -1);
+		readyFds = epoll_wait(_epollFd, readyEvents, 200, 2500);
 		if (g_signum == SIGINT)
 		{
 			_cleanExit();
@@ -231,7 +231,7 @@ void	Webserv::launchServer(void)
 			else if ((idx = isCgiFd(readyEvents[i].data.fd)) != -1)
 			{
 				int servIdx = idx >> 16;
-				int cgiIdx = idx & std::numeric_limits<int>::max();
+				int cgiIdx = idx & 0xFFFF;
 				if (this->_servers[servIdx].getCgiVec()[cgiIdx].getErrorFD() == readyEvents[i].data.fd)
 					_handleErrorPipe(this->_servers[servIdx].getCgiVec()[cgiIdx]);
 				else if (readyEvents[i].events & EPOLLOUT)
@@ -655,21 +655,22 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 
 void	Webserv::_handleErrorPipe(CGI &cgi)
 {
-	int	err;
+	int					err;
 	struct epoll_event	event;
-	size_t n = read(cgi.getErrorFD(), &err, sizeof(err));
+	size_t				n = read(cgi.getErrorFD(), &err, sizeof(err));
+	Client				&client = this->_clientMap[cgi.getClientFD()].client;
+
 	if (n > 0)
 	{
 		//exceve error, cleanup time and build error response
-		Client	&client = this->_clientMap[cgi.getClientFD()].client;
-		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getErrorFD(), &event); //add client here dubass
+		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getErrorFD(), &event);
 		_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
-		//ad client back
 		event.events = EPOLLOUT;
 		event.data.fd = cgi.getClientFD();
 		if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 		{
-			//TODO
+			closeClient(cgi.getClientFD());
+			return;
 		}
 		return (client.getResponse().buildErrorResponse(500, this->_clientMap[cgi.getClientFD()].server, &cgi.getLocation()));
 	}
@@ -681,7 +682,14 @@ void	Webserv::_handleErrorPipe(CGI &cgi)
 		event.data.fd = cgi.getWriteFD();
 		if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getWriteFD(), &event) == -1)
 		{
-			//TODO
+			event.events = EPOLLOUT;
+			event.data.fd = cgi.getClientFD();
+			if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
+			{
+				closeClient(cgi.getClientFD());
+				return;
+			}
+			return (client.getResponse().buildErrorResponse(500, this->_clientMap[cgi.getClientFD()].server, &cgi.getLocation()));
 		}
 	}
 	if (cgi.getReadFD() != -1)
@@ -690,7 +698,16 @@ void	Webserv::_handleErrorPipe(CGI &cgi)
 		event.data.fd = cgi.getReadFD();
 		if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getReadFD(), &event) == -1)
 		{
-			//TODO
+			if (cgi.getWriteFD() != -1)
+				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), &event);
+			event.events = EPOLLOUT;
+			event.data.fd = cgi.getClientFD();
+			if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
+			{
+				closeClient(cgi.getClientFD());
+				return;
+			}
+			return (client.getResponse().buildErrorResponse(500, this->_clientMap[cgi.getClientFD()].server, &cgi.getLocation()));
 		}
 	}
 	close(cgi.getErrorFD());
@@ -774,6 +791,8 @@ void    Webserv::handleTimeouts(void)
 	struct timeval	cgiOutStamp;
 	
 	gettimeofday(&now, NULL);
+	if (this->_clientMap.empty())
+		return ;
 	for (std::map<int, t_connection>::iterator it = this->_clientMap.begin(); it != this->_clientMap.end(); it++)
 	{
 		Client	&client = it->second.client;
@@ -786,19 +805,28 @@ void    Webserv::handleTimeouts(void)
 		//check if 1) request/response complete 2) timestamp initialized === first receive/send happend 3) timeout status
 		if (!reqFlag && (recvStamp.tv_sec != 0 || recvStamp.tv_usec != 0) && getTimeDiff(recvStamp, now) > QUERY_TIMEOUT)
 		{
-			client.getResponse().buildErrorResponse(408, it->second.server, NULL);
-			closeClient(client.getFd());
+			if (!client.getRequest().getReqFlag())
+				client.getResponse().buildErrorResponse(400, it->second.server, NULL);
+			else
+				client.getResponse().buildErrorResponse(408, it->second.server, NULL);
+			//add client to epoll
+			struct epoll_event event;
+			event.events = EPOLLOUT;
+			event.data.fd = client.getFd();
+			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, client.getFd(), &event) == -1)
+			{
+				_clientMap.erase(client.getFd());
+				close(client.getFd());
+				throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
+			}
 		}
 		if (!responseFlag && (sendStamp.tv_sec != 0 || sendStamp.tv_usec != 0) && getTimeDiff(sendStamp, now) > QUERY_TIMEOUT)
-		{
-			client.getResponse().buildErrorResponse(408, it->second.server, NULL);
 			closeClient(client.getFd());
-		}
 	}
 	//cgi timeout
-	for (size_t j = 0; j != this->_servers.size(); j++)
+	for (size_t j = 0; j < this->_servers.size(); j++)
 	{
-		for (size_t i = 0; i != this->_servers[j].getCgiVec().size(); i++)
+		for (size_t i = 0; i < this->_servers[j].getCgiVec().size(); i++)
 		{
 			CGI	&cgi = this->_servers[j].getCgiVec()[i];
 			cgiOutStamp = cgi.getOutTimestamp();
@@ -806,8 +834,19 @@ void    Webserv::handleTimeouts(void)
 			{
 				std::cout << "CGI timed out" << std::endl;
 				this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(503, &this->_servers[j], &cgi.getLocation());
+				//add client to epoll
 				std::vector<CGI>::iterator toErase = this->_servers[j].getCgiVec().begin() + i;
 				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
+				//add client to epoll
+				struct epoll_event event;
+				event.events = EPOLLOUT;
+				event.data.fd = cgi.getClientFD();
+				if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, cgi.getClientFD(), &event) == -1)
+				{
+					_clientMap.erase(cgi.getClientFD());
+					close(cgi.getClientFD());
+					throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
+				}
 				_destroyCGI(cgi, this->_servers[j]);
 				this->_servers[j].getCgiVec().erase(toErase);
 			}

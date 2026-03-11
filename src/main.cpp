@@ -45,14 +45,14 @@ int	main(int argc, char *argv[], char **envp)
 
 	if (argc > 1)
 		config_file = argv[1];
-	if (pipe(g_sigPipe) == -1)
-		return (1);
-	signal(SIGINT, &signalHandler);
 	try
 	{
 		webserv.getConfig(config_file);
 		std::cout << "Parsed config file: " << std::endl;
 		// std::cout << webserv << std::endl;
+        if (pipe(g_sigPipe) == -1)
+		    return (1);
+        signal(SIGINT, &signalHandler);
 		webserv.openSockets();
 		webserv.launchServer();
 		close(g_sigPipe[0]);
