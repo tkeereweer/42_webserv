@@ -168,8 +168,8 @@ void	Webserv::parseRoot(std::list<t_conf_token>::iterator &token, std::list<t_co
 
 static bool	handledErrorCodes(int code)
 {
-	if (code == 400 || code == 403 || code == 404 || code == 405 || code == 408 || code == 411 
-		|| code == 413 || code == 500 || code == 502 || code == 503)
+	if (code == 400 || code == 403 || code == 404 || code == 405 || code == 408 || code == 409 || code == 411
+		|| code == 411 || code == 413 || code == 414 || code == 500 || code == 502 || code == 503 || code == 505)
 		return (true);
 	return (false);
 }
