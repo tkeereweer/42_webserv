@@ -54,7 +54,7 @@ class	Server: public Config
 		bool		isMethodAllowed(t_method method, Location &loc) const;
 		void		dispatchRequest(Client &client, int epollFD);
 		void		addCgiToEpoll(CGI &cgi, int epollFD) const;
-		std::string	buildPath(std::string URI, Location &loc) const;
+		std::string	buildPath(std::string URI, Location *loc) const;
 };
 
 #endif

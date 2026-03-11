@@ -57,9 +57,9 @@ void    Response::build405Response(bool getAllowed, bool postAllowed, bool delet
 	this->_returnCode = 405;
 	this->_reasonPhrase = "Method Not Allowed";
 	if (loc && (it = loc->getErrorPages().find(405)) != loc->getErrorPages().end())
-		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
+		this->_bodyFilepath = server->buildPath("/" + it->second, loc);
 	else if (loc && server && (it = server->getErrorPages().find(405)) != server->getErrorPages().end())
-		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
+		this->_bodyFilepath = server->buildPath("/" + it->second, loc);
 	else
 		this->_bodyFilepath = resolvePath("data/www/default-errors/405.html");
 	if (getAllowed || postAllowed || deleteAllowed)
@@ -89,9 +89,9 @@ void    Response::buildErrorResponse(short code, Server *server, Location *loc)
 	this->_protocol = "HTTP/1.0";
 	this->_bodyFilepath.clear();
 	if (loc && (it = loc->getErrorPages().find(code)) != loc->getErrorPages().end()) //problem here when loc is NULL
-		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
+		this->_bodyFilepath = server->buildPath("/" + it->second, loc);
 	else if (server && (it = server->getErrorPages().find(code)) != server->getErrorPages().end())
-		this->_bodyFilepath = server->buildPath("/" + it->second, *loc);
+		this->_bodyFilepath = server->buildPath("/" + it->second, loc);
 	switch (code)
 	{
 		case (400):
