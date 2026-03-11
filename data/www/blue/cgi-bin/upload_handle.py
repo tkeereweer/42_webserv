@@ -50,38 +50,7 @@ def handle_upload():
     if not filename or content is None:
         print("Status: 200")
         print("Content-Type: text/html\n")
-        print("""<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>At your Webservice — Files</title>
-        <link rel="stylesheet" href="../css/style.css" />
-    </head>
-    <body>
-        <header>
-            <span class="header-title"><a href="/index.html">At your Webservice</a></span>
-        </header>
-        <main>
-            <h1 class="page-title">FILES</h1>
-            <div style="display:flex;flex-direction:column;gap:24px;width:100%;max-width:600px;">
-                <p class="message error">Error: no file received.</p>
-                <form class="upload-form" action="/cgi-bin/upload_handle.py" method="POST" enctype="multipart/form-data">
-                    <label class="file-label" for="myfile" id="file-label">Choose file</label>
-                    <input type="file" id="myfile" name="myfile" />
-                    <button type="submit" class="upload-btn" id="upload-btn" disabled>Upload</button>
-                </form>
-            </div>
-        </main>
-        <script>
-            document.getElementById('myfile').addEventListener('change', function() {
-                var hasFile = this.files.length > 0;
-                document.getElementById('file-label').textContent = hasFile ? this.files[0].name : 'Choose file';
-                document.getElementById('upload-btn').disabled = !hasFile;
-            });
-        </script>
-    </body>
-</html>""")
+        print('<meta http-equiv="refresh" content="0; url=/cgi-bin/list_files.py?error=no+file+received">')
         return
 
     os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -93,38 +62,7 @@ def handle_upload():
 
     print("Status: 200")
     print("Content-Type: text/html\n")
-    print("""<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>At your Webservice — Files</title>
-        <link rel="stylesheet" href="../css/style.css" />
-    </head>
-    <body>
-        <header>
-            <span class="header-title"><a href="/index.html">At your Webservice</a></span>
-        </header>
-        <main>
-            <h1 class="page-title">FILES</h1>
-            <div style="display:flex;flex-direction:column;gap:24px;width:100%;max-width:600px;">
-                <p class="message success">Saved: {filename} ({size} bytes)</p>
-                <form class="upload-form" action="/cgi-bin/upload_handle.py" method="POST" enctype="multipart/form-data">
-                    <label class="file-label" for="myfile" id="file-label">Choose file</label>
-                    <input type="file" id="myfile" name="myfile" />
-                    <button type="submit" class="upload-btn" id="upload-btn" disabled>Upload</button>
-                </form>
-            </div>
-        </main>
-        <script>
-            document.getElementById('myfile').addEventListener('change', function() {{
-                var hasFile = this.files.length > 0;
-                document.getElementById('file-label').textContent = hasFile ? this.files[0].name : 'Choose file';
-                document.getElementById('upload-btn').disabled = !hasFile;
-            }});
-        </script>
-    </body>
-</html>""".format(filename=filename, size=len(content)))
+    print('<meta http-equiv="refresh" content="0; url=/cgi-bin/list_files.py?success">')
 
 if __name__ == "__main__":
     handle_upload()

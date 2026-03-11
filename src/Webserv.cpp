@@ -530,7 +530,7 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 		this->_clientMap[cgi.getClientFD()].client.getResponse().setContentType(cgi.getContentType());
 		if (cgi.getStatus() != -1)
 			this->_clientMap[cgi.getClientFD()].client.getResponse().setReturnCode(cgi.getStatus());
-			// stop cgi if status 4xx or 5xx and build errror response
+			// TODO stop cgi if status 4xx or 5xx and build errror response
 		if (!cgi.getSetCookie().empty()) //set cookie
 			this->_clientMap[cgi.getClientFD()].client.getResponse().setSetCookie(cgi.getSetCookie());
 		if (cgi.getContentLength() != -1)
