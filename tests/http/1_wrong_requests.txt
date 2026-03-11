@@ -1,9 +1,65 @@
-#test46: "400" - GET method with body
+#test21: "400" - Content-Length mismatch body too short
 
-GET /index.html HTTP/1.1
+POST /api HTTP/1.1
 Host: example.com
-Content-Length: 16
+Content-Length: 50
+Content-Type: application/json
 
 {"data": "value"}
 
-#endtest46
+#endtest21
+
+#test21: "400" - Content-Length mismatch body too short
+
+POST /api HTTP/1.1
+Host: example.com
+Content-Length: 50
+Content-Type: application/json
+
+{"data": "value"}
+
+#endtest21
+
+#test21: "400" - Content-Length mismatch body too short
+
+POST /api HTTP/1.1
+Host: example.com
+Content-Length: 50
+Content-Type: application/json
+
+{"data": "value"}
+
+#endtest21
+
+#test21: "400" - Content-Length mismatch body too short
+
+POST /api HTTP/1.1
+Host: example.com
+Content-Length: 50
+Content-Type: application/json
+
+{"data": "value"}
+
+#endtest21
+
+#test21: "400" - Content-Length mismatch body too short
+
+POST /api HTTP/1.1
+Host: example.com
+Content-Length: 50
+Content-Type: application/json
+
+{"data": "value"}
+
+#endtest21
+
+#test21: "400" - Content-Length mismatch body too short
+
+POST /api HTTP/1.1
+Host: example.com
+Content-Length: 50
+Content-Type: application/json
+
+{"data": "value"}
+
+#endtest21
