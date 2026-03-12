@@ -25,13 +25,13 @@ class	Server: public Config
 		std::vector<CGI>			_cgiVec; //more logical here as you can choose to have some virtual hosts have access to some CGIs or not.
 		std::vector<std::string>	_parentEnv;
 
-		int		matchLocation(std::string URI) const;
+		int		_matchLocation(std::string URI) const;
 		void	_getQueryParams(Request &req);
-		void	handleDir(Client &client, Location &loc, std::string dir);
-		void	handleGET(Client &client, Location &loc, std::string path, int epollFD);
-		void	handlePOST(Location &loc, Client &client, std::string path, int epollFD);
-		void	handleDELETE(Location &loc, Client &client, std::string& path);
-		void	uploadFile(Location &loc, Client &client);
+		void	_handleDir(Client &client, Location &loc, std::string dir);
+		void	_handleGET(Client &client, Location &loc, std::string path, int epollFD);
+		void	_handlePOST(Location &loc, Client &client, std::string path, int epollFD);
+		void	_handleDELETE(Location &loc, Client &client, std::string& path);
+		void	_uploadFile(Location &loc, Client &client);
 
 		Server(void);
 	public:

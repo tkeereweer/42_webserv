@@ -1,4 +1,4 @@
-#include "../include/Webserv.hpp"
+#include "Webserv.hpp"
 
 std::string	Webserv::_openFile(char const *filepath)
 {

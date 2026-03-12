@@ -1,4 +1,4 @@
-#include "../include/CGI.hpp"
+#include "CGI.hpp"
 
 static bool	isHeader(std::list<t_cgiToken>::iterator &it)
 {

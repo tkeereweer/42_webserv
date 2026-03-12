@@ -1,4 +1,4 @@
-#include "../include/Location.hpp"
+#include "Location.hpp"
 
 /*******************************************************************************
 *						CTOR/DTOR
