@@ -327,7 +327,9 @@ void	Response::buildDelResponse(Client &client, std::string& path, Server *serve
 	errno = 0;
 	if (unlink(path.c_str()) == -1)
 	{
-		if (errno == EACCES || errno == EPERM || errno == EROFS)
+        if (errno == ENOENT)
+            return (buildErrorResponse(404, server, loc));
+		else if (errno == EACCES || errno == EPERM || errno == EROFS)
 			return (buildErrorResponse(403, server, loc));
 		else if (errno == EBUSY)
 			return (buildErrorResponse(409, server, loc));

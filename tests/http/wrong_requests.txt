@@ -1,129 +1,97 @@
 #test1: "405" - PATCH method not supported
-
 PATCH /index.html HTTP/1.1
 Host: example.com
-
 #endtest1
 
 #test2: "400" - Invalid HTTP version format
-
 GET /index.html HTTP/1.x
 Host: example.com
-
 #endtest2
 
 #test3: "400" - Missing HTTP version
-
 GET /index.html
 Host: example.com
-
 #endtest3
 
 #test4: "505" - HTTP version not supported
-
 GET /index.html HTTP/2.5
 Host: example.com
-
 #endtest4
 
 #test5: "400" - Missing URI
-
 GET HTTP/1.1
 Host: example.com
-
 #endtest5
 
 #test6: "400" - Empty request line
-
 Host: example.com
-
 #endtest6
 
 #test7: "400" - Multiple spaces in request line
-
 GET  /index.html  HTTP/1.1
 Host: example.com
-
 #endtest7
 
 #test8: "400" - Invalid characters in URI
-
 GET /index<>.html HTTP/1.1
 Host: example.com
-
 #endtest8
 
-#test10: "400" - Missing colon in header
-
+#test9: "400" - Missing colon in header
 GET /index.html HTTP/1.1
 Host example.com
+#endtest9
 
-#endtest10
-
-#test12: "400" - Empty header field name
-
+#test10: "400" - Empty header field name
 GET /index.html HTTP/1.1
 : value
 Host: example.com
+#endtest10
 
-#endtest12
-
-#test13: "400" - Space before colon in header
-
+#test11: "400" - Space before colon in header
 GET /index.html HTTP/1.1
 Host : example.com
+#endtest11
 
-#endtest13
-
-#test14: "400" - Invalid characters in header name
-
+#test12: "400" - Invalid characters in header name
 GET /index.html HTTP/1.1
 Host[name]: example.com
+#endtest12
 
-#endtest14
-
-#test15: "400" - Tab character in header name
-
+#test13: "400" - Tab character in header name
 GET /index.html HTTP/1.1
 Host	Name: example.com
+#endtest13
 
-#endtest15
-
-#test16: "400" - Non-numeric Content-Length
-
+#test14: "400" - Non-numeric Content-Length
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: abc
 Content-Type: application/json
 
 {"data": "value"}
+#endtest14
 
-#endtest16
-
-#test17: "400" - Negative Content-Length
-
+#test15: "400" - Negative Content-Length
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: -50
 Content-Type: application/json
 
 {"data": "value"}
+#endtest15
 
-#endtest17
-
-#test18: "400" - Content-Length with invalid spacing
-
+#test16: "400" - Content-Length with invalid spacing
 POST /api HTTP/1.1
 Host: example.com
-Content-Length:  50  
+Content-Length:  50
+
 Content-Type: application/json
 
 {"data": "value"}
+#endtest16
 
-#endtest18
-
-#test19: "400" - Multiple conflicting Content-Length headers
-
+#test17: "400" - Multiple conflicting Content-Length headers
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
@@ -131,142 +99,114 @@ Content-Length: 20
 Content-Type: application/json
 
 {"data": "value"}
+#endtest17
 
-#endtest19
-
-#test20: "400" - Content-Length with decimal points
-
+#test18: "400" - Content-Length with decimal points
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16.5
 Content-Type: application/json
 
 {"data": "value"}
+#endtest18
 
-#endtest20
-
-#test21: "400" - Content-Length mismatch body too short
-
+#test19: "408" - Content-Length mismatch body too short
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 50
 Content-Type: application/json
 
 {"data": "value"}
+#endtest19
 
-#endtest21
-
-#test22: "400" - Content-Length mismatch body too long
-
+#test20: "400" - Content-Length mismatch body too long
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 10
 Content-Type: application/json
 
 {"data": "value"}
+#endtest20
 
-#endtest22
-
-#test23: "400" - Content-Length with plus sign
-
+#test21: "400" - Content-Length with plus sign
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: +50
 Content-Type: application/json
 
 body content here
+#endtest21
 
-#endtest23
-
-#test24: "400" - Invalid MIME type missing subtype
-
+#test22: "400" - Invalid MIME type missing subtype
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
 Content-Type: application
 
 {"data": "value"}
+#endtest22
 
-#endtest24
-
-#test25: "400" - Invalid characters in MIME type
-
+#test23: "400" - Invalid characters in MIME type
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
 Content-Type: application/json<script>
 
 {"data": "value"}
+#endtest23
 
-#endtest25
-
-#test26: "400" - Content-Type with invalid parameter format
-
+#test24: "400" - Content-Type with invalid parameter format
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
 Content-Type: application/json; charset
 
 {"data": "value"}
+#endtest24
 
-#endtest26
-
-#test27: "400" - Content-Type with null character
-
+#test25: "400" - Content-Type with null character
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
 Content-Type: application/json
 
 {"data": "value"}
+#endtest25
 
-#endtest27
-
-#test28: "400" - Empty Content-Type value
-
+#test26: "400" - Empty Content-Type value
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
-Content-Type: 
+Content-Type:
 
 {"data": "value"}
+#endtest26
 
-#endtest28
-
-#test29: "400" - Malformed cookie missing equals
-
+#test27: "400" - Malformed cookie missing equals
 GET /index.html HTTP/1.1
 Host: example.com
 Cookie: sessionid value123
+#endtest27
 
-#endtest29
-
-#test30: "400" - Cookie with invalid characters in name
-
+#test28: "400" - Cookie with invalid characters in name
 GET /index.html HTTP/1.1
 Host: example.com
 Cookie: session[id]=value123
+#endtest28
 
-#endtest30
-
-#test33: "400" - Cookie with invalid delimiter
-
+#test29: "400" - Cookie with invalid delimiter
 GET /index.html HTTP/1.1
 Host: example.com
 Cookie: sessionid=value123; userid=abc; invalid
+#endtest29
 
-#endtest33
-
-#test34: "400" - Empty cookie value
-
+#test30: "400" - Empty cookie value
 GET /index.html HTTP/1.1
 Host: example.com
 Cookie: sessionid=
+#endtest30
 
-#endtest34
-
-#test35: "400" - Invalid Content-Encoding value
-
+#test31: "400" - Invalid Content-Encoding value
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
@@ -274,11 +214,9 @@ Content-Encoding: supercompress
 Content-Type: application/json
 
 {"data": "value"}
+#endtest31
 
-#endtest35
-
-#test36: "400" - Content-Encoding with invalid characters
-
+#test32: "400" - Content-Encoding with invalid characters
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
@@ -286,23 +224,20 @@ Content-Encoding: gzip<>
 Content-Type: application/json
 
 {"data": "value"}
+#endtest32
 
-#endtest36
-
-#test37: "400" - Content-Encoding with invalid spacing
-
+#test33: "400" - Content-Encoding with invalid spacing
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
-Content-Encoding:  gzip  
+Content-Encoding:  gzip
+
 Content-Type: application/json
 
 {"data": "value"}
+#endtest33
 
-#endtest37
-
-#test38: "400" - Multiple invalid Content-Encodings
-
+#test34: "400" - Multiple invalid Content-Encodings
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
@@ -310,84 +245,64 @@ Content-Encoding: gzip, supercompress, deflate
 Content-Type: application/json
 
 {"data": "value"}
+#endtest34
 
-#endtest38
-
-#test39: "400" - Query parameter with invalid encoding
-
+#test35: "400" - Query parameter with invalid encoding
 GET /search?q=hello%ZZ HTTP/1.1
 Host: example.com
+#endtest35
 
-#endtest39
-
-#test41: "400" - Query parameter with empty value
-
+#test36: "400" - Query parameter with empty value
 GET /search?q= HTTP/1.1
 Host: example.com
+#endtest36
 
-#endtest41
-
-#test42: "400" - Malformed query string double ampersand
-
+#test37: "400" - Malformed query string double ampersand
 GET /search?q=test&&p=1 HTTP/1.1
 Host: example.com
+#endtest37
 
-#endtest42
-
-#test43: "400" - Query parameter with unencoded special characters
-
+#test38: "400" - Query parameter with unencoded special characters
 GET /search?q=hello<script> HTTP/1.1
 Host: example.com
+#endtest38
 
-#endtest43
-
-#test44: "400" - Query parameter with incomplete encoding
-
+#test39: "400" - Query parameter with incomplete encoding
 GET /search?q=hello% HTTP/1.1
 Host: example.com
+#endtest39
 
-#endtest44
-
-#test45: "400" - POST without Content-Length
-
+#test40: "411" - POST without Content-Length
 POST /api HTTP/1.1
 Host: example.com
 Content-Type: application/json
 
 {"data": "value"}
+#endtest40
 
-#endtest45
-
-#test48: "400" - Invalid JSON body with length mismatch
-
+#test41: "400" - Invalid JSON body with length mismatch
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
 Content-Type: application/json
 
 {"data": invalid}
+#endtest41
 
-#endtest48
-
-#test49: "400" - Binary data with null bytes
-
+#test42: "400" - Binary data with null bytes
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 5
 Content-Type: text/plain
 
 [binary null bytes]
+#endtest42
 
-#endtest49
-
-#test52: "400" - No line ending after request line
-
+#test43: "400" - No line ending after request line
 GET /index.html HTTP/1.1Host: example.com
+#endtest43
 
-#endtest52
-
-#test54: "400" - Duplicate Content-Type headers same value
-
+#test44: "400" - Duplicate Content-Type headers same value
 POST /api HTTP/1.1
 Host: example.com
 Content-Type: application/json
@@ -395,11 +310,9 @@ Content-Type: application/json
 Content-Length: 16
 
 {"data": "value"}
+#endtest44
 
-#endtest54
-
-#test55: "400" - Conflicting Content-Type headers
-
+#test45: "400" - Conflicting Content-Type headers
 POST /api HTTP/1.1
 Host: example.com
 Content-Type: application/json
@@ -407,79 +320,286 @@ Content-Type: text/plain
 Content-Length: 16
 
 {"data": "value"}
+#endtest45
 
-#endtest55
+#test46: "400" - Whitespace-only request line
 
-#test57: "400" - Whitespace-only request line
-
-   
 Host: example.com
+#endtest46
 
-#endtest57
-
-#test58: "414" - Very long URI exceeds maximum length
-
-GET /path/with/extremely/long/uri/that/exceeds/reasonable/limits/and/should/be/rejected/by/the/parser/to/prevent/denial/of/service/attacks/through/memory/exhaustion/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa HTTP/1.1
+#test47: "414" - Very long URI exceeds maximum length
+GET /path/with/extremely/long/uri/that/exceeds/reasonable/limits/and/should/be/rejected/by/the/parser/to/prevent/denial/of/service/attacks/through/memory/exhaustion/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa HTTP/1.1
 Host: example.com
+#endtest47
 
-#endtest58
-
-
-#test60: "400" - Missing blank line between headers and body
-
+#test48: "400" - Missing blank line between headers and body
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 16
 Content-Type: application/json
 {"data": "value"}
+#endtest48
 
-#endtest60
-
-#test61: "400" - Content-Length zero POST with no body
-
+#test49: "400" - Content-Length zero POST with no body
 POST /api HTTP/1.1
 Host: example.com
 Content-Length: 0
 Content-Type: application/json
+#endtest49
 
-#endtest61
-
-#test62: "405" - HEAD method not supported
-
+#test50: "405" - HEAD method not supported
 HEAD /index.html HTTP/1.1
 Host: example.com
+#endtest50
 
-#endtest62
-
-#test63: "405" - OPTIONS method not supported
-
+#test51: "405" - OPTIONS method not supported
 OPTIONS * HTTP/1.1
 Host: example.com
+#endtest51
 
-#endtest63
-
-#test64: "405" - PUT method not supported
-
+#test52: "405" - PUT method not supported
 PUT /resource HTTP/1.1
 Host: example.com
 Content-Length: 16
 Content-Type: application/json
 
 {"data": "value"}
+#endtest52
 
-#endtest64
-
-#test66: "400" - Extended ASCII in header
-
+#test53: "400" - Extended ASCII in header
 GET /index.html HTTP/1.1
 Host: example.com
 X-Custom: café
+#endtest53
 
-#endtest66
-
-#test68: "400" - Unicode in query parameter not encoded
-
+#test54: "400" - Unicode in query parameter not encoded
 GET /search?q=café HTTP/1.1
 Host: example.com
+#endtest54
 
+#test55: "405" - GET not allowed: POST on GET-only location /css
+POST /css/main.css HTTP/1.1
+Host: 127.0.0.1
+Content-type: text/plain
+Content-length: 1
+
+a
+#endtest55
+
+#test56: "404" - GET non-existent file
+GET /this-page-does-not-exist.html HTTP/1.1
+Host: 127.0.0.1
+#endtest56
+
+#test57: "403" - GET file where server has no read permissions
+GET /protected.html HTTP/1.1
+Host: 127.0.0.1
+#endtest57
+
+#test58: "405" - DELETE not allowed: DELETE on location /
+DELETE /index.html HTTP/1.1
+Host: 127.0.0.1
+#endtest58
+
+#test59: "404" - DELETE non-existent file from /upload
+DELETE /upload/this-file-does-not-exist.txt HTTP/1.1
+Host: 127.0.0.1
+#endtest59
+
+#test61: "411" - POST with body but no Content-Length header
+POST / HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+
+body data without content length header
+#endtest61
+
+#test62: "408" - POST body exceeds client_max_body_size
+POST /upload HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: 80000001
+
+x
+#endtest62
+
+#test63: "404" - Request to path with no matching explicit location
+GET /no-such-location/nonexistent.html HTTP/1.1
+Host: 127.0.0.1
+#endtest63
+
+#test65: "400" - Path traversal attempt with ../ in URI
+GET /../etc/passwd HTTP/1.1
+Host: 127.0.0.1
+#endtest65
+
+#test66: "405" - DELETE on GET-only location /assets
+DELETE /assets/image.png HTTP/1.1
+Host: 127.0.0.1
+#endtest66
+
+#test67: "405" - DELETE on GET+POST location /cgi-bin
+DELETE /cgi-bin/script.py HTTP/1.1
+Host: 127.0.0.1
+#endtest67
+
+#test68: "405" - POST on GET-only location /assets
+POST /assets/image.jpg HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: 4
+
+data
 #endtest68
+
+#test69: "405" - DELETE on GET-only location /css
+DELETE /css/style.css HTTP/1.1
+Host: 127.0.0.1
+#endtest69
+
+#test70: "404" - GET non-existent file from /upload
+GET /upload/ghost.txt HTTP/1.1
+Host: 127.0.0.1
+#endtest70
+
+#test71: "404" - GET non-existent file from /assets
+GET /assets/nosuchfile.jpg HTTP/1.1
+Host: 127.0.0.1
+#endtest71
+
+#test72: "404" - GET non-existent CGI script
+GET /cgi-bin/noscript.py HTTP/1.1
+Host: 127.0.0.1
+#endtest72
+
+#test73: "404" - GET non-existent file from /css
+GET /css/missing.css HTTP/1.1
+Host: 127.0.0.1
+#endtest73
+
+#test74: "404" - GET deeply nested non-existent path
+GET /a/b/c/d/e/no-such-file.html HTTP/1.1
+Host: 127.0.0.1
+#endtest74
+
+#test75: "404" - GET non-existent file with query string
+GET /nonexistent.html?foo=bar HTTP/1.1
+Host: 127.0.0.1
+#endtest75
+
+#test76: "400" - Path traversal with ../ deeper in URI
+GET /upload/../../../etc/passwd HTTP/1.1
+Host: 127.0.0.1
+#endtest76
+
+#test77: "400" - Invalid characters in URI (unencoded space)
+GET /index .html HTTP/1.1
+Host: 127.0.0.1
+#endtest77
+
+#test78: "400" - Invalid HTTP method (lowercase)
+get /index.html HTTP/1.1
+Host: 127.0.0.1
+#endtest78
+
+#test79: "414" - URI too long
+GET /aaaaaaaaa...[truncated] HTTP/1.1
+Host: 127.0.0.1
+#endtest79
+
+#test80: "411" - POST to /upload without Content-Length
+POST /upload/test.txt HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+
+some body without content length
+#endtest80
+
+#test81: "411" - POST to /cgi-bin without Content-Length
+POST /cgi-bin/script.py HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+
+some body without content length
+#endtest81
+
+#test82: "408" - POST to / with body exceeding client_max_body_size
+POST / HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: 80000001
+
+x
+#endtest82
+
+#test83: "301" - GET /files redirects to CGI list_files
+GET /files HTTP/1.1
+Host: 127.0.0.1
+#endtest83
+
+#test84: "301" - GET /redir.html redirects to youtube
+GET /redir.html HTTP/1.1
+Host: 127.0.0.1
+#endtest84
+
+#test85: "200" - GET / serves index.html
+GET / HTTP/1.1
+Host: 127.0.0.1
+#endtest85
+
+#test86: "200" - GET /index.html directly
+GET /index.html HTTP/1.1
+Host: 127.0.0.1
+#endtest86
+
+#test87: "201" - POST to /upload creates a file
+POST /upload/error_case_test.txt HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: 16
+
+upload test data
+#endtest87
+
+#test88: "400" - Absolute URI with foreign host
+GET http://evil.com/steal HTTP/1.1
+Host: 127.0.0.1
+#endtest88
+
+#test89: "403" - GET on /upload/ directory with no autoindex
+GET /upload/ HTTP/1.1
+Host: 127.0.0.1
+#endtest89
+
+#test90: "400" - Negative Content-Length
+POST /upload/test.txt HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: -1
+
+data
+#endtest90
+
+#test91: "400" - Non-numeric Content-Length
+POST /upload/test.txt HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: abc
+
+data
+#endtest91
+
+#test92: "404" - GET file with hidden dot prefix
+GET /.hidden-file HTTP/1.1
+Host: 127.0.0.1
+#endtest92
+
+#test93: "404" - GET on non-existent nested path under /upload
+GET /upload/subdir/deep/file.txt HTTP/1.1
+Host: 127.0.0.1
+#endtest93
+
+#test94: "400" - URI with backslash
+GET /upload\file.txt HTTP/1.1
+Host: 127.0.0.1
+#endtest94

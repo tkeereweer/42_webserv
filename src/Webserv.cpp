@@ -226,7 +226,6 @@ void	Webserv::launchServer(void)
 		{
 			// activityNotif(readyEvents[i]);
 
-			//error handling: throws only on epoll fail--> end program in main
 			if (isListenSocket(readyEvents[i].data.fd))
 				newClient(readyEvents[i].data.fd);
 			else if ((idx = isCgiFd(readyEvents[i].data.fd)) != -1)
@@ -250,7 +249,7 @@ void	Webserv::launchServer(void)
 					closeClient(readyEvents[i].data.fd);
 			}
 		}
-		// handleTimeouts();
+		handleTimeouts();
 	}
 }
 

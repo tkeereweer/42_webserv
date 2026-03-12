@@ -207,7 +207,7 @@ void    Request::_parseURI(std::list<t_reqToken>::iterator &it)
 	it++;
 	this->_URI += "/";
 	this->_URI += _parseAbsPath(it);
-	if (this->_URI.size() > 2000)
+	if (this->_URI.size() > 500)
 		throw (Request::ErrorNum("URI too long", 414));
 	return ;
 }
