@@ -1,6 +1,6 @@
 #include "../include/Webserv.hpp"
 
-std::string	Webserv::openFile(char const *filepath)
+std::string	Webserv::_openFile(char const *filepath)
 {
 	std::ifstream	ifs(filepath);
 	std::string		line;
@@ -13,7 +13,7 @@ std::string	Webserv::openFile(char const *filepath)
 	return (content);
 }
 
-std::list<t_conf_token>	Webserv::lexConfigFile(std::string content)
+std::list<t_conf_token>	Webserv::_lexConfigFile(std::string content)
 {
 	std::list<t_conf_token>	out;
 	t_conf_token			curr;
@@ -60,7 +60,7 @@ std::list<t_conf_token>	Webserv::lexConfigFile(std::string content)
 	return (out);
 }
 
-void	Webserv::printConfTokens(std::list<t_conf_token> lst)
+void	Webserv::_printConfTokens(std::list<t_conf_token> lst)
 {
 	for (std::list<t_conf_token>::iterator it = lst.begin(); it != lst.end(); it++)
 	{
@@ -68,7 +68,7 @@ void	Webserv::printConfTokens(std::list<t_conf_token> lst)
 	}
 }
 
-void	Webserv::parseConfTokens(std::list<t_conf_token> &tokens)
+void	Webserv::_parseConfTokens(std::list<t_conf_token> &tokens)
 {
 	std::list<t_conf_token>::iterator	token = tokens.begin();
 	std::list<t_conf_token>::iterator	end = tokens.end();
@@ -82,7 +82,7 @@ void	Webserv::parseConfTokens(std::list<t_conf_token> &tokens)
 			if (token != end && token->type == OPEN_CURLY)
 			{
 				token++;
-				parseServerBlock(token, end, server);
+				_parseServerBlock(token, end, server);
 				if (token == end)
 					throw(std::runtime_error("Syntax error in config file"));
 				if (server.getSockets().size() < 1)
@@ -103,7 +103,7 @@ void	Webserv::parseConfTokens(std::list<t_conf_token> &tokens)
 *						CONFIG PARSING
 *******************************************************************************/
 
-void	Webserv::parseLimitExcept(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
+void	Webserv::_parseLimitExcept(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	token++;
 	if (token == end || token->type != CONF_WORD)
@@ -127,7 +127,7 @@ void	Webserv::parseLimitExcept(std::list<t_conf_token>::iterator &token, std::li
 	}
 }
 
-void	Webserv::parseMaxBodySize(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
+void	Webserv::_parseMaxBodySize(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	char		*end_num;
 	long long	max_size;
@@ -151,7 +151,7 @@ void	Webserv::parseMaxBodySize(std::list<t_conf_token>::iterator &token, std::li
 		throw(std::runtime_error("Error in client_max_body_size directive config"));
 }
 
-void	Webserv::parseRoot(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
+void	Webserv::_parseRoot(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	token++;
 	if (token == end || token->type != CONF_WORD)
@@ -174,7 +174,7 @@ static bool	handledErrorCodes(int code)
 	return (false);
 }
 
-void	Webserv::parseErrorPage(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
+void	Webserv::_parseErrorPage(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	char		*end_num;
 	int			code;
@@ -199,7 +199,7 @@ void	Webserv::parseErrorPage(std::list<t_conf_token>::iterator &token, std::list
 		throw(std::runtime_error("Error in error_page directive config"));
 }
 
-void	Webserv::parseAutoIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
+void	Webserv::_parseAutoIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	token++;
 	if (token == end || token->type != CONF_WORD)
@@ -215,7 +215,7 @@ void	Webserv::parseAutoIndex(std::list<t_conf_token>::iterator &token, std::list
 		throw(std::runtime_error("Error in autoindex directive config"));
 }
 
-void	Webserv::parseIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
+void	Webserv::_parseIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	token++;
 	if (token == end || token->type != CONF_WORD)
@@ -226,7 +226,7 @@ void	Webserv::parseIndex(std::list<t_conf_token>::iterator &token, std::list<t_c
 		throw(std::runtime_error("Error in index directive config"));
 }
 
-void	Webserv::parseRedir(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
+void	Webserv::_parseRedir(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	char		*end_num;
 	int			status;
@@ -251,7 +251,7 @@ void	Webserv::parseRedir(std::list<t_conf_token>::iterator &token, std::list<t_c
 		throw(std::runtime_error("Error in redirection directive config"));
 }
 
-void	Webserv::parseMaxCGIOutput(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
+void	Webserv::_parseMaxCGIOutput(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
 	char		*end_num;
 	long long	max_size;
@@ -279,7 +279,7 @@ void	Webserv::parseMaxCGIOutput(std::list<t_conf_token>::iterator &token, std::l
 *						LOCATION BLOCK PARSING
 *******************************************************************************/
 
-void	Webserv::parseUpload(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
+void	Webserv::_parseUpload(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
 {
 	token++;
 	if (token == end || token->type != CONF_WORD)
@@ -294,7 +294,7 @@ void	Webserv::parseUpload(std::list<t_conf_token>::iterator &token, std::list<t_
 		throw(std::runtime_error("Error in upload_store directive config"));
 }
 
-void	Webserv::parseLocation(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
+void	Webserv::_parseLocation(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location)
 {
 	if (token == end || token->type != CONF_WORD)
 		throw(std::runtime_error("Error in location config"));
@@ -308,23 +308,23 @@ void	Webserv::parseLocation(std::list<t_conf_token>::iterator &token, std::list<
 	while (token != end && token->type != CLOSE_CURLY)
 	{
 		if (token->type == CONF_WORD && token->value == "root")
-			parseRoot(token, end, location);
+			_parseRoot(token, end, location);
 		else if (token->type == CONF_WORD && token->value == "limit_except")
-			parseLimitExcept(token, end, location);
+			_parseLimitExcept(token, end, location);
 		else if (token->type == CONF_WORD && token->value == "autoindex")
-			parseAutoIndex(token, end, location);
+			_parseAutoIndex(token, end, location);
 		else if (token->type == CONF_WORD && token->value == "index")
-			parseIndex(token, end, location);
+			_parseIndex(token, end, location);
 		else if (token->type == CONF_WORD && token->value == "client_max_body_size")
-			parseMaxBodySize(token, end, location);
+			_parseMaxBodySize(token, end, location);
 		else if (token->type == CONF_WORD && token->value == "upload_store")
-			parseUpload(token, end, location);
+			_parseUpload(token, end, location);
 		else if (token->type == CONF_WORD && token->value == "error_page")
-			parseErrorPage(token, end, location);
+			_parseErrorPage(token, end, location);
 		else if (token->type == CONF_WORD && token->value == "return")
-			parseRedir(token, end, location);
+			_parseRedir(token, end, location);
 		else if (token->type == CONF_WORD && token->value == "cgi_max_output_size")
-			parseMaxCGIOutput(token, end, location);
+			_parseMaxCGIOutput(token, end, location);
 		else
 			throw(std::runtime_error("Unknown directive"));
 		token++;
@@ -335,7 +335,7 @@ void	Webserv::parseLocation(std::list<t_conf_token>::iterator &token, std::list<
 *						SERVER BLOCK PARSING
 *******************************************************************************/
 
-void	Webserv::parseListen(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
+void	Webserv::_parseListen(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
 {
 	t_socket	socket;
 	int			port_num;
@@ -363,7 +363,7 @@ void	Webserv::parseListen(std::list<t_conf_token>::iterator &token, std::list<t_
 		throw(std::runtime_error("Error in listen directive config"));
 }
 
-void	Webserv::parseServerName(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
+void	Webserv::_parseServerName(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
 {
 	token++;
 	if (token == end || token->type != CONF_WORD)
@@ -374,7 +374,7 @@ void	Webserv::parseServerName(std::list<t_conf_token>::iterator &token, std::lis
 		throw(std::runtime_error("Error in server_name directive config"));
 }
 
-void	Webserv::parseServerBlock(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
+void	Webserv::_parseServerBlock(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server)
 {
 	while (token != end && token->type != CLOSE_CURLY)
 	{
@@ -382,31 +382,31 @@ void	Webserv::parseServerBlock(std::list<t_conf_token>::iterator &token, std::li
 		{
 			Location	location;
 			token++;
-			parseLocation(token, end, location);
+			_parseLocation(token, end, location);
 			if (token == end)
 				throw(std::runtime_error("Syntax error in config file"));
 			server.addLocation(location);
 		}
 		else if (token->type == CONF_WORD && token->value == "listen")
-			parseListen(token, end, server);
+			_parseListen(token, end, server);
 		else if (token->type == CONF_WORD && token->value == "server_name")
-			parseServerName(token, end, server);
+			_parseServerName(token, end, server);
 		else if (token->type == CONF_WORD && token->value == "client_max_body_size")
-			parseMaxBodySize(token, end, server);
+			_parseMaxBodySize(token, end, server);
 		else if (token->type == CONF_WORD && token->value == "root")
-			parseRoot(token, end, server);
+			_parseRoot(token, end, server);
 		else if (token->type == CONF_WORD && token->value == "limit_except")
-			parseLimitExcept(token, end, server);
+			_parseLimitExcept(token, end, server);
 		else if (token->type == CONF_WORD && token->value == "error_page")
-			parseErrorPage(token, end, server);
+			_parseErrorPage(token, end, server);
 		else if (token->type == CONF_WORD && token->value == "autoindex")
-			parseAutoIndex(token, end, server);
+			_parseAutoIndex(token, end, server);
 		else if (token->type == CONF_WORD && token->value == "index")
-			parseIndex(token, end, server);
+			_parseIndex(token, end, server);
 		else if (token->type == CONF_WORD && token->value == "return")
-			parseRedir(token, end, server);
+			_parseRedir(token, end, server);
 		else if (token->type == CONF_WORD && token->value == "cgi_max_output_size")
-			parseMaxCGIOutput(token, end, server);
+			_parseMaxCGIOutput(token, end, server);
 		else
 			throw(std::runtime_error("Unknown directive"));
 		token++;

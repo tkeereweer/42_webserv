@@ -109,10 +109,9 @@ void	Webserv::addServer(Server server)
 
 void	Webserv::getConfig(char const *filepath)
 {
-	std::string	content = openFile(filepath);
-	std::list<t_conf_token>	tokens = lexConfigFile(content);
-	// printConfTokens(tokens);
-	parseConfTokens(tokens);
+	std::string	content = _openFile(filepath);
+	std::list<t_conf_token>	tokens = _lexConfigFile(content);
+	_parseConfTokens(tokens);
 	if (this->_servers.size() < 1)
 		throw(std::runtime_error("No server in config file"));
 }
@@ -167,7 +166,7 @@ void	Webserv::openSockets(void)
 }
 
 
-int	Webserv::setupEpoll(void) const
+int	Webserv::_setupEpoll(void) const
 {
 	int					epollFd;
 	struct epoll_event	event;
@@ -182,17 +181,17 @@ int	Webserv::setupEpoll(void) const
 		event.data.fd = it->first;
 		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, it->first, &event) == -1)
 			throw(std::runtime_error(std::strerror(errno)));
-		std::cout << "Listening Socket with fd: " << it->first << " added to the epoll" << std::endl;
+		std::cout << "ListenSocket (" << it->first << ") added to epoll" << std::endl;
 	}
 	return (epollFd);
 }
 
 
-void	Webserv::activityNotif(struct epoll_event	readyEvent)
+void	Webserv::_activityNotif(struct epoll_event	readyEvent)
 {
-	if (isListenSocket(readyEvent.data.fd))
+	if (_isListenSocket(readyEvent.data.fd))
 		std::cout << "ListenSocket (" << readyEvent.data.fd << ") is ready for ";
-	else if (isCgiFd(readyEvent.data.fd) != -1)
+	else if (_isCgiFd(readyEvent.data.fd) != -1)
 		std::cout << "Pipe (" << readyEvent.data.fd << ") is ready for ";
 	else
 		std::cout << "Client (" << readyEvent.data.fd << ") is ready for ";
@@ -212,7 +211,7 @@ void	Webserv::launchServer(void)
 	struct epoll_event	readyEvents[200];
 	long				idx = 0;
 
-	this->_epollFd = this->setupEpoll();
+	this->_epollFd = this->_setupEpoll();
 	while (1)
 	{
 		// std::cout << "\nWaiting for connections" << std::endl;
@@ -227,9 +226,9 @@ void	Webserv::launchServer(void)
 			// activityNotif(readyEvents[i]);
 
 			//error handling: throws only on epoll fail--> end program in main
-			if (isListenSocket(readyEvents[i].data.fd))
-				newClient(readyEvents[i].data.fd);
-			else if ((idx = isCgiFd(readyEvents[i].data.fd)) != -1)
+			if (_isListenSocket(readyEvents[i].data.fd))
+				_newClient(readyEvents[i].data.fd);
+			else if ((idx = _isCgiFd(readyEvents[i].data.fd)) != -1)
 			{
 				int servIdx = idx >> 16;
 				int cgiIdx = idx & 0xFFFF;
@@ -243,14 +242,14 @@ void	Webserv::launchServer(void)
 			else
 			{
 				if (readyEvents[i].events & EPOLLIN)
-					handleRequest(readyEvents[i].data.fd);
+					_handleRequest(readyEvents[i].data.fd);
 				else if (readyEvents[i].events & EPOLLOUT)
-					handleResponse(readyEvents[i].data.fd);
+					_handleResponse(readyEvents[i].data.fd);
 				else
-					closeClient(readyEvents[i].data.fd);
+					_closeClient(readyEvents[i].data.fd);
 			}
 		}
-		// handleTimeouts();
+		_handleTimeouts();
 	}
 }
 
@@ -259,7 +258,7 @@ void	Webserv::launchServer(void)
 *						CLIENT HELPERS
 *******************************************************************************/
 
-void	Webserv::newClient(int listenFd)
+void	Webserv::_newClient(int listenFd)
 {
 	struct sockaddr	clientAddr;
 	socklen_t		addrSize = sizeof(clientAddr);
@@ -288,23 +287,13 @@ void	Webserv::newClient(int listenFd)
 	event.events = EPOLLIN;
 	event.data.fd = clientFd;
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1)
-		closeClient(clientFd);
+		_closeClient(clientFd);
 	time(&now);
 	_clientMap[clientFd].client.getRequest().setRecvTimestamp(now);
-	// std::cout << "New client with fd: " << clientFd << std::endl;
+	// std::cout << "Client (" << clientFd << ") connected" << std::endl;
 }
 
-
-void	Webserv::testPrint(int clientFd, Client &client)
-{
-	std::cout << "\n" << client.getRequest() << std::endl;
-	std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
-	(void)client;
-	_clientMap[clientFd].client.clearReadBuffer();
-}
-
-
-void	Webserv::handleRequest(int clientFd)
+void	Webserv::_handleRequest(int clientFd)
 {
 	Client&		    client = _clientMap[clientFd].client;
 	char		    buffer[4056];
@@ -317,7 +306,7 @@ void	Webserv::handleRequest(int clientFd)
 	int	lexReturn = -2;
 
  	if (bytesRead < 1)
-		return (closeClient(clientFd));
+		return (_closeClient(clientFd));
 
 	buffer[bytesRead] = '\0';
 	// std::cout << "Recv from client (" << clientFd << ") : " << std::string(buffer);
@@ -362,7 +351,6 @@ void	Webserv::handleRequest(int clientFd)
 	}
 	if (lexReturn == -1)
 	{
-		testPrint(clientFd, client);
 		this->_clientMap[clientFd].server->dispatchRequest(client, this->_epollFd); //CGI added to epoll ctl in this function
 
 		if (this->_clientMap[clientFd].client.getCgiResponseState() == 0)
@@ -371,7 +359,7 @@ void	Webserv::handleRequest(int clientFd)
 			event.events = EPOLLOUT;
 			event.data.fd = clientFd;
 			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientFd, &event) == -1)
-				closeClient(clientFd);
+				_closeClient(clientFd);
 		}
 		else //remove clientFD from epoll while we are reading the content from the CGI
 		{
@@ -454,7 +442,7 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 		event.events = EPOLLOUT;
 		event.data.fd = cgi.getClientFD();
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
-			closeClient(cgi.getClientFD());
+			_closeClient(cgi.getClientFD());
 	}
 }
 
@@ -469,12 +457,12 @@ void	Webserv::_cgiError(CGI &cgi)
 		event.data.fd = cgi.getClientFD();
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 		{
-			closeClient(cgi.getClientFD());
+			_closeClient(cgi.getClientFD());
 		}
 	}
 	else
 	{
-		closeClient(cgi.getClientFD());
+		_closeClient(cgi.getClientFD());
 	}
 	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
 	_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
@@ -500,7 +488,7 @@ void	Webserv::_buildOtherCode(CGI &cgi)
 	event.events = EPOLLOUT;
 	event.data.fd = cgi.getClientFD();
 	if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
-		closeClient(cgi.getClientFD());
+		_closeClient(cgi.getClientFD());
 	_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
 }
 
@@ -542,7 +530,7 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 			event.data.fd = cgi.getClientFD();
 			if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 			{
-				closeClient(cgi.getClientFD());
+				_closeClient(cgi.getClientFD());
 				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
 				_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
 				return (-3);
@@ -607,7 +595,7 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 				event.events = EPOLLOUT;
 				event.data.fd = cgi.getClientFD();
 				if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
-					closeClient(cgi.getClientFD());
+					_closeClient(cgi.getClientFD());
 				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
 				_destroyCGI(cgi, *(this->_clientMap[cgi.getClientFD()].server));
 				return ;
@@ -637,7 +625,7 @@ void	Webserv::_handleErrorPipe(CGI &cgi)
 		event.data.fd = cgi.getClientFD();
 		if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 		{
-			closeClient(cgi.getClientFD());
+			_closeClient(cgi.getClientFD());
 			return;
 		}
 		return (client.getResponse().buildErrorResponse(500, this->_clientMap[cgi.getClientFD()].server, &cgi.getLocation()));
@@ -654,7 +642,7 @@ void	Webserv::_handleErrorPipe(CGI &cgi)
 			event.data.fd = cgi.getClientFD();
 			if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 			{
-				closeClient(cgi.getClientFD());
+				_closeClient(cgi.getClientFD());
 				return;
 			}
 			return (client.getResponse().buildErrorResponse(500, this->_clientMap[cgi.getClientFD()].server, &cgi.getLocation()));
@@ -672,7 +660,7 @@ void	Webserv::_handleErrorPipe(CGI &cgi)
 			event.data.fd = cgi.getClientFD();
 			if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 			{
-				closeClient(cgi.getClientFD());
+				_closeClient(cgi.getClientFD());
 				return;
 			}
 			return (client.getResponse().buildErrorResponse(500, this->_clientMap[cgi.getClientFD()].server, &cgi.getLocation()));
@@ -683,7 +671,7 @@ void	Webserv::_handleErrorPipe(CGI &cgi)
 	return ;
 }
 
-void	Webserv::handleResponse(int clientFd)
+void	Webserv::_handleResponse(int clientFd)
 {
 	Client&		    client = _clientMap[clientFd].client;
 	const char*		ptr = client.getResponse().getRawResponse().c_str() + client.getBytesSent();
@@ -699,19 +687,19 @@ void	Webserv::handleResponse(int clientFd)
 	{
 		client.addBytesSent(bytesSentNow);
 		if ((client.getBytesSent()) == client.getResponse().getToRead())
-			closeClient(clientFd);
+			_closeClient(clientFd);
 	}
 	else if (client.getCgiResponseState() != 1)
-		closeClient(clientFd);
+		_closeClient(clientFd);
 }
 
 
-void	Webserv::closeClient(int clientFd)
+void	Webserv::_closeClient(int clientFd)
 {
 	epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
 	_clientMap.erase(clientFd);
 	close(clientFd);
-	// std::cout << "Client disconnected with fd: " << clientFd << std::endl;
+	// std::cout << "Client (" << clientFd << ") disconnected" std::endl;
 }
 
 
@@ -719,7 +707,7 @@ void	Webserv::closeClient(int clientFd)
 *						BOOL FD IS
 *******************************************************************************/
 
-bool	Webserv::isListenSocket(int fd) const
+bool	Webserv::_isListenSocket(int fd) const
 {
 	if (_serverMap.find(fd) != _serverMap.end())
 		return true;
@@ -727,7 +715,7 @@ bool	Webserv::isListenSocket(int fd) const
 }
 
 
-long  Webserv::isCgiFd(int fd) //return a pair to identify server and CGI OR a bitshifted number ??? like return codes and error codes
+long  Webserv::_isCgiFd(int fd) //return a pair to identify server and CGI OR a bitshifted number ??? like return codes and error codes
 {
 	for (size_t j = 0; j < this->_servers.size(); j++)
 	{
@@ -740,7 +728,7 @@ long  Webserv::isCgiFd(int fd) //return a pair to identify server and CGI OR a b
 	return (-1);
 }
 
-void Webserv::handleCgiTimeout(std::time_t &now)
+void Webserv::_handleCgiTimeout(std::time_t &now)
 {
 	for (size_t j = 0; j < this->_servers.size(); j++)
 	{
@@ -760,7 +748,7 @@ void Webserv::handleCgiTimeout(std::time_t &now)
 				event.events = EPOLLOUT;
 				event.data.fd = cgi.getClientFD();
 				if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1) //chekc if clientfd == -1 here aka already closed/timed out in request
-					closeClient(cgi.getClientFD()); //used to be throw
+					_closeClient(cgi.getClientFD()); //used to be throw
 				_destroyCGI(cgi, this->_servers[j]);
 				//TODO: not closing sockets when exceptions caught in main causes broken pipe error from kernel a few seconds after program end
 			}
@@ -768,7 +756,7 @@ void Webserv::handleCgiTimeout(std::time_t &now)
 	}
 }
 
-void    Webserv::handleTimeouts(void)
+void    Webserv::_handleTimeouts(void)
 {
 	std::time_t	now;
 	std::time_t firstCo;
@@ -800,16 +788,16 @@ void    Webserv::handleTimeouts(void)
 			event.events = EPOLLOUT;
 			event.data.fd = client.getFd();
 			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, client.getFd(), &event) == -1)
-				closeClient(client.getFd());
+				_closeClient(client.getFd());
 		}
 		if (!responseFlag && sendStamp != 0 && now - sendStamp > QUERY_TIMEOUT)
 		{
 			std::cout << "response timed out" << std::endl;
-			closeClient(client.getFd());
+			_closeClient(client.getFd());
 		}
 	}
 	//cgi timeout
-	this->handleCgiTimeout(now);	
+	this->_handleCgiTimeout(now);	
 }
 
 void	Webserv::_cleanExit(void)
