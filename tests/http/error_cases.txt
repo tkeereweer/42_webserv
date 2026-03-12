@@ -1,0 +1,324 @@
+#test1: "405" - GET not allowed: POST on GET-only location /css
+
+POST /css/main.css HTTP/1.1
+Host: 127.0.0.1
+Content-type: text/plain
+Content-length: 1
+
+a
+
+#endtest1
+
+#test2: "404" - GET non-existent file
+
+GET /this-page-does-not-exist.html HTTP/1.1
+Host: 127.0.0.1
+
+#endtest2
+
+#test3: "403" - GET file where server has no read permissions (requires: touch /data/www/blue/pages/protected.html && chmod 000 /data/www/blue/pages/protected.html)
+
+GET /notallowed.html HTTP/1.1
+Host: 127.0.0.1
+
+#endtest3
+
+#test4: "405" - DELETE not allowed: DELETE on location / (GET + POST only)
+
+DELETE /index.html HTTP/1.1
+Host: 127.0.0.1
+
+#endtest4
+
+#test5: "404" - DELETE non-existent file from /upload
+
+DELETE /upload/this-file-does-not-exist.txt HTTP/1.1
+Host: 127.0.0.1
+
+#endtest5
+
+#test6: "403" - DELETE file where server has no permissions (requires: touch /data/upload/protected.txt && chmod 000 /data/upload/protected.txt)
+
+DELETE /upload/protected.txt HTTP/1.1
+Host: 127.0.0.1
+
+#endtest6
+
+#test7: "409" - DELETE file currently open by another process (requires: tail -f /data/upload/locked-file.txt & and create the file first)
+
+DELETE /upload/locked-file.txt HTTP/1.1
+Host: 127.0.0.1
+
+#endtest7
+
+#test8: "411" - POST with body but no Content-Length header
+
+POST / HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+
+body data without content length header
+#endtest8
+
+#test9: "413" - POST body exceeds client_max_body_size of 80000000 bytes
+
+POST /upload HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: 80000001
+
+x
+#endtest9
+
+#test10: "404" - Request to path with no matching explicit location (falls to catch-all /, file does not exist)
+
+GET /no-such-location/nonexistent.html HTTP/1.1
+Host: 127.0.0.1
+
+#endtest10
+
+#test11: "408" - Request timeout: Content-Length claims 10000 bytes but only a few bytes are sent
+
+POST / HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: 10000
+
+short
+#endtest11
+
+#test12: "400" - Path traversal attempt with ../ in URI
+
+GET /../etc/passwd HTTP/1.1
+Host: 127.0.0.1
+
+#endtest12
+
+#test13: "405" - DELETE on GET-only location /assets
+
+DELETE /assets/image.png HTTP/1.1
+Host: 127.0.0.1
+
+#endtest13
+
+#test14: "405" - DELETE on GET+POST location /cgi-bin
+
+DELETE /cgi-bin/script.py HTTP/1.1
+Host: 127.0.0.1
+
+#endtest14
+
+#test17: "405" - POST on GET-only location /assets
+
+POST /assets/image.jpg HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: 4
+
+data
+#endtest17
+
+#test18: "405" - DELETE on GET-only location /css
+
+DELETE /css/style.css HTTP/1.1
+Host: 127.0.0.1
+
+#endtest18
+
+#test21: "404" - GET non-existent file from /upload
+
+GET /upload/ghost.txt HTTP/1.1
+Host: 127.0.0.1
+
+#endtest21
+
+#test22: "404" - GET non-existent file from /assets
+
+GET /assets/nosuchfile.jpg HTTP/1.1
+Host: 127.0.0.1
+
+#endtest22
+
+#test23: "404" - GET non-existent CGI script
+
+GET /cgi-bin/noscript.py HTTP/1.1
+Host: 127.0.0.1
+
+#endtest23
+
+#test24: "404" - GET non-existent file from /css
+
+GET /css/missing.css HTTP/1.1
+Host: 127.0.0.1
+
+#endtest24
+
+#test25: "404" - GET deeply nested non-existent path
+
+GET /a/b/c/d/e/no-such-file.html HTTP/1.1
+Host: 127.0.0.1
+
+#endtest25
+
+#test26: "404" - GET non-existent file with query string
+
+GET /nonexistent.html?foo=bar HTTP/1.1
+Host: 127.0.0.1
+
+#endtest26
+
+#test29: "400" - Path traversal with ../ deeper in URI
+
+GET /upload/../../../etc/passwd HTTP/1.1
+Host: 127.0.0.1
+
+#endtest29
+
+#test31: "400" - Invalid characters in URI (unencoded space)
+
+GET /index .html HTTP/1.1
+Host: 127.0.0.1
+
+#endtest31
+
+#test32: "400" - Invalid HTTP method (lowercase)
+
+get /index.html HTTP/1.1
+Host: 127.0.0.1
+
+#endtest32
+
+#test34: "414" - URI too long (over 8000 characters)
+
+GET /aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa HTTP/1.1
+Host: 127.0.0.1
+
+#endtest34
+
+#test35: "411" - POST to /upload without Content-Length
+
+POST /upload/test.txt HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+
+some body without content length
+#endtest35
+
+#test36: "411" - POST to /cgi-bin without Content-Length
+
+POST /cgi-bin/script.py HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+
+some body without content length
+#endtest36
+
+#test37: "413" - POST to / with body exceeding client_max_body_size
+
+POST / HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: 80000001
+
+x
+#endtest37
+
+#test38: "301" - GET /files redirects to CGI list_files
+
+GET /files HTTP/1.1
+Host: 127.0.0.1
+
+#endtest38
+
+#test39: "301" - GET /redir.html redirects to youtube
+
+GET /redir.html HTTP/1.1
+Host: 127.0.0.1
+
+#endtest39
+
+#test40: "200" - GET / serves index.html
+
+GET / HTTP/1.1
+Host: 127.0.0.1
+
+#endtest40
+
+#test41: "200" - GET /index.html directly
+
+GET /index.html HTTP/1.1
+Host: 127.0.0.1
+
+#endtest41
+
+#test42: "201" - POST to /upload creates a file
+
+POST /upload/error_case_test.txt HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: 16
+
+upload test data
+#endtest42
+
+#test47: "400" - Absolute URI with foreign host
+
+GET http://evil.com/steal HTTP/1.1
+Host: 127.0.0.1
+
+#endtest47
+
+#test48: "404" - GET on /upload/ directory with no autoindex
+
+GET /upload/ HTTP/1.1
+Host: 127.0.0.1
+
+#endtest48
+
+#test49: "400" - Negative Content-Length
+
+POST /upload/test.txt HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: -1
+
+data
+#endtest49
+
+#test50: "400" - Non-numeric Content-Length
+
+POST /upload/test.txt HTTP/1.1
+Host: 127.0.0.1
+Content-Type: text/plain
+Content-Length: abc
+
+data
+#endtest50
+
+#test52: "404" - GET file with hidden dot prefix
+
+GET /.hidden-file HTTP/1.1
+Host: 127.0.0.1
+
+#endtest52
+
+#test53: "404" - GET on non-existent nested path under /upload
+
+GET /upload/subdir/deep/file.txt HTTP/1.1
+Host: 127.0.0.1
+
+#endtest53
+
+#test54: "405" - DELETE on /files (redirect location, no DELETE)
+
+DELETE /files HTTP/1.1
+Host: 127.0.0.1
+
+#endtest54
+
+#test55: "400" - URI with backslash
+
+GET /upload\file.txt HTTP/1.1
+Host: 127.0.0.1
+
+#endtest55

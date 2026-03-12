@@ -112,9 +112,9 @@ def build_payload(raw: str) -> bytes:
     """
     raw = raw.replace("\r\n", "\n").replace("\n", "\r\n")  # normalize to CRLF
     data = raw.encode("latin-1", errors="replace")
-    if not data.endswith(b"\r\n\r\n"):
+    if b"\r\n\r\n" not in data:
+        # No header/body separator yet — strip trailing whitespace and add it
         data = data.rstrip(b"\r\n") + b"\r\n\r\n"
-    
     return data
 
 
@@ -517,8 +517,13 @@ def main():
     )
     parser.add_argument("--host",    default="127.0.0.1", help="Server host (default: 127.0.0.1)")
     parser.add_argument("--port",    type=int, default=8080, help="Server port (default: 8080)")
+<<<<<<< HEAD
     parser.add_argument("--timeout", type=float, default=30.0, help="Per-request timeout in seconds (default: 30)")
     parser.add_argument("--file",    default="/home/mturgeon/rank5/webserv/tests/http/1_wrong_requests.txt",
+=======
+    parser.add_argument("--timeout", type=float, default=20.0, help="Per-request timeout in seconds (default: 30)")
+    parser.add_argument("--file",    default="./http/error_cases.txt",
+>>>>>>> 5e5728b892ad5b10419b72728d94b3148094f6ae
                         help="Path to test file (default: wrong_requests.txt next to script)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Print full response detail per test")
     parser.add_argument("--filter",  type=str, default="", help="Run only tests whose description contains this string (case-insensitive)")
