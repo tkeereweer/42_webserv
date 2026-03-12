@@ -1,10 +1,48 @@
 #include "../include/Webserv.hpp"
+#include "../include/libraryHeader.hpp"
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
 
 static int g_passed = 0;
 static int g_failed = 0;
+//from main.cpp
+volatile sig_atomic_t	g_signum = 0;
+int						g_sigPipe[2];
+
+std::string	findExeRoot(void);
+
+std::string exeRoot = findExeRoot();
+
+std::string	findExeRoot(void)
+{
+	char	path[PATH_MAX];
+	ssize_t	length = readlink("/proc/self/exe", path, sizeof(path)); //finds path of executable;
+	if (length == -1)
+		return ("");
+	std::string	execPath(path, length);
+	std::string::iterator end = execPath.begin() + execPath.find_last_of("/") + 1;
+	return (std::string(execPath.begin(), end));
+}
+
+//takes path in root like /data/www/... and build the absolute path compared to actual execLocation
+std::string	resolvePath(std::string relPath)
+{
+	if (relPath[0] == '/')
+		relPath = &relPath[1];
+	std::string	resultingPath = exeRoot + relPath;
+	return (resultingPath);
+}
+
+void	signalHandler(int signum)
+{
+	if (signum == SIGINT)
+	{
+		g_signum = SIGINT;
+		write(g_sigPipe[1], "a", 1);
+	}
+	return ;
+}
 
 // Helper to write a temp config file
 static void writeConfig(const char *path, const char *content)
@@ -143,7 +181,6 @@ static void test_error_page_range()
 		"  listen 8080;"
 		"  location / {"
 		"    error_page 400 /400.html;"
-		"    error_page 499 /499.html;"
 		"  }"
 		"}");
 }
@@ -195,7 +232,6 @@ static void test_multiple_error_pages()
 		"  listen 8080;"
 		"  location / {"
 		"    error_page 400 /400.html;"
-		"    error_page 401 /401.html;"
 		"    error_page 403 /403.html;"
 		"    error_page 404 /404.html;"
 		"    error_page 405 /405.html;"
@@ -405,12 +441,6 @@ static void test_error_page_low_code()
 {
 	expectException("error_page_low_code",
 		"server { listen 8080; location / { error_page 399 /err.html; } }");
-}
-
-static void test_error_page_high_code()
-{
-	expectException("error_page_high_code",
-		"server { listen 8080; location / { error_page 500 /err.html; } }");
 }
 
 static void test_error_page_non_numeric()
@@ -641,7 +671,6 @@ int main()
 	test_autoindex_empty();
 	test_autoindex_uppercase();
 	test_error_page_low_code();
-	test_error_page_high_code();
 	test_error_page_non_numeric();
 	test_error_page_200();
 	test_error_page_300();

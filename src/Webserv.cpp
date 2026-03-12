@@ -8,7 +8,8 @@ std::string	resolvePath(std::string relPath);
 /*******************************************************************************
 *						CTOR/DTOR
 *******************************************************************************/
-
+Webserv::Webserv(void): _epollFd(-1)
+{}
 
 Webserv::Webserv(char **envp): _epollFd(-1)
 {
@@ -249,7 +250,7 @@ void	Webserv::launchServer(void)
 					closeClient(readyEvents[i].data.fd);
 			}
 		}
-		handleTimeouts();
+		// handleTimeouts();
 	}
 }
 
@@ -286,11 +287,7 @@ void	Webserv::newClient(int listenFd)
 	event.events = EPOLLIN;
 	event.data.fd = clientFd;
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1)
-	{
-		_clientMap.erase(clientFd);
-		close(clientFd);
-		throw(std::runtime_error(std::strerror(errno)));
-	}
+		closeClient(clientFd);
 	time(&now);
 	_clientMap[clientFd].client.getRequest().setRecvTimestamp(now);
 	// std::cout << "New client with fd: " << clientFd << std::endl;
@@ -299,8 +296,8 @@ void	Webserv::newClient(int listenFd)
 
 void	Webserv::testPrint(int clientFd, Client &client)
 {
-	// std::cout << "\n" << client.getRequest() << std::endl;
-	// std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
+	std::cout << "\n" << client.getRequest() << std::endl;
+	std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
 	(void)client;
 	_clientMap[clientFd].client.clearReadBuffer();
 }
@@ -373,21 +370,12 @@ void	Webserv::handleRequest(int clientFd)
 			event.events = EPOLLOUT;
 			event.data.fd = clientFd;
 			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientFd, &event) == -1)
-			{
-				_clientMap.erase(clientFd);
-				close(clientFd);
-				throw(std::runtime_error(std::strerror(errno)));
-			}
+				closeClient(clientFd);
 		}
 		else //remove clientFD from epoll while we are reading the content from the CGI
 		{
-			struct epoll_event event;
-			if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, &event) == -1)
-			{
-				_clientMap.erase(clientFd);
-				close(clientFd);
-				throw(std::runtime_error(std::strerror(errno)));
-			}
+			struct epoll_event	event;
+			epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, &event);
 		}
 	}
 }
@@ -701,7 +689,7 @@ void	Webserv::handleResponse(int clientFd)
 	size_t			remaining = client.getResponse().getToRead() - (client.getBytesSent());
 	std::time_t  now;
 
-	// std::cout << "Sending" << std::string(ptr) <<  " to client (" << clientFd << ")" << std::endl;
+	std::cout << "Sending" << std::string(ptr) <<  " to client (" << clientFd << ")" << std::endl;
 	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
 	time(&now); //(stdtime could work cuz timeout ~ 30-60s)
 	client.getResponse().setSendTimestamp(now);
