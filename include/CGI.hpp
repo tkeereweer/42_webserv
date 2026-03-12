@@ -53,7 +53,7 @@ class CGI
 		bool	_outHeadersValid;
 		//body bytes already read such that after body consumed, contentLength - bytesRead == 0
 		long long		_bytesRead;
-		struct timeval	_outTimestamp;
+        std::time_t _startTimestamp;
 
 		void		_createChildProcess(int *inPipe, int *outPipe, char **childEnv, int *errorPipe);
 		void	    _setupEnvPOST(std::vector<std::string> env, char ***childEnv, Client &client);
@@ -95,7 +95,7 @@ class CGI
 		std::string		getContentType(void) const;
 		std::string		getSetCookie(void) const;
 		Location		&getLocation(void);
-		struct timeval	getOutTimestamp(void) const;
+        std::time_t     getStartTimestamp(void) const;
 		ssize_t     	getBytesWritten(void) const;
 		int				getStatus(void) const;
 		int				&getInFileFD(void);
@@ -104,7 +104,8 @@ class CGI
 		//setters
 		void	setCGIContentLength(long long length);
 		void	setCGIContentType(std::string type);
-		void	setOutTimestamp(struct timeval tv);
+		void	setOutTimestamp(std::time_t tv);
+        void    resetStartTimestamp(void);
 		void	addBytesSent(ssize_t bytes);
 		void	addBytesWritten(ssize_t bytes);
 

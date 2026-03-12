@@ -6,10 +6,9 @@ Request::Request(void):
 	_reqComplete(false),
 	_reqLineValid(false), 
 	_reqHeadersValid(false),
-	_bytesRead(0)
+	_bytesRead(0),
+    _recvTimestamp(0)
 	{
-		this->_recvTimestamp.tv_sec = 0;
-		this->_recvTimestamp.tv_usec = 0;
 	}
 
 Request::Request(Request const &src)
@@ -144,7 +143,7 @@ std::string const	&Request::getBodyFilename(void) const
 	return (this->_bodyFilename);
 }
 
-struct timeval Request::getRecvTimestamp(void) const
+std::time_t Request::getRecvTimestamp(void) const
 {
 	return (this->_recvTimestamp);
 }
@@ -170,7 +169,7 @@ long long	Request::getBytesRead(void) const
 }
 
 //setters
-void    Request::setRecvTimestamp(struct timeval time)
+void    Request::setRecvTimestamp(std::time_t time)
 {
 	this->_recvTimestamp = time;
 }

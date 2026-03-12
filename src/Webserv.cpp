@@ -251,8 +251,6 @@ void	Webserv::launchServer(void)
 		}
 		handleTimeouts();
 	}
-	// handleTimeouts(); //for the case where epoll_wait times out but still hanging requests
-	//TODO: clean client closing and exit when epoll timeouts
 }
 
 
@@ -260,12 +258,11 @@ void	Webserv::launchServer(void)
 *						CLIENT HELPERS
 *******************************************************************************/
 
-//TODO: all exceptions here are not caught
 void	Webserv::newClient(int listenFd)
 {
 	struct sockaddr	clientAddr;
 	socklen_t		addrSize = sizeof(clientAddr);
-	struct timeval	now;
+	std::time_t	now;
 
 	int	clientFd = accept(listenFd, &clientAddr, &addrSize);
 	if (clientFd == -1)
@@ -291,10 +288,10 @@ void	Webserv::newClient(int listenFd)
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1)
 	{
 		_clientMap.erase(clientFd);
-		close(clientFd); //TODO: refine throwing logic on epoll error
+		close(clientFd);
 		throw(std::runtime_error(std::strerror(errno)));
 	}
-	gettimeofday(&now, NULL);
+	time(&now);
 	_clientMap[clientFd].client.getRequest().setRecvTimestamp(now);
 	// std::cout << "New client with fd: " << clientFd << std::endl;
 }
@@ -313,11 +310,11 @@ void	Webserv::handleRequest(int clientFd)
 {
 	Client&		    client = _clientMap[clientFd].client;
 	char		    buffer[4056];
-	struct timeval	now;
+	std::time_t	now;
 
 	ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
 	//logic for timeout handling
-	gettimeofday(&now, NULL);
+	time(&now);
 	client.getRequest().setRecvTimestamp(now);
 	int	lexReturn = -2;
 
@@ -353,7 +350,7 @@ void	Webserv::handleRequest(int clientFd)
 	else
 	{
 		int tempFD = open(client.getRequest().getBodyFilename().c_str(), O_WRONLY | O_APPEND);
-		write(tempFD, client.getReadBuffer().c_str(), client.getReadBuffer().size()); //add bytes in the tempfile and compare with content length
+		write(tempFD, client.getReadBuffer().c_str(), client.getReadBuffer().size());
 		close(tempFD);
 		client.getRequest().addBytesRead(client.getReadBuffer().size());
 		client.getReadBuffer().clear();
@@ -361,11 +358,13 @@ void	Webserv::handleRequest(int clientFd)
 		{
 			lexReturn = -1;
 			client.getRequest().setReqFlag(true);
+			if (client.getRequest().getContentLength() - client.getRequest().getBytesRead() < 0) //content-length < body size
+				client.getResponse().buildErrorResponse(400, this->_clientMap[clientFd].server, NULL);
 		}
 	}
 	if (lexReturn == -1)
 	{
-		testPrint(clientFd, client); //put request dipsatcher here, build body here
+		testPrint(clientFd, client);
 		this->_clientMap[clientFd].server->dispatchRequest(client, this->_epollFd); //CGI added to epoll ctl in this function
 
 		if (this->_clientMap[clientFd].client.getCgiResponseState() == 0)
@@ -377,7 +376,7 @@ void	Webserv::handleRequest(int clientFd)
 			{
 				_clientMap.erase(clientFd);
 				close(clientFd);
-				throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
+				throw(std::runtime_error(std::strerror(errno)));
 			}
 		}
 		else //remove clientFD from epoll while we are reading the content from the CGI
@@ -387,7 +386,7 @@ void	Webserv::handleRequest(int clientFd)
 			{
 				_clientMap.erase(clientFd);
 				close(clientFd);
-				throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
+				throw(std::runtime_error(std::strerror(errno)));
 			}
 		}
 	}
@@ -432,21 +431,6 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 	long long   contentLength = client.getRequest().getContentLength();
 	char	    buffer[4056];
 
-	std::cout << "in CGI input" << std::endl;
-	//TODO: do we need this ?
-	//logic to change as we're either reading directly
-	// int     fileFD = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
-	// if (fileFD == -1)
-	// {
-	// 	struct epoll_event	event;
-	// 	event.events = EPOLLOUT;
-	// 	event.data.fd = cgi.getClientFD();
-	// 	if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
-	// 		closeClient(cgi.getClientFD());
-	// 	this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2);
-	// 	this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502, &server, &cgi.getLocation());
-	// 	_destroyCGI(cgi.getWriteFD(), server);
-	// }
 	ssize_t bytesRead = read(cgi.getInFileFD(), buffer, sizeof(buffer) - 1);
 
 	if (bytesRead > 0)
@@ -473,7 +457,7 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 		close(cgi.getInFileFD());
 		cgi.getInFileFD() = -1;
 		this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2);
-		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(502, &server, &cgi.getLocation());
+		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(500, &server, &cgi.getLocation());
 		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
 		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
 		_destroyCGI(cgi, server);
@@ -482,7 +466,6 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 		event.data.fd = cgi.getClientFD();
 		if (epoll_ctl(this->_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1)
 			closeClient(cgi.getClientFD());
-		//TODO build error 500
 	}
 }
 
@@ -584,14 +567,10 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 {
 	char			buffer[4056];
 	int				lexReturn = -4;
-	struct timeval	now;
 
 	std::cout << "in CGI output" << std::endl;
 	ssize_t	bytesRead = read(cgi.getReadFD(), buffer, sizeof(buffer) - 1);
 	std::cout << "bytesread: " << bytesRead << std::endl;
-	//logic for timeout handling
-	gettimeofday(&now, NULL);
-	cgi.setOutTimestamp(now);
 	if (bytesRead == -1)
 		return(_cgiError(cgi));
 
@@ -720,11 +699,11 @@ void	Webserv::handleResponse(int clientFd)
 	Client&		    client = _clientMap[clientFd].client;
 	const char*		ptr = client.getResponse().getRawResponse().c_str() + client.getBytesSent();
 	size_t			remaining = client.getResponse().getToRead() - (client.getBytesSent());
-	struct timeval  now;
+	std::time_t  now;
 
 	// std::cout << "Sending" << std::string(ptr) <<  " to client (" << clientFd << ")" << std::endl;
 	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
-	gettimeofday(&now, NULL); //(stdtime could work cuz timeout ~ 30-60s)
+	time(&now); //(stdtime could work cuz timeout ~ 30-60s)
 	client.getResponse().setSendTimestamp(now);
 
 	if (bytesSentNow > 0)
@@ -771,26 +750,47 @@ long  Webserv::isCgiFd(int fd) //return a pair to identify server and CGI OR a b
 	}
 	return (-1);
 }
-//t2 - t1
-int	getTimeDiff(timeval t1, timeval t2)
-{
-	long dSeconds = t2.tv_sec  - t1.tv_sec;
-	long dUseconds = t2.tv_usec - t1.tv_usec;
 
-	return ((dSeconds) * 1000 + dUseconds / 1000.0) + 0.5; //+0.5 is a rounding technique to be sure we round the nearest integer.
+void Webserv::handleCgiTimeout(std::time_t &now)
+{
+	std::cout << "in handle Cgi timeouts" << std::endl;
+	for (size_t j = 0; j < this->_servers.size(); j++)
+	{
+		for (size_t i = 0; i < this->_servers[j].getCgiVec().size(); i++)
+		{
+			CGI	&cgi = this->_servers[j].getCgiVec()[i];
+			if (this->_clientMap[cgi.getClientFD()].client.getCgiResponseState() == 1 && cgi.getStartTimestamp() != 0 && now - cgi.getStartTimestamp() > CGI_TIMEOUT)
+			{
+			   std::cout << "CGI timed out" << std::endl;
+				this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(503, &this->_servers[j], &cgi.getLocation());
+                //make sure no trailling FDs forgotten in epoll
+                epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
+                epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getClientFD(), NULL);
+				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
+				//add client to epoll
+				struct epoll_event event;
+				event.events = EPOLLOUT;
+				event.data.fd = cgi.getClientFD();
+				if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1) //chekc if clientfd == -1 here aka already closed/timed out in request
+                    closeClient(cgi.getClientFD()); //used to be throw
+				_destroyCGI(cgi, this->_servers[j]);
+                //TODO: not closing sockets when exceptions caught in main causes broken pipe error from kernel a few seconds after program end
+			}
+		}
+	}
 }
 
 //TODO: implement a timeout if CGI is stuck in infinite loop. Just .erase() as waitpid(WNOHANG) in CGI destructor
 void    Webserv::handleTimeouts(void)
 {
-	struct timeval	now;
-	struct timeval	recvStamp;
-	struct timeval	sendStamp;
+	std::time_t	now;
+	std::time_t	recvStamp;
+	std::time_t	sendStamp;
 	bool			reqFlag;
-	bool			responseFlag;
-	struct timeval	cgiOutStamp;
+	bool			responseFlag;	   
 	
-	gettimeofday(&now, NULL);
+	std::cout << "in handle timeouts" << std::endl;
+	time(&now);
 	if (this->_clientMap.empty())
 		return ;
 	for (std::map<int, t_connection>::iterator it = this->_clientMap.begin(); it != this->_clientMap.end(); it++)
@@ -803,8 +803,9 @@ void    Webserv::handleTimeouts(void)
 
 		//recv/send timeouts
 		//check if 1) request/response complete 2) timestamp initialized === first receive/send happend 3) timeout status
-		if (!reqFlag && (recvStamp.tv_sec != 0 || recvStamp.tv_usec != 0) && getTimeDiff(recvStamp, now) > QUERY_TIMEOUT)
+		if (!reqFlag && recvStamp != 0 && now - recvStamp > QUERY_TIMEOUT)
 		{
+			std::cout << "request timed out" << std::endl;
 			if (!client.getRequest().getReqFlag())
 				client.getResponse().buildErrorResponse(400, it->second.server, NULL);
 			else
@@ -814,44 +815,16 @@ void    Webserv::handleTimeouts(void)
 			event.events = EPOLLOUT;
 			event.data.fd = client.getFd();
 			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, client.getFd(), &event) == -1)
-			{
-				_clientMap.erase(client.getFd());
-				close(client.getFd());
-				throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
-			}
+                closeClient(client.getFd());// throw(std::runtime_error(std::strerror(errno)));
 		}
-		if (!responseFlag && (sendStamp.tv_sec != 0 || sendStamp.tv_usec != 0) && getTimeDiff(sendStamp, now) > QUERY_TIMEOUT)
+		if (!responseFlag && sendStamp != 0 && now - sendStamp > QUERY_TIMEOUT)
+		{
+			std::cout << "response timed out" << std::endl;
 			closeClient(client.getFd());
+		}
 	}
 	//cgi timeout
-	for (size_t j = 0; j < this->_servers.size(); j++)
-	{
-		for (size_t i = 0; i < this->_servers[j].getCgiVec().size(); i++)
-		{
-			CGI	&cgi = this->_servers[j].getCgiVec()[i];
-			cgiOutStamp = cgi.getOutTimestamp();
-			if (this->_clientMap[cgi.getClientFD()].client.getCgiResponseState() == 1 && (cgiOutStamp.tv_sec != 0 || cgiOutStamp.tv_usec != 0) && getTimeDiff(cgiOutStamp, now) > CGI_TIMEOUT)
-			{
-				std::cout << "CGI timed out" << std::endl;
-				this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(503, &this->_servers[j], &cgi.getLocation());
-				//add client to epoll
-				std::vector<CGI>::iterator toErase = this->_servers[j].getCgiVec().begin() + i;
-				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
-				//add client to epoll
-				struct epoll_event event;
-				event.events = EPOLLOUT;
-				event.data.fd = cgi.getClientFD();
-				if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, cgi.getClientFD(), &event) == -1)
-				{
-					_clientMap.erase(cgi.getClientFD());
-					close(cgi.getClientFD());
-					throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
-				}
-				_destroyCGI(cgi, this->_servers[j]);
-				this->_servers[j].getCgiVec().erase(toErase);
-			}
-		}
-	}
+	this->handleCgiTimeout(now);	
 }
 
 void	Webserv::_cleanExit(void)

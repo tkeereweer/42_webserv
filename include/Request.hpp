@@ -32,6 +32,7 @@ typedef struct s_reqToken
 
 //headers are divided like in RFC 1945
 //only POST has a body
+//TODO first read timestamp for slowcrawl attacks
 class Request
 {
 	private:
@@ -54,7 +55,7 @@ class Request
 		bool    _reqHeadersValid;         
 		//body bytes already read such that after body consumed, contentLength - bytesRead == 0
 		long long	    _bytesRead;
-		struct timeval	_recvTimestamp;
+		std::time_t	_recvTimestamp;
 		std::string     _queryParam;
 
 
@@ -109,14 +110,14 @@ class Request
 		std::string const	&getContentType(void) const;
 		std::string const	&getCookies(void) const;
 		std::string const	&getBodyFilename(void) const;
-		struct timeval		getRecvTimestamp(void) const;
+		std::time_t		getRecvTimestamp(void) const;
 		bool				getHeaderFlag(void) const;
 		bool				getReqFlag(void) const;
 		std::string			&getQueryParam(void);
 		long long			getBytesRead(void) const;
 
 		//setters
-		void				setRecvTimestamp(struct timeval time);
+		void				setRecvTimestamp(std::time_t time);
 		void                setURI(std::string path);
 		void                setQueryParam(std::string params);
 		void				setReqFlag(bool state);

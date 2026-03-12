@@ -12,7 +12,7 @@ void	Request::_readLeftovers(std::list<t_reqToken>::iterator &it)
 
 	long long	ret = this->_contentLength - bodyOverflow.size();
 	if (ret < 0)
-		throw (Request::ErrorNum("content-llength < body size", 400)); //should trigger 
+		throw (Request::ErrorNum("content-length < body size", 400)); //should trigger 
 	//create temp file
 	if (this->_bodyFilename == "")
 		_createTempFile();

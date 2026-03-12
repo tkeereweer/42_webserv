@@ -22,7 +22,8 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
 	_contentLength(-1),
 	_status(-1),
 	_outComplete(false),
-	_outHeadersValid(false)
+	_outHeadersValid(false),
+    _startTimestamp(0)
 {
 	//don't build input pipe but append queryString as query_string=<value here> to end of servEnv.
 
@@ -56,6 +57,7 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
 		throw (std::runtime_error(std::strerror(errno)));
 	}
 	//take creation timestamp
+    time(&this->_startTimestamp);
 	if (this->_pid == 0)
 		_createChildProcess(NULL, outPipe, childEnv, errorPipe);
 
@@ -64,8 +66,6 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
 	freeEnv(childEnv);
 	this->_errorFD = errorPipe[0];
 	this->_readFd = outPipe[0];
-	this->_outTimestamp.tv_usec = 0;
-	this->_outTimestamp.tv_sec = 0;
 }
 
 //constructor for POST method CGI
@@ -82,7 +82,8 @@ CGI::CGI(std::vector<std::string> env, Client &client, Location *loc, std::strin
 	_contentLength(-1),
 	_status(-1),
 	_outComplete(false),
-	_outHeadersValid(false)
+	_outHeadersValid(false),
+    _startTimestamp(0)
 {
 	//open body file
 	this->_inFileFd = open(client.getRequest().getBodyFilename().c_str(), O_RDONLY);
@@ -132,6 +133,7 @@ CGI::CGI(std::vector<std::string> env, Client &client, Location *loc, std::strin
 		close(this->_inFileFd);
 		throw (std::runtime_error(std::strerror(errno)));
 	}
+    time(&this->_startTimestamp);
 	if (this->_pid == 0)
 		_createChildProcess(inPipe, outPipe, childEnv, errorPipe);
 
@@ -142,8 +144,6 @@ CGI::CGI(std::vector<std::string> env, Client &client, Location *loc, std::strin
 	this->_errorFD = errorPipe[0];
 	this->_readFd = outPipe[0];
 	this->_writeFd = inPipe[1]; //only for post method
-	this->_outTimestamp.tv_usec = 0;
-	this->_outTimestamp.tv_sec = 0;
 }
 
 CGI::CGI(CGI const &src)
@@ -174,7 +174,7 @@ CGI	&CGI::operator=(CGI const &rhs)
 		this->_setCookie = rhs._setCookie;
 		this->_outComplete = rhs._outComplete;
 		this->_outHeadersValid = rhs._outHeadersValid;
-		this->_outTimestamp = rhs._outTimestamp;
+        this->_startTimestamp = rhs._startTimestamp;
 		this->_status = rhs._status;
 	}
 	return (*this);
@@ -397,9 +397,9 @@ Location	&CGI::getLocation(void)
 	return (*(this->_loc));
 }
 
-struct timeval	CGI::getOutTimestamp(void) const
+std::time_t	CGI::getStartTimestamp(void) const
 {
-	return (this->_outTimestamp);
+	return (this->_startTimestamp);
 }
 
 int	CGI::getStatus(void) const
@@ -437,7 +437,8 @@ void	CGI::addBytesWritten(ssize_t bytes)
 	this->_bytesWritten += bytes;
 }
 
-void    CGI::setOutTimestamp(struct timeval tv)
+
+void    CGI::resetStartTimestamp(void)
 {
-	this->_outTimestamp = tv;
+    this->_startTimestamp = 0;
 }

@@ -9,9 +9,9 @@ std::string	resolvePath(std::string relPath);
 Response::Response(void):
 	_returnCode(0),
 	_toRead(0),
-	_responseComplete(false)
+	_responseComplete(false),
+    _sendTimestamp(0)
 {
-	this->_sendTimestamp.tv_sec = this->_sendTimestamp.tv_usec = 0;
 }
 
 Response::~Response(void){}
@@ -37,8 +37,7 @@ Response    &Response::operator=(Response const &rhs)
 
 		this->_rawResponse = rhs._rawResponse;
 		this->_responseComplete = rhs._responseComplete;
-		this->_sendTimestamp.tv_sec = rhs._sendTimestamp.tv_sec;
-		this->_sendTimestamp.tv_usec = rhs._sendTimestamp.tv_usec;
+		this->_sendTimestamp = rhs._sendTimestamp;
 	}
 	return (*this);
 }
@@ -406,7 +405,7 @@ std::string 	Response::getContentType(void) const
 	return (this->_contentType);
 }
 
-struct timeval	&Response::getSendTimestamp(void)
+std::time_t	&Response::getSendTimestamp(void)
 {
 	return (this->_sendTimestamp);
 }
@@ -433,10 +432,9 @@ short	Response::getReturnCode(void) const
 
 //setters
 
-void	Response::setSendTimestamp(struct timeval timestamp)
+void	Response::setSendTimestamp(std::time_t timestamp)
 {
-	this->_sendTimestamp.tv_sec = timestamp.tv_sec;
-	this->_sendTimestamp.tv_usec = timestamp.tv_usec;
+	this->_sendTimestamp = timestamp;
 }
 
 void	Response::setContentLength(std::string length)
