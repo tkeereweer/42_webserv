@@ -54,9 +54,9 @@ class Request
 		bool    _reqLineValid;      
 		bool    _reqHeadersValid;         
 		//body bytes already read such that after body consumed, contentLength - bytesRead == 0
-		long long	    _bytesRead;
+		long long	_bytesRead; 
 		std::time_t	_recvTimestamp;
-		std::string     _queryParam;
+		std::string _queryParam;
 
 
 		void	_lexInput(std::string const &str);
@@ -110,7 +110,7 @@ class Request
 		std::string const	&getContentType(void) const;
 		std::string const	&getCookies(void) const;
 		std::string const	&getBodyFilename(void) const;
-		std::time_t		getRecvTimestamp(void) const;
+		std::time_t			getRecvTimestamp(void) const;
 		bool				getHeaderFlag(void) const;
 		bool				getReqFlag(void) const;
 		std::string			&getQueryParam(void);

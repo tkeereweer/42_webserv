@@ -15,6 +15,7 @@ class	Client
 		size_t		_bytesSent;
 		bool        _requestDone;
 		int	        _cgiResponseState;
+        std::time_t _firstCoTimestamp;
 
 	public:
 		Client(void);
@@ -29,12 +30,14 @@ class	Client
 		size_t				getBytesSent(void) const;
 		Request             &getRequest(void);
 		int					getCgiResponseState(void) const;
+        std::time_t         getFirstCoTimestamp(void) const;
 
 		void				setReadBuffer(const std::string& readBuffer);
 		void				setResponse(const Response& response);
 		void				appendReadBuffer(const std::string& appendix);
 		void				addBytesSent(size_t bytesSent);
 		void				setCgiResponseState(int state);
+        void                setFirstCoTimestamp(std::time_t);
 
 		void				clearReadBuffer(void);
 		void				clearBytesSent(void);
