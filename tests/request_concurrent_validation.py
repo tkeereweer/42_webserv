@@ -517,13 +517,8 @@ def main():
     )
     parser.add_argument("--host",    default="127.0.0.1", help="Server host (default: 127.0.0.1)")
     parser.add_argument("--port",    type=int, default=8080, help="Server port (default: 8080)")
-<<<<<<< HEAD
-    parser.add_argument("--timeout", type=float, default=30.0, help="Per-request timeout in seconds (default: 30)")
-    parser.add_argument("--file",    default="/home/mturgeon/rank5/webserv/tests/http/1_wrong_requests.txt",
-=======
-    parser.add_argument("--timeout", type=float, default=20.0, help="Per-request timeout in seconds (default: 30)")
-    parser.add_argument("--file",    default="./http/error_cases.txt",
->>>>>>> 5e5728b892ad5b10419b72728d94b3148094f6ae
+    parser.add_argument("--timeout", type=float, default=60.0, help="Per-request timeout in seconds (default: 30)")
+    parser.add_argument("--file",    default="./http/wrong_requests.txt",
                         help="Path to test file (default: wrong_requests.txt next to script)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Print full response detail per test")
     parser.add_argument("--filter",  type=str, default="", help="Run only tests whose description contains this string (case-insensitive)")

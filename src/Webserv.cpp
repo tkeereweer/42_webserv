@@ -225,7 +225,6 @@ void	Webserv::launchServer(void)
 		{
 			// activityNotif(readyEvents[i]);
 
-			//error handling: throws only on epoll fail--> end program in main
 			if (_isListenSocket(readyEvents[i].data.fd))
 				_newClient(readyEvents[i].data.fd);
 			else if ((idx = _isCgiFd(readyEvents[i].data.fd)) != -1)
