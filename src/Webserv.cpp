@@ -8,7 +8,8 @@ std::string	resolvePath(std::string relPath);
 /*******************************************************************************
 *						CTOR/DTOR
 *******************************************************************************/
-
+Webserv::Webserv(void): _epollFd(-1)
+{}
 
 Webserv::Webserv(char **envp): _epollFd(-1)
 {
@@ -249,7 +250,7 @@ void	Webserv::launchServer(void)
 					closeClient(readyEvents[i].data.fd);
 			}
 		}
-		handleTimeouts();
+		// handleTimeouts();
 	}
 	// handleTimeouts(); //for the case where epoll_wait times out but still hanging requests
 	//TODO: clean client closing and exit when epoll timeouts
@@ -292,7 +293,7 @@ void	Webserv::newClient(int listenFd)
 	{
 		_clientMap.erase(clientFd);
 		close(clientFd); //TODO: refine throwing logic on epoll error
-		throw(std::runtime_error(std::strerror(errno)));
+		throw(std::runtime_error(std::strerror(errno))); // no need to throw here
 	}
 	gettimeofday(&now, NULL);
 	_clientMap[clientFd].client.getRequest().setRecvTimestamp(now);
@@ -302,8 +303,8 @@ void	Webserv::newClient(int listenFd)
 
 void	Webserv::testPrint(int clientFd, Client &client)
 {
-	// std::cout << "\n" << client.getRequest() << std::endl;
-	// std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
+	std::cout << "\n" << client.getRequest() << std::endl;
+	std::cout << "~~~~~~ end request ~~~~~~~" << std::endl;
 	(void)client;
 	_clientMap[clientFd].client.clearReadBuffer();
 }
@@ -377,7 +378,8 @@ void	Webserv::handleRequest(int clientFd)
 			{
 				_clientMap.erase(clientFd);
 				close(clientFd);
-				throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
+				// need to delete clientFd from epoll
+				throw(std::runtime_error(std::strerror(errno))); //no need to throw here
 			}
 		}
 		else //remove clientFD from epoll while we are reading the content from the CGI
@@ -387,7 +389,8 @@ void	Webserv::handleRequest(int clientFd)
 			{
 				_clientMap.erase(clientFd);
 				close(clientFd);
-				throw(std::runtime_error(std::strerror(errno))); //exception is not being caught
+				// need to delete clientFd from epoll
+				throw(std::runtime_error(std::strerror(errno))); //no need to throw here
 			}
 		}
 	}
@@ -722,7 +725,7 @@ void	Webserv::handleResponse(int clientFd)
 	size_t			remaining = client.getResponse().getToRead() - (client.getBytesSent());
 	struct timeval  now;
 
-	// std::cout << "Sending" << std::string(ptr) <<  " to client (" << clientFd << ")" << std::endl;
+	std::cout << "Sending" << std::string(ptr) <<  " to client (" << clientFd << ")" << std::endl;
 	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
 	gettimeofday(&now, NULL); //(stdtime could work cuz timeout ~ 30-60s)
 	client.getResponse().setSendTimestamp(now);
@@ -824,6 +827,8 @@ void    Webserv::handleTimeouts(void)
 			closeClient(client.getFd());
 	}
 	//cgi timeout
+	// set clientFd to -1 when closed so we don't add it back to epoll
+	// if has been added 
 	for (size_t j = 0; j < this->_servers.size(); j++)
 	{
 		for (size_t i = 0; i < this->_servers[j].getCgiVec().size(); i++)

@@ -83,9 +83,9 @@ class	Webserv
 
 
 		void	testPrint(int clientFd, Client &client);
-		Webserv(void);
 
 	public:
+		Webserv(void);
 		Webserv(char **envp);
 		Webserv(Webserv const &src);
 		Webserv	&operator=(Webserv const &rhs);
