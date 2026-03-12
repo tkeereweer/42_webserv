@@ -170,8 +170,6 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 		|| (this->_maxBodySizeClientReq != -1 && req.getContentLength() > this->_maxBodySizeClientReq))
 		return (resp.buildErrorResponse(413, this, &loc));
 	std::string	path = buildPath(req.getURI(), &loc);
-	// if (access(path.c_str(), F_OK) == -1)
-	// 	return (resp.buildErrorResponse(404, this, &loc)); //TODO: make a decision about this line
 	if (isDir(path.c_str()) || *(path.rbegin()) == '/')
 		return (handleDir(client, loc, path));
 	if (!isMethodAllowed(req.getMethod(), loc))
@@ -227,11 +225,15 @@ void	Server::handleGET(Client &client, Location &loc, std::string path, int epol
 	try
 	{
 		Request	&req = client.getRequest();
-		if (access(path.c_str(), R_OK) == -1)
+        errno = 0;
+		if (access(path.c_str(), F_OK | R_OK) == -1)
 		{
 			std::cout << "access errno: " << strerror(errno) << std::endl;
 			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
-			return (client.getResponse().buildErrorResponse(404, this, &loc));
+            if (errno == ENOENT)
+			    return (client.getResponse().buildErrorResponse(404, this, &loc));
+            else
+                return (client.getResponse().buildErrorResponse(403, this, &loc));
 		}
 		//handle GET Cgi
 		if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
@@ -288,6 +290,7 @@ void	Server::handlePOST(Location &loc, Client &client, std::string path, int epo
 	catch(const std::exception& e)
 	{
 		return (client.getResponse().buildErrorResponse(500, this, &loc));
+        //add client to epoll
 	}
 }
 
@@ -308,7 +311,6 @@ void	Server::handleDELETE(Location &loc, Client &client, std::string& path)
 
 }
 
-//adds errorFD to epoll so it can then add the right fds if execve succeeded
 void	Server::addCgiToEpoll(CGI &cgi, int epollFD) const
 {
 	epoll_event	ev;
@@ -320,9 +322,6 @@ void	Server::addCgiToEpoll(CGI &cgi, int epollFD) const
 		ev.events = EPOLLOUT;
 		ev.data.fd = cgi.getClientFD();
 		if (epoll_ctl(epollFD, EPOLL_CTL_ADD, cgi.getClientFD(), &ev) == -1)
-		{
-			//TODO what here? should close client but that is Webserv member function (not accessible here)
-			return;
-		}
+            throw (std::runtime_error("epoll ctl fail"));
 	}
 }

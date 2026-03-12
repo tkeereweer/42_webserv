@@ -7,10 +7,8 @@
 # include "Request.hpp"
 # include "libraryHeader.hpp"
 
-
-
-# define QUERY_TIMEOUT 3000 //30s == 30000ms between 2 reads and write is the standard on firefox. If lower, test value for debugging quicker
-# define CGI_TIMEOUT 3000
+# define QUERY_TIMEOUT 5 //NGINX does 30-60s
+# define CGI_TIMEOUT 5
 
 typedef enum	e_conf_type
 {
@@ -68,6 +66,7 @@ class	Webserv
 		void	handleRequest(int clientFd);
 		void	handleResponse(int clientFd);
 		void    handleTimeouts(void);
+        void    handleCgiTimeout(std::time_t &now);
 		void	closeClient(int clientFd);
 		
 		// HandleCgi

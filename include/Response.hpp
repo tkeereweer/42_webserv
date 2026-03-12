@@ -31,9 +31,9 @@ class Response
 		std::string _bodyFilepath; //path of file to write in _entityBody
 
 		//where we build the response and from which we will write to client
-		std::string 	_rawResponse;
-		bool    		_responseComplete;
-		struct timeval	_sendTimestamp;
+		std::string _rawResponse;
+		bool    	_responseComplete;
+		std::time_t	_sendTimestamp;
 
 		void    _writeFileToResponse(std::string filepath);
 
@@ -59,14 +59,14 @@ class Response
 		std::string 	&getRawResponse(void);
 		std::string 	getContentLength(void) const;
 		std::string 	getContentType(void) const;
-		struct timeval	&getSendTimestamp(void);
+		std::time_t	&getSendTimestamp(void);
 		bool			getRespFlag(void) const;
 		size_t			getToRead(void) const;
 		std::string		&getEntityBody(void);
 		short			getReturnCode(void) const;
 
 		//setter
-		void	setSendTimestamp(struct timeval timestamp);
+		void	setSendTimestamp(std::time_t timestamp);
 		void	setContentLength(std::string length);
 		void	setContentType(std::string type);
 		void	setToRead(size_t bytes);

@@ -92,6 +92,13 @@ std::string	Request::_parsePath(std::list<t_reqToken>::iterator &it)
 	{
 		res += it->val; //puts slash in path
 		it++;
+        if (it->val == "..")
+        {
+            it++;
+            if (it->type == SLASH)
+                throw (Request::ErrorNum("blocked path for security reasons", 400));
+            it--;
+        }
 		res += _parseSegment(it);
 	}
 	if (res == "")
@@ -586,7 +593,6 @@ static bool	isHeader(std::list<t_reqToken>::iterator &it)
 	return (true);
 }
 
-//TODO error 431 if header too long (hardcode values)
 void	Request::_parseFullRequest(std::list<t_reqToken>::iterator &it)
 {
 	//throws exception when request line not full
