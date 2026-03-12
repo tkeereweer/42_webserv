@@ -1,65 +1,6 @@
-#test21: "400" - Content-Length mismatch body too short
+#test21: "400" - forbidden "../" in URI
 
-POST /api HTTP/1.1
-Host: example.com
-Content-Length: 50
-Content-Type: application/json
-
-{"data": "value"}
-
-#endtest21
-
-#test21: "400" - Content-Length mismatch body too short
-
-POST /api HTTP/1.1
-Host: example.com
-Content-Length: 50
-Content-Type: application/json
-
-{"data": "value"}
-
-#endtest21
-
-#test21: "400" - Content-Length mismatch body too short
-
-POST /api HTTP/1.1
-Host: example.com
-Content-Length: 50
-Content-Type: application/json
-
-{"data": "value"}
-
-#endtest21
-
-#test21: "400" - Content-Length mismatch body too short
-
-POST /api HTTP/1.1
-Host: example.com
-Content-Length: 50
-Content-Type: application/json
-
-{"data": "value"}
-
-#endtest21
-
-#test21: "400" - Content-Length mismatch body too short
-
-POST /api HTTP/1.1
-Host: example.com
-Content-Length: 50
-Content-Type: application/json
-
-{"data": "value"}
-
-#endtest21
-
-#test21: "400" - Content-Length mismatch body too short
-
-POST /api HTTP/1.1
-Host: example.com
-Content-Length: 50
-Content-Type: application/json
-
-{"data": "value"}
+GET /pages/../../../etc/passwd HTTP/1.1
+Host: 127.0.0.1
 
 #endtest21

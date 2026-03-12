@@ -87,6 +87,13 @@ std::string	Request::_parsePath(std::list<t_reqToken>::iterator &it)
 {
 	std::string	res = "";
 
+    if (it->val == "..")
+    {
+        it++;
+        if (it->type == SLASH)
+            throw (Request::ErrorNum("blocked path for security reasons", 400));
+        it--;
+    }
 	res += _parseFSegment(it);
 	while (it->type == SLASH)
 	{
@@ -638,7 +645,9 @@ void	Request::_parseFullRequest(std::list<t_reqToken>::iterator &it)
 	this->_reqHeadersValid = true;
 	if (it != this->_tokenList.end() && this->_method == POST)
 	{
-		if (this->_contentType.empty() || this->_contentLength == 0)
+        if (this->_contentLength == 0)
+            throw (Request::ErrorNum("content lenght required", 411));
+		if (this->_contentType.empty())
 			throw (Request::ErrorNum("invalid POST request: missing content-length or content-type", 400));
 		_readLeftovers(it);
 	}
