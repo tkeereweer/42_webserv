@@ -18,7 +18,7 @@ void	Request::_parse(void)
 		{
 			if (it != this->_tokenList.end())
 			{
-				// std::cerr << e.what();
+				// std::cerr << e.what() << std::endl;
 				throw; //this might do something called slicing ? do std::cerr<< e.what(); throw; instead ?
 			}
 			return ;

@@ -32,7 +32,16 @@ static enum e_reqType	whichType(std::string word)
 
 void	Request::_lexInput(std::string const &str)
 {
-	std::string::const_iterator	start = str.begin() + str.find_first_not_of("\n\r\t\b ");
+	std::string::const_iterator	start;
+	if (str.find_first_not_of("\n\r\t\b ") == std::string::npos)
+	{
+		if (str.find_first_of("\n\r\t\b ") == std::string::npos)
+			start = str.end();
+		else
+			start = str.begin();
+	}
+	else
+		start = str.begin() + str.find_first_not_of("\n\r\t\b ");
 	std::string	word = "";
 	bool	inQuotes = false;
 
@@ -59,14 +68,14 @@ void	Request::_lexInput(std::string const &str)
 			}
 			if (isCRLF(it))
 			{
-                if (this->_tokenList.back().type == CRLF)
-                {
-                    this->_tokenList.push_back(token(std::string("\r\n"), CRLF));
-                    it++;
-                    it++;
-                    this->_tokenList.push_back(token(std::string(it, str.end()), WORD));
-                    break;
-                }
+				if (this->_tokenList.back().type == CRLF)
+				{
+					this->_tokenList.push_back(token(std::string("\r\n"), CRLF));
+					it++;
+					it++;
+					this->_tokenList.push_back(token(std::string(it, str.end()), WORD));
+					break;
+				}
 				this->_tokenList.push_back(token(std::string("\r\n"), CRLF));
 				it++;
 				continue;

@@ -9,7 +9,8 @@ Client::Client(void) :
     _response(), 
     _bytesSent(0),
     _requestDone(false), 
-    _cgiResponseState(0)
+    _cgiResponseState(0),
+    _firstCoTimestamp(0)
 {}
 
 Client::Client(int fd) : 
@@ -18,7 +19,8 @@ Client::Client(int fd) :
     _response(),
 	_bytesSent(0),
     _requestDone(false), 
-    _cgiResponseState(0)
+    _cgiResponseState(0),
+    _firstCoTimestamp(0)
 {}
 
 Client::Client(Client const &src) :
@@ -27,7 +29,8 @@ Client::Client(Client const &src) :
 	_response(src._response),
 	_bytesSent(src._bytesSent),
     _requestDone(false),
-    _cgiResponseState(0)
+    _cgiResponseState(0),
+    _firstCoTimestamp(0)
     {}
 
 Client&	Client::operator=(Client const &rhs)
@@ -78,6 +81,11 @@ int			Client::getCgiResponseState(void) const
 	return (this->_cgiResponseState);
 }
 
+std::time_t Client::getFirstCoTimestamp(void) const
+{
+    return (this->_firstCoTimestamp);
+}
+
 void		Client::setReadBuffer(const std::string& readBuffer)
 {
 	this->_readBuffer = readBuffer;
@@ -103,6 +111,10 @@ void		Client::setCgiResponseState(int state)
 	this->_cgiResponseState = state;
 }
 
+void    Client::setFirstCoTimestamp(std::time_t time)
+{
+    this->_firstCoTimestamp = time;
+}
 
 void		Client::clearReadBuffer(void)
 {

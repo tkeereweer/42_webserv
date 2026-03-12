@@ -148,6 +148,7 @@ std::time_t Request::getRecvTimestamp(void) const
 	return (this->_recvTimestamp);
 }
 
+
 bool  Request::getReqFlag(void) const
 {
 	return (this->_reqComplete);
@@ -173,6 +174,7 @@ void    Request::setRecvTimestamp(std::time_t time)
 {
 	this->_recvTimestamp = time;
 }
+
 
 void	Request::setURI(std::string path)
 {

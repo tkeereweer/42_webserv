@@ -7,8 +7,9 @@
 # include "Request.hpp"
 # include "libraryHeader.hpp"
 
-# define QUERY_TIMEOUT 5 //NGINX does 30-60s
-# define CGI_TIMEOUT 5
+# define QUERY_TIMEOUT 30 //NGINX does 30-60s
+# define CGI_TIMEOUT 30
+# define FIRST_CONNEXION_TIMEOUT 55 //time from accepted client
 
 typedef enum	e_conf_type
 {
