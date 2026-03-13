@@ -2,3 +2,7 @@ http://server:9090/index.html
 http://server:9090/css/style.css
 http://server:9090/cgi-bin/getform_handle.py?firstname=Form&lastname=StressTest&sex=male&email=stressing.out%40justtakeiteasy.ch&about_you=this+is+the+form+for+the+stress+test%21&annoying_status=true
 http://server:9090/non-existent-page
+http://server:8080/index.html
+http://server:8080/css/style.css
+http://server:8080/cgi-bin/getform_handle.py?firstname=Form&lastname=StressTest&sex=male&email=stressing.out%40justtakeiteasy.ch&about_you=this+is+the+form+for+the+stress+test%21&annoying_status=true
+http://server:8080/non-existent-page
