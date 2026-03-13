@@ -85,8 +85,9 @@ void	Webserv::_parseConfTokens(std::list<t_conf_token> &tokens)
 				_parseServerBlock(token, end, server);
 				if (token == end)
 					throw(std::runtime_error("Syntax error in config file"));
-				if (server.getSockets().size() < 1)
+				if (server.getSockets().size() < 1 || server.getLocations().size() < 1)
 					throw(std::runtime_error("Not enough info for server"));
+				_testErrorPages(server);
 				this->addServer(server);
 			}
 			else
@@ -96,12 +97,32 @@ void	Webserv::_parseConfTokens(std::list<t_conf_token> &tokens)
 			throw(std::runtime_error("Config file does not start with a server block"));
 		token++;
 	}
-	
 }
 
 /*******************************************************************************
 *						CONFIG PARSING
 *******************************************************************************/
+
+void	Webserv::_testErrorPages(Server &server)
+{
+	std::string	errPath;
+
+	for (std::vector<Location>::iterator	itLoc = server.getLocations().begin(); itLoc != server.getLocations().end(); itLoc++)
+	{
+		for (std::map<int, std::string>::iterator	itErr = itLoc->getErrorPages().begin(); itErr != itLoc->getErrorPages().end(); itErr++)
+		{
+			errPath = server.buildPath("/" + itErr->second, &(*itLoc));
+			if (access(errPath.c_str(), F_OK | R_OK) == -1)
+				throw(std::runtime_error("Custom error page with wrong path"));
+		}
+	}
+	for (std::map<int, std::string>::iterator	itErr = server.getErrorPages().begin(); itErr != server.getErrorPages().end(); itErr++)
+	{
+		errPath = server.buildPath("/" + itErr->second, NULL);
+		if (access(errPath.c_str(), F_OK | R_OK) == -1)
+			throw(std::runtime_error("Custom error page with wrong path"));
+	}
+}
 
 void	Webserv::_parseLimitExcept(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config)
 {
