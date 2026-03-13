@@ -19,28 +19,7 @@ void	Webserv::_handleRequest(int clientFd)
 	// std::cout << "Recv from client (" << clientFd << ") : " << std::string(buffer);
 	client.appendReadBuffer(std::string(buffer, bytesRead));//data string
 	if (!client.getRequest().getHeaderFlag())
-	{	
-		try
-		{
-			lexReturn = client.getRequest().lexRawData(client.getReadBuffer());
-		}
-		catch(const Request::Error405 &e)
-		{
-			client.getResponse().build405Response(true, true, true, this->_clientMap[clientFd].server, NULL);
-			lexReturn = -1; //to get into write response logic
-		}
-		catch(const Request::ErrorNum &e)
-		{
-			client.getResponse().buildErrorResponse(e.getCode(), this->_clientMap[clientFd].server, NULL);
-			lexReturn = -1; //to get into write response logic
-		}
-		catch(const std::exception& e)
-		{
-			std::cerr << e.what() << '\n';
-			client.getResponse().buildErrorResponse(500, this->_clientMap[clientFd].server, NULL);
-			lexReturn = -1; //to get into write response logic
-		}
-	}
+        lexReturn = _lexInput(client, clientFd);
 	else
 	{
 		int tempFD = open(client.getRequest().getBodyFilename().c_str(), O_WRONLY | O_APPEND);
@@ -61,17 +40,37 @@ void	Webserv::_handleRequest(int clientFd)
 		this->_clientMap[clientFd].server->dispatchRequest(client, this->_epollFd); //CGI added to epoll ctl in this function
 
 		if (this->_clientMap[clientFd].client.getCgiResponseState() == 0)
-		{
-			struct epoll_event event;
-			event.events = EPOLLOUT;
-			event.data.fd = clientFd;
-			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientFd, &event) == -1)
-				_closeClient(clientFd);
-		}
+            _modifyEpoll(EPOLLOUT, EPOLL_CTL_MOD, clientFd);
 		else //remove clientFD from epoll while we are reading the content from the CGI
 		{
 			struct epoll_event	event;
 			epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, &event);
 		}
 	}
+}
+
+int Webserv::_lexInput(Client &client, int clientFd)
+{
+    int ret;
+    try
+    {
+        ret = client.getRequest().lexRawData(client.getReadBuffer());
+    }
+    catch(const Request::Error405 &e)
+    {
+        client.getResponse().build405Response(true, true, true, this->_clientMap[clientFd].server, NULL);
+        ret = -1; //to get into write response logic
+    }
+    catch(const Request::ErrorNum &e)
+    {
+        client.getResponse().buildErrorResponse(e.getCode(), this->_clientMap[clientFd].server, NULL);
+        ret = -1; //to get into write response logic
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        client.getResponse().buildErrorResponse(500, this->_clientMap[clientFd].server, NULL);
+        ret = -1; //to get into write response logic
+    }
+    return (ret);
 }

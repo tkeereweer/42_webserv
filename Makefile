@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: sravizza <sravizza@student.42lausanne.c    +#+  +:+       +#+         #
+#    By: mturgeon <maxime.p.turgeon@gmail.com>      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/02/11 09:56:12 by sravizza          #+#    #+#              #
-#    Updated: 2025/11/19 13:31:20 by sravizza         ###   ########.fr        #
+#    Updated: 2026/03/13 11:26:53 by mturgeon         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -35,6 +35,7 @@ SRC_MAIN		=	main.cpp \
 SRC_CGI			=	CGI.cpp \
 					cgiHandling.cpp \
 					cgiInit.cpp \
+					cgiOutputHandling.cpp \
 					lexCGIOutput.cpp \
 					parseCGIOutput.cpp
 
@@ -48,6 +49,9 @@ SRC_METH		=	dispatcher.cpp \
 SRC_HTTP_PARS 	=	createTempFile.cpp \
 					httpLexer.cpp \
 					lexerUtils.cpp \
+					parseHeaders.cpp \
+					parseRequestLine.cpp \
+					parseURI.cpp \
 					parsingMethods.cpp \
 					Request.cpp 
 
@@ -79,8 +83,8 @@ SRC				= 	$(SRC_MAIN) \
 
 
 NAME	= webserv
-CC		= g++
-CFLAGS	= -Wall -Werror -Wextra -I$(INCL_DIR)
+CC		= c++
+CFLAGS	= -Wall -Werror -Wextra -I$(INCL_DIR) -g
 OBJ		= $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o))
 RM		= rm -f
 AR		= ar -rcs
@@ -148,6 +152,6 @@ valgrind: CFLAGS += -g
 valgrind: re
 	$(VALGRIND) $(VFLAGS) $(VSUPP) ./$(NAME)
 
-.SILENT:
+# .SILENT:
 
 .PHONY: all clean fclean re debug

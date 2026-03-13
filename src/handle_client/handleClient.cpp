@@ -25,11 +25,7 @@ void	Webserv::_newClient(int listenFd)
 	_clientMap[clientFd].server = _serverMap[listenFd];
 	_clientMap[clientFd].client.setFirstCoTimestamp(time(&now));
 
-	struct epoll_event event;
-	event.events = EPOLLIN;
-	event.data.fd = clientFd;
-	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1)
-		_closeClient(clientFd);
+	_modifyEpoll(EPOLLIN, EPOLL_CTL_ADD, clientFd);
 	time(&now);
 	_clientMap[clientFd].client.getRequest().setRecvTimestamp(now);
 	// std::cout << "Client (" << clientFd << ") connected" << std::endl;
@@ -43,7 +39,7 @@ void	Webserv::_handleResponse(int clientFd)
 	size_t			remaining = client.getResponse().getToRead() - (client.getBytesSent());
 	std::time_t  now;
 
-	std::cout << "Sending" << std::string(ptr) <<  " to client (" << clientFd << ")" << std::endl;
+	// std::cout << "Sending" << std::string(ptr) <<  " to client (" << clientFd << ")" << std::endl;
 	ssize_t bytesSentNow = send(clientFd, ptr, remaining, 0);
 	time(&now);
 	client.getResponse().setSendTimestamp(now);
@@ -58,11 +54,19 @@ void	Webserv::_handleResponse(int clientFd)
 		_closeClient(clientFd);
 }
 
-
 void	Webserv::_closeClient(int clientFd)
 {
-	epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
-	_clientMap.erase(clientFd);
+	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
+	this->_clientMap.erase(clientFd);
 	close(clientFd);
 	// std::cout << "Client (" << clientFd << ") disconnected" std::endl;
+}
+
+void	Webserv::_modifyEpoll(int EVENT, int MODIFIER, int whichFd)
+{
+    struct epoll_event event;
+	event.events = EVENT;
+	event.data.fd = whichFd;
+	if (epoll_ctl(_epollFd, MODIFIER, whichFd, &event) == -1)
+		_closeClient(whichFd);
 }

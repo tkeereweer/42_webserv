@@ -19,14 +19,8 @@ void Webserv::_handleCgiTimeout(std::time_t &now)
 				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
 				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getClientFD(), NULL);
 				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
-				//add client to epoll
-				struct epoll_event event;
-				event.events = EPOLLOUT;
-				event.data.fd = cgi.getClientFD();
-				if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, cgi.getClientFD(), &event) == -1) //chekc if clientfd == -1 here aka already closed/timed out in request
-					_closeClient(cgi.getClientFD()); //used to be throw
+                _modifyEpoll(EPOLLOUT, EPOLL_CTL_ADD, cgi.getClientFD());
 				_destroyCGI(cgi, this->_servers[j]);
-				//TODO: not closing sockets when exceptions caught in main causes broken pipe error from kernel a few seconds after program end
 			}
 		}
 	}
@@ -60,12 +54,7 @@ void    Webserv::_handleTimeouts(void)
 		{
 			std::cout << "request timed out" << std::endl;
 			client.getResponse().buildErrorResponse(408, it->second.server, NULL);
-			//add client to epoll
-			struct epoll_event event;
-			event.events = EPOLLOUT;
-			event.data.fd = client.getFd();
-			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, client.getFd(), &event) == -1)
-				_closeClient(client.getFd());
+            _modifyEpoll(EPOLLOUT, EPOLL_CTL_MOD, client.getFd());
 		}
 		if (!responseFlag && sendStamp != 0 && now - sendStamp > QUERY_TIMEOUT)
 		{

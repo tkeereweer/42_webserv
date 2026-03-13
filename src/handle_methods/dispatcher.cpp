@@ -20,6 +20,7 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	int	locIdx = _matchLocation(req.getURI());
 	if (locIdx == -1)
 		return (resp.buildErrorResponse(404, this, NULL));
+
 	Location	&loc = this->_locations[locIdx];
 	if (!loc.getRedir().second.empty())
 		return (resp.buildRedirResponse(loc.getRedir().first, loc.getRedir().second));
@@ -28,11 +29,13 @@ void	Server::dispatchRequest(Client &client, int epollFD)
 	if ((loc.getMaxBody() != -1 && req.getContentLength() > loc.getMaxBody())
 		|| (this->_maxBodySizeClientReq != -1 && req.getContentLength() > this->_maxBodySizeClientReq))
 		return (resp.buildErrorResponse(413, this, &loc));
+
 	std::string	path = buildPath(req.getURI(), &loc);
 	if (isDir(path.c_str()) || *(path.rbegin()) == '/')
 		return (_handleDir(client, loc, path));
 	if (!isMethodAllowed(req.getMethod(), loc))
 		return (resp.build405Response(isMethodAllowed(GET, loc), isMethodAllowed(POST, loc), isMethodAllowed(DELETE, loc), this, &loc));
+
 	if (req.getMethod() == GET)
 		_handleGET(client, loc, path, epollFD);
 	else if (req.getMethod() == POST)
@@ -85,7 +88,6 @@ int	Server::_matchLocation(std::string URI) const
 
 std::string	Server::buildPath(std::string URI, Location *loc) const
 {
-	//this field should not end w/ a '/'
 	std::string	path;
 	if (loc && !loc->getRoot().empty())
 		path = resolvePath(loc->getRoot());

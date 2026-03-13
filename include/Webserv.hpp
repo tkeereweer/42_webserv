@@ -65,16 +65,21 @@ class	Webserv
 		bool	_isListenSocket(int fd) const;
 		void	_newClient(int listenFd);
 		void	_handleRequest(int clientFd);
+		int		_lexInput(Client &client, int clientFD);
 		void	_handleResponse(int clientFd);
 		void    _handleTimeouts(void);
-        void    _handleCgiTimeout(std::time_t &now);
+		void    _handleCgiTimeout(std::time_t &now);
 		void	_closeClient(int clientFd);
+		void	_modifyEpoll(int EVENT, int MODIFIER, int whichFd);
 		
 		// HandleCgi
 		long        _isCgiFd(int fd);
 		void		_handleCgiInput(CGI &cgi, Server &server);
 		void		_handleCgiOutput(CGI &cgi, Server &server);
-        void	    _handleErrorPipe(CGI &cgi);
+		void	    _handleErrorPipe(CGI &cgi);
+		void		_returnValidCgi(CGI &cgi);
+		void		_setupInvalidCgi(CGI &cgi);
+		void		_returnError500(CGI &cgi, Client &client);
 		void		_cgiError(CGI &cgi);
 		int			_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize);
 		void        _destroyCGI(CGI &cgi, Server &server);
