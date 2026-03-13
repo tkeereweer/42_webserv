@@ -1,4 +1,4 @@
-#include "../../include/CGI.hpp"
+#include "CGI.hpp"
 
 t_cgi_token	whichType(std::string word)
 {

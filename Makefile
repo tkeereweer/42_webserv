@@ -1,69 +1,153 @@
-SRC = Client.cpp \
-	Location.cpp \
-	Server.cpp \
-	Webserv.cpp \
-	Config.cpp \
-	configFile.cpp \
-	http_parsing/createTempFile.cpp \
-	http_parsing/httpLexer.cpp \
-	http_parsing/lexerUtils.cpp \
-	http_parsing/parsingMethods.cpp \
-	http_parsing/Request.cpp \
-	CGI.cpp \
-	cgi_output_parsing/parseCGIOutput.cpp \
-	cgi_output_parsing/lexCGIOutput.cpp \
-	Response.cpp \
-	main.cpp
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    Makefile                                           :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: sravizza <sravizza@student.42lausanne.c    +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2025/02/11 09:56:12 by sravizza          #+#    #+#              #
+#    Updated: 2025/11/19 13:31:20 by sravizza         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
 
-NAME = webserv
+################################################################################
+##								DIRECTORIES									  ##
 
-CC = g++
-FLAGS = -Wall -Werror -Wextra -std=c++98 -g
-OBJ_DIR = objects
-OBJS = $(addprefix $(OBJ_DIR)/, $(notdir $(SRC:.cpp=.o)))
+SRC_DIR			= src
+OBJ_DIR			= obj
+INCL_DIR		= include
+
+CGI_DIR			= handle_cgi
+CLIENT_DIR		= handle_client
+METH_DIR		= handle_methods
+HTTP_PARS_DIR	= http_parsing
+INIT_DIR		= init
+RESP_DIR		= responses
+
+
+################################################################################
+##								  SOURCES									  ##
+
+SRC_MAIN		=	main.cpp \
+					epoll.cpp \
+					timeout.cpp 
+
+SRC_CGI			=	CGI.cpp \
+					cgiHandling.cpp \
+					cgiInit.cpp \
+					lexCGIOutput.cpp \
+					parseCGIOutput.cpp
+
+SRC_CLIENT		=	Client.cpp \
+					handleRequest.cpp \
+					handleClient.cpp 
+
+SRC_METH		=	dispatcher.cpp \
+					methods.cpp
+
+SRC_HTTP_PARS 	=	createTempFile.cpp \
+					httpLexer.cpp \
+					lexerUtils.cpp \
+					parsingMethods.cpp \
+					Request.cpp 
+
+SRC_INIT		=	Config.cpp \
+					configFile.cpp \
+					init_sockets_epoll.cpp \
+					Location.cpp \
+					Server.cpp \
+					Webserv.cpp
+
+SRC_RESP		=	Response.cpp \
+					error_response.cpp \
+					method_response.cpp \
+					raw_response.cpp 
+
+
+
+SRC				= 	$(SRC_MAIN) \
+					$(addprefix $(CGI_DIR)/, $(SRC_CGI)) \
+					$(addprefix $(CLIENT_DIR)/, $(SRC_CLIENT)) \
+					$(addprefix $(METH_DIR)/, $(SRC_METH)) \
+					$(addprefix $(HTTP_PARS_DIR)/, $(SRC_HTTP_PARS)) \
+					$(addprefix $(INIT_DIR)/, $(SRC_INIT)) \
+					$(addprefix $(RESP_DIR)/, $(SRC_RESP)) 
+
+
+################################################################################
+##								 ARGUMENTS									  ##
+
+
+NAME	= webserv
+CC		= g++
+CFLAGS	= -Wall -Werror -Wextra -I$(INCL_DIR)
+OBJ		= $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o))
+RM		= rm -f
+AR		= ar -rcs
+
+
+################################################################################
+##								   RULES									  ##
+
+$(NAME): $(OBJ) 
+	$(CC) $(CFLAGS) $(OBJ) -o $(NAME)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | create_obj_dirs
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: $(CGI_DIR)/%.cpp | create_obj_dirs
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: $(CLIENT_DIR)/%.cpp | create_obj_dirs
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: $(METH_DIR)/%.cpp | create_obj_dirs
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: $(HTTP_PARS_DIR)/%.cpp | create_obj_dirs
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: $(INIT_DIR)/%.cpp | create_obj_dirs
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: $(RESP_DIR)/%.cpp | create_obj_dirs
+	$(CC) $(CFLAGS) -c $< -o $@
+
+
+
+
+create_obj_dirs:
+	mkdir -p	$(OBJ_DIR)/$(CGI_DIR) \
+				$(OBJ_DIR)/$(CLIENT_DIR) \
+				$(OBJ_DIR)/$(METH_DIR) \
+				$(OBJ_DIR)/$(HTTP_PARS_DIR) \
+				$(OBJ_DIR)/$(INIT_DIR) \
+				$(OBJ_DIR)/$(RESP_DIR) 
+
+	
+################################################################################
+##								   COMMANDS									  ##
 
 all: $(NAME)
-
-$(NAME): $(LIBFT) $(MLX) $(OBJS)
-	$(CC) $(FLAGS) $(OBJS) $(LINKS_MAC) -o $(NAME)
-
-$(OBJ_DIR)/%.o: %.cpp | $(OBJ_DIR) #for main.c
-	$(CC) $(FLAGS) -Iinclude -c $< -o $@
-
-$(OBJ_DIR)/%.o: src/%.cpp | $(OBJ_DIR)
-	$(CC) $(FLAGS) -Iinclude -c $< -o $@
-
-$(OBJ_DIR)/%.o: src/http_parsing/%.cpp | $(OBJ_DIR)
-	$(CC) $(FLAGS) -Iinclude -c $< -o $@
-
-$(OBJ_DIR)/%.o: src/cgi_output_parsing/%.cpp | $(OBJ_DIR)
-	$(CC) $(FLAGS) -Iinclude -c $< -o $@
-
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
-
+	echo $(NAME) "compiled"
 clean:
 	rm -rf $(OBJ_DIR)
+	echo $(NAME) "obj removed"
 
 fclean: clean
-	rm -rf $(NAME)
+	$(RM) $(NAME)
+	echo $(NAME) "removed"
 
 re: fclean all
 
-# Test target
-TEST_NAME = test_config
-TEST_OBJS = $(OBJ_DIR)/test_config.o
+debug: CFLAGS += -g
+debug: re
+	echo $(NAME) "compiled in debug mode"
 
-test: $(TEST_NAME)
-	./$(TEST_NAME)
+valgrind: CFLAGS += -g
+valgrind: re
+	$(VALGRIND) $(VFLAGS) $(VSUPP) ./$(NAME)
 
-$(TEST_NAME): $(filter-out $(OBJ_DIR)/main.o, $(OBJS)) $(TEST_OBJS)
-	$(CC) $(FLAGS) $(filter-out $(OBJ_DIR)/main.o, $(OBJS)) $(TEST_OBJS) -o $(TEST_NAME)
+.SILENT:
 
-$(OBJ_DIR)/test_config.o: tests/test_config.cpp | $(OBJ_DIR)
-	$(CC) $(FLAGS) -Iinclude -c $< -o $@
-
-fclean_test:
-	rm -rf $(TEST_NAME)
-
-.PHONY: all clean fclean re test fclean_test
+.PHONY: all clean fclean re debug

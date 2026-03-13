@@ -27,7 +27,7 @@ class	Config
 		bool						getAcceptPOST(void) const;
 		bool						getAcceptDELETE(void) const;
 		std::string					getRoot(void) const;
-		int						getAutoIndex(void) const;
+		int							getAutoIndex(void) const;
 		std::string					getIndex(void) const;
 		long long					getMaxBody(void) const;
 		std::map<int, std::string>	&getErrorPages(void);

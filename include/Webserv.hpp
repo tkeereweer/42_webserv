@@ -41,37 +41,37 @@ class	Webserv
 		std::vector<std::string>	_parentEnv;
 
 		// configuration file parsing
-		void					parseListen(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
-		void					parseServerName(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
-		void					parseMaxBodySize(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
-		void					parseRoot(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
-		void					parseLimitExcept(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
-		void					parseErrorPage(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
-		void					parseAutoIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
-		void					parseIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
-		void					parseUpload(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location);
-		void					parseRedir(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
-		void					parseMaxCGIOutput(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
-		void					parseLocation(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location);
-		void					parseServerBlock(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
-		std::string				openFile(char const *filepath);
-		std::list<t_conf_token>	lexConfigFile(std::string content);
-		void					printConfTokens(std::list<t_conf_token> lst);
-		void					parseConfTokens(std::list<t_conf_token> &tokens);
+		void					_parseListen(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
+		void					_parseServerName(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
+		void					_parseMaxBodySize(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
+		void					_parseRoot(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
+		void					_parseLimitExcept(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
+		void					_parseErrorPage(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
+		void					_parseAutoIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
+		void					_parseIndex(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
+		void					_parseUpload(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location);
+		void					_parseRedir(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
+		void					_parseMaxCGIOutput(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Config &config);
+		void					_parseLocation(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Location &location);
+		void					_parseServerBlock(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
+		std::string				_openFile(char const *filepath);
+		std::list<t_conf_token>	_lexConfigFile(std::string content);
+		void					_printConfTokens(std::list<t_conf_token> lst);
+		void					_parseConfTokens(std::list<t_conf_token> &tokens);
 
 		// socket/connection management
-		int		setupEpoll(void) const;
-		void	activityNotif(struct epoll_event	readyEvents);
-		bool	isListenSocket(int fd) const;
-		void	newClient(int listenFd);
-		void	handleRequest(int clientFd);
-		void	handleResponse(int clientFd);
-		void    handleTimeouts(void);
-        void    handleCgiTimeout(std::time_t &now);
-		void	closeClient(int clientFd);
+		int		_setupEpoll(void) const;
+		void	_activityNotif(struct epoll_event	readyEvents);
+		bool	_isListenSocket(int fd) const;
+		void	_newClient(int listenFd);
+		void	_handleRequest(int clientFd);
+		void	_handleResponse(int clientFd);
+		void    _handleTimeouts(void);
+        void    _handleCgiTimeout(std::time_t &now);
+		void	_closeClient(int clientFd);
 		
 		// HandleCgi
-		long        isCgiFd(int fd);
+		long        _isCgiFd(int fd);
 		void		_handleCgiInput(CGI &cgi, Server &server);
 		void		_handleCgiOutput(CGI &cgi, Server &server);
         void	    _handleErrorPipe(CGI &cgi);
@@ -80,9 +80,6 @@ class	Webserv
 		void        _destroyCGI(CGI &cgi, Server &server);
 		void		_buildOtherCode(CGI &cgi);
 		void		_cleanExit(void);
-
-
-		void	testPrint(int clientFd, Client &client);
 
 	public:
 		Webserv(void);

@@ -1,4 +1,4 @@
-#include "../../include/Request.hpp"
+#include "Request.hpp"
 
 //if last token is a word or space, don't read it as it will be put back in data.
 void	Request::_readLeftovers(std::list<t_reqToken>::iterator &it)

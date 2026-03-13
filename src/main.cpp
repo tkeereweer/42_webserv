@@ -1,4 +1,4 @@
-#include "../include/Webserv.hpp"
+#include "Webserv.hpp"
 
 volatile sig_atomic_t	g_signum = 0;
 int						g_sigPipe[2];
