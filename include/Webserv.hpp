@@ -58,6 +58,7 @@ class	Webserv
 		std::list<t_conf_token>	_lexConfigFile(std::string content);
 		void					_printConfTokens(std::list<t_conf_token> lst);
 		void					_parseConfTokens(std::list<t_conf_token> &tokens);
+		void					_testErrorPages(Server &server);
 
 		// socket/connection management
 		int		_setupEpoll(void) const;

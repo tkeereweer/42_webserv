@@ -129,70 +129,48 @@ flowchart TD
     START([launchServer]) --> WAIT[epoll_wait]
     WAIT --> EVENT{fd type?}
 
-    EVENT -->|listen socket| ACCEPT[accept new connection\nnew Client added to epoll]
-    EVENT -->|client fd EPOLLIN| READ[read into _readBuffer\nlex + parse Request]
-    EVENT -->|client fd EPOLLOUT| WRITE[write _rawResponse\nto client socket]
-    EVENT -->|CGI read pipe| CGIOUT[read CGI stdout\nlex + parse CGI headers/body]
-    EVENT -->|CGI write pipe| CGIOUT2[write POST body\nto CGI stdin pipe]
+    EVENT -->|listen socket| ACCEPT[accept new connection new Client added to epoll]
+    EVENT -->|client fd EPOLLIN| READ[read into _readBuffer lex + parse Request]
+    EVENT -->|client fd EPOLLOUT| WRITE[write _rawResponse to client socket]
+    EVENT -->|CGI read pipe| CGIOUT[read CGI stdout lex + parse CGI headers/body]
+    EVENT -->|CGI write pipe| CGIOUT2[write POST body to CGI stdin pipe]
 
     ACCEPT --> WAIT
-    READ --> PARSED{request\ncomplete?}
+    READ --> PARSED{request complete?}
     PARSED -->|no| WAIT
     PARSED -->|yes| DISPATCH[Server::dispatchRequest]
 
     DISPATCH --> ROUTE{route type?}
-    ROUTE -->|static file| STATIC[buildRouteResponse\nread file into body]
+    ROUTE -->|static file| STATIC[buildRouteResponse read file into body]
     ROUTE -->|directory| DIR{autoindex?}
     DIR -->|on| LISTING[buildDirectoryListingResponse]
     DIR -->|off| IDX[serve index file]
-    ROUTE -->|CGI| CGIFORK[fork + exec script\nregister pipes in epoll]
-    ROUTE -->|redirect| REDIR[buildRedirResponse\n301 / 302]
-    ROUTE -->|upload| UPLOAD[write file to upload_store\nbuildPostResponse 201]
+    ROUTE -->|CGI| CGIFORK[fork + exec script register pipes in epoll]
+    ROUTE -->|redirect| REDIR[buildRedirResponse 301 / 302]
+    ROUTE -->|upload| UPLOAD[write file to upload_store buildPostResponse 201]
 
-    STATIC --> EPOLLOUT[arm EPOLLOUT\non client fd]
+    STATIC --> EPOLLOUT[arm EPOLLOUT on client fd]
     LISTING --> EPOLLOUT
     IDX --> EPOLLOUT
     REDIR --> EPOLLOUT
     UPLOAD --> EPOLLOUT
     CGIFORK --> WAIT
-    CGIOUT --> CGIDONE{CGI output\ncomplete?}
+    CGIOUT --> CGIDONE{CGI output complete?}
     CGIDONE -->|no| WAIT
     CGIDONE -->|yes| EPOLLOUT
 
-    WRITE --> DONE{all bytes\nsent?}
+    WRITE --> DONE{all bytes sent?}
     DONE -->|no| WAIT
     DONE -->|yes| CLOSE[close + remove client]
     CLOSE --> WAIT
 
     WAIT -->|timeout check| TIMEOUT{timed out?}
     TIMEOUT -->|request 30s| ERR408[send 408]
-    TIMEOUT -->|CGI 30s| ERR503[send 503\nkill CGI pid]
+    TIMEOUT -->|CGI 30s| ERR503[send 503 kill CGI pid]
     TIMEOUT -->|first connect 55s| CLOSE2[close client]
     ERR408 --> WAIT
     ERR503 --> WAIT
     CLOSE2 --> WAIT
-```
-
-### Config Parsing Pipeline
-
-```mermaid
-flowchart LR
-    FILE[config file] --> OPEN[openFile\nread to string]
-    OPEN --> LEX[lexConfigFile\ntokenize into\nWORD / OPEN_CURLY\nCLOSE_CURLY / SEMICOLON]
-    LEX --> PARSE[parseConfTokens\niterate token list]
-    PARSE --> SERVER[parseServerBlock\nper server block]
-    SERVER --> LISTEN[parseListen]
-    SERVER --> NAME[parseServerName]
-    SERVER --> BODY[parseMaxBodySize]
-    SERVER --> ROOT[parseRoot]
-    SERVER --> ERRPG[parseErrorPage]
-    SERVER --> LOC[parseLocation\nper location block]
-    LOC --> METHODS[parseLimitExcept]
-    LOC --> AUTO[parseAutoIndex]
-    LOC --> INDEX[parseIndex]
-    LOC --> UPLOAD[parseUpload]
-    LOC --> REDIR[parseRedir]
-    SERVER --> SERVERS[(Webserv::_servers)]
 ```
 
 ---
