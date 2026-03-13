@@ -23,17 +23,26 @@ void	Webserv::_handleRequest(int clientFd)
 	else
 	{
 		int tempFD = open(client.getRequest().getBodyFilename().c_str(), O_WRONLY | O_APPEND);
-		write(tempFD, client.getReadBuffer().c_str(), client.getReadBuffer().size());
-		close(tempFD);
-		client.getRequest().addBytesRead(client.getReadBuffer().size());
-		client.getReadBuffer().clear();
-		if (client.getRequest().getContentLength() - client.getRequest().getBytesRead() <= 0)
+		if (write(tempFD, client.getReadBuffer().c_str(), client.getReadBuffer().size()) < 1)
 		{
 			lexReturn = -1;
 			client.getRequest().setReqFlag(true);
-			if (client.getRequest().getContentLength() - client.getRequest().getBytesRead() < 0) //content-length < body size
-				client.getResponse().buildErrorResponse(400, this->_clientMap[clientFd].server, NULL);
+			client.getResponse().buildErrorResponse(500, this->_clientMap[clientFd].server, NULL);
 		}
+		else
+		{
+			client.getRequest().addBytesRead(client.getReadBuffer().size());
+			client.getReadBuffer().clear();
+			if (client.getRequest().getContentLength() - client.getRequest().getBytesRead() <= 0)
+			{
+				lexReturn = -1;
+				client.getRequest().setReqFlag(true);
+				if (client.getRequest().getContentLength() - client.getRequest().getBytesRead() < 0) //content-length < body size
+					client.getResponse().buildErrorResponse(400, this->_clientMap[clientFd].server, NULL);
+			}
+		}
+		close(tempFD);
+
 	}
 	if (lexReturn == -1)
 	{

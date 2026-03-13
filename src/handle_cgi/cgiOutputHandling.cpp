@@ -5,9 +5,7 @@ void	Webserv::_handleCgiOutput(CGI &cgi, Server &server)
 	char			buffer[4056];
 	int				lexReturn = -4;
 
-	std::cout << "in CGI output" << std::endl;
 	ssize_t	bytesRead = read(cgi.getReadFD(), buffer, sizeof(buffer) - 1);
-	std::cout << "bytesread: " << bytesRead << std::endl;
 	if (bytesRead == -1)
 		return(_cgiError(cgi));
 

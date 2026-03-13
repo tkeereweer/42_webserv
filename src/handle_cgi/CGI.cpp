@@ -44,7 +44,6 @@ CGI::CGI(std::string queryString, std::vector<std::string> env, Client &client, 
 	_setupEnvGET(queryString, env, &childEnv, client);
 
 	std::string	progPath = _getProgPath(this->_scriptPath);
-	std::cout<<"PROGPATH:"<<progPath<<std::endl;
 
 	//create child
 	this->_pid = fork();

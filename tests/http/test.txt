@@ -1,5 +1,0 @@
-#test14: "400" - Invalid characters in header name
-GET /index.html HTTP/1.1
-Host[name]: example.com
-
-#endtest14

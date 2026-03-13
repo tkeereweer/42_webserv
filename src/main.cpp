@@ -48,10 +48,19 @@ int	main(int argc, char *argv[], char **envp)
 	try
 	{
 		webserv.getConfig(config_file);
-		std::cout << "Parsed config file: " << std::endl;
+		// std::cout << "Parsed config file: " << std::endl;
 		// std::cout << webserv << std::endl;
         if (pipe(g_sigPipe) == -1)
 		    return (1);
+
+		int flags = fcntl(g_sigPipe[1], F_GETFL, 0);
+		if (flags == -1 || fcntl(g_sigPipe[1], F_SETFL, flags | O_NONBLOCK) == -1)
+		{
+			close(g_sigPipe[1]);
+			std::cerr << "fcntl fail" << std::endl;
+			return (1);
+		}
+
         signal(SIGINT, &signalHandler);
 		webserv.openSockets();
 		webserv.launchServer();

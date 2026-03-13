@@ -56,7 +56,6 @@ class	Webserv
 		void					_parseServerBlock(std::list<t_conf_token>::iterator &token, std::list<t_conf_token>::iterator &end, Server &server);
 		std::string				_openFile(char const *filepath);
 		std::list<t_conf_token>	_lexConfigFile(std::string content);
-		void					_printConfTokens(std::list<t_conf_token> lst);
 		void					_parseConfTokens(std::list<t_conf_token> &tokens);
 		void					_testErrorPages(Server &server);
 
@@ -86,6 +85,8 @@ class	Webserv
 		void        _destroyCGI(CGI &cgi, Server &server);
 		void		_buildOtherCode(CGI &cgi);
 		void		_cleanExit(void);
+		void		_cgiInputError(Server& server, CGI& cgi, const std::string& message);
+
 
 	public:
 		Webserv(void);

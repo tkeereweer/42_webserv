@@ -32,6 +32,19 @@ void    Webserv::_destroyCGI(CGI &cgi, Server &server)//readFD or writeFD of CGI
 	return ;
 }
 
+void	Webserv::_cgiInputError(Server& server, CGI& cgi, const std::string& message)
+{
+	std::cout << message << std::endl;
+	close(cgi.getInFileFD());
+	cgi.getInFileFD() = -1;
+	this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2);
+	this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(500, &server, &cgi.getLocation());
+	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
+	epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
+	_destroyCGI(cgi, server);
+	_modifyEpoll(EPOLLOUT, EPOLL_CTL_ADD, cgi.getClientFD());	
+}
+
 //is buffeer placeholder for where we want to write actually ?
 void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 {
@@ -41,35 +54,22 @@ void	Webserv::_handleCgiInput(CGI &cgi, Server &server)
 
 	ssize_t bytesRead = read(cgi.getInFileFD(), buffer, sizeof(buffer) - 1);
 
-	if (bytesRead > 0)
-	{
+	if (bytesRead < 1)
+		 return (_cgiInputError(server, cgi, "in error reading from file cgi input"));
+	
+	buffer[bytesRead] = 0;
+	ssize_t bytesSentNow = write(cgi.getWriteFD(), buffer, bytesRead);
+	if (bytesSentNow < 1)
+		return (_cgiInputError(server, cgi, "in error writing to file cgi input"));
 
-		buffer[bytesRead] = 0;
-		errno = 0;
-		ssize_t bytesSentNow = write(cgi.getWriteFD(), buffer, bytesRead);
-		std::cout << "cgi input buffer: " << buffer << std::endl;
-		std::cout << "bytessentnow: " << bytesSentNow << std::endl;
-		cgi.addBytesWritten(bytesSentNow);
-		if (cgi.getBytesWritten() >= contentLength)
-		{
-			epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
-			close(cgi.getWriteFD());
-			cgi.getWriteFD() = -1;
-			close(cgi.getInFileFD());
-			cgi.getInFileFD() = -1;
-		}
-	}
-	else
+	cgi.addBytesWritten(bytesSentNow);
+	if (cgi.getBytesWritten() >= contentLength)
 	{
-		std::cout << "in error reading from file cgi input" << std::endl;
+		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
+		close(cgi.getWriteFD());
+		cgi.getWriteFD() = -1;
 		close(cgi.getInFileFD());
 		cgi.getInFileFD() = -1;
-		this->_clientMap[cgi.getClientFD()].client.setCgiResponseState(2);
-		this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(500, &server, &cgi.getLocation());
-		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
-		epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getReadFD(), NULL);
-		_destroyCGI(cgi, server);
-		_modifyEpoll(EPOLLOUT, EPOLL_CTL_ADD, cgi.getClientFD());
 	}
 }
 
@@ -118,7 +118,6 @@ int	Webserv::_setupCGIResponseHeaders(CGI &cgi, long long maxOutSize)
 	}
 	catch(const std::exception& e)
 	{
-		std::cout << e.what() << std::endl;
 		return (-2);
 	}
 	if (lexReturn != 0 && this->_clientMap[cgi.getClientFD()].client.getResponse().getReturnCode() == 0)//first time done header parsing 

@@ -13,7 +13,7 @@ void Webserv::_handleCgiTimeout(std::time_t &now)
 			CGI	&cgi = this->_servers[j].getCgiVec()[i];
 			if (this->_clientMap[cgi.getClientFD()].client.getCgiResponseState() == 1 && cgi.getStartTimestamp() != 0 && now - cgi.getStartTimestamp() > CGI_TIMEOUT)
 			{
-			   std::cout << "CGI timed out" << std::endl;
+			//    std::cout << "CGI timed out" << std::endl;
 				this->_clientMap[cgi.getClientFD()].client.getResponse().buildErrorResponse(503, &this->_servers[j], &cgi.getLocation());
 				//make sure no trailling FDs forgotten in epoll
 				epoll_ctl(this->_epollFd, EPOLL_CTL_DEL, cgi.getWriteFD(), NULL);
@@ -52,13 +52,13 @@ void    Webserv::_handleTimeouts(void)
 		//check if 1) request/response complete 2) timestamp initialized === first receive/send happend 3) timeout status
 		if ((firstCo != 0 && now - firstCo > FIRST_CONNEXION_TIMEOUT) || (!reqFlag && recvStamp != 0 && now - recvStamp > QUERY_TIMEOUT))
 		{
-			std::cout << "request timed out" << std::endl;
+			// std::cout << "request timed out" << std::endl;
 			client.getResponse().buildErrorResponse(408, it->second.server, NULL);
             _modifyEpoll(EPOLLOUT, EPOLL_CTL_MOD, client.getFd());
 		}
 		if (!responseFlag && sendStamp != 0 && now - sendStamp > QUERY_TIMEOUT)
 		{
-			std::cout << "response timed out" << std::endl;
+			// std::cout << "response timed out" << std::endl;
 			_closeClient(client.getFd());
 		}
 	}

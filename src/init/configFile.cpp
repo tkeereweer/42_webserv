@@ -60,14 +60,6 @@ std::list<t_conf_token>	Webserv::_lexConfigFile(std::string content)
 	return (out);
 }
 
-void	Webserv::_printConfTokens(std::list<t_conf_token> lst)
-{
-	for (std::list<t_conf_token>::iterator it = lst.begin(); it != lst.end(); it++)
-	{
-		std::cout << it->value << std::endl;
-	}
-}
-
 void	Webserv::_parseConfTokens(std::list<t_conf_token> &tokens)
 {
 	std::list<t_conf_token>::iterator	token = tokens.begin();

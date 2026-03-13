@@ -1,5 +1,0 @@
-DELETE /resource/123 HTTP/1.0
-Host: www.example.com
-User-Agent: Mozilla/5.0
-Authorization: Basic abc123
-

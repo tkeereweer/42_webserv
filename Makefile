@@ -133,14 +133,12 @@ create_obj_dirs:
 ##								   COMMANDS									  ##
 
 all: $(NAME)
-	echo $(NAME) "compiled"
+
 clean:
 	rm -rf $(OBJ_DIR)
-	echo $(NAME) "obj removed"
 
 fclean: clean
 	$(RM) $(NAME)
-	echo $(NAME) "removed"
 
 re: fclean all
 
@@ -152,6 +150,5 @@ valgrind: CFLAGS += -g
 valgrind: re
 	$(VALGRIND) $(VFLAGS) $(VSUPP) ./$(NAME)
 
-# .SILENT:
 
 .PHONY: all clean fclean re debug

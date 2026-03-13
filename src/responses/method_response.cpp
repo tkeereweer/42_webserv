@@ -59,9 +59,6 @@ void	Response::buildDelResponse(Client &client, std::string& path, Server *serve
 {
 	std::string	filename = client.getRequest().getURI();
 
-	std::cout<<"path: "<< path << std::endl;
-	std::cout<<"filename: "<< filename << std::endl;
-
 	errno = 0;
 	if (unlink(path.c_str()) == -1)
 	{

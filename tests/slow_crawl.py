@@ -7,7 +7,7 @@ TARGET_IP = "127.0.0.1"  # Replace with your server IP
 TARGET_PORT = 8080         # Replace with your server port
 NUM_CONNECTIONS = 100     # Number of slow connections to open
 DELAY = 21               # Delay between sending chunks (seconds)
-TIMEOUT = 30             # Max time to wait for server response (seconds)
+TIMEOUT = 120             # Max time to wait for server response (seconds)
 
 def slow_connect():
     try:

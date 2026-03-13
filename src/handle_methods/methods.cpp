@@ -33,8 +33,6 @@ void	Server::_handleGET(Client &client, Location &loc, std::string path, int epo
         errno = 0;
 		if (access(path.c_str(), F_OK | R_OK) == -1)
 		{
-			std::cout << "access errno: " << strerror(errno) << std::endl;
-			std::cout << "path: " << path << std::endl << "path.c_str(): " << path.c_str() << std::endl;
             if (errno == ENOENT)
 			    return (client.getResponse().buildErrorResponse(404, this, &loc));
             else
@@ -62,7 +60,6 @@ void	Server::_handlePOST(Location &loc, Client &client, std::string path, int ep
 	try
 	{
 		Request	&req = client.getRequest();
-		std::cout << "path:"<< req.getURI() << std::endl;
 		//handle POST Cgi
 		if (req.getURI().find(".py") != std::string::npos || req.getURI().find(".php") != std::string::npos) //.php or any other handled cgi
 			return (client.getResponse().buildPostCgiResponse(client, &loc, epollFD, *this, path));
