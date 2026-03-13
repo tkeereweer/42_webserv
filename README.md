@@ -1,3 +1,5 @@
+*This project has been created as part of the 42 curriculum by [mturgeon](https://github.com/Maxkirit), [sravizza](https://github.com/Piccolo-42), and [mkeerewe](https://github.com/tkeereweer)*
+
 # webserv
 
 A non-blocking HTTP/1.0 server written in C++98, built as part of the 42 school curriculum.
@@ -258,8 +260,6 @@ location /old-path {
 }
 ```
 
-Status codes in the range 300–399 are supported.
-
 ### Custom Error Pages
 
 Error pages can be configured per server block and per location block. The server ships with default error pages for all handled codes:
@@ -362,14 +362,10 @@ server {
 ### Requirements
 
 - **Linux** (epoll is not available on macOS/BSD)
-- `g++` with C++98 support
+- `c++` with C++98 support
 - `python3` and/or `php` in `PATH` for CGI scripts
 
-On macOS, use the provided Linux container:
-
-```bash
-linuxdev    # starts the Linux dev container
-```
+On macOS, use a container running linux to build and exucute the program.
 
 ### Build
 
@@ -471,7 +467,7 @@ docker run -it --rm --network=test-network --name=tester \
 | Script                    | Description                                      |
 |---------------------------|--------------------------------------------------|
 | `simple_test.sh`          | 200 concurrent connections for 60 seconds        |
-| `flood_test.sh`           | 255 concurrent connections (high CPU warning)    |
+| `flood_test.sh`           | 255 concurrent connections                       |
 | `random_urls_get_test.sh` | GET requests against a randomised URL list       |
 
 ---
@@ -481,6 +477,8 @@ docker run -it --rm --network=test-network --name=tester \
 - [RFC 1945 — HTTP/1.0](https://www.rfc-editor.org/rfc/rfc1945)
 - [RFC 2109 — HTTP State Management (Cookies)](https://www.rfc-editor.org/rfc/rfc2109)
 - [RFC 3875 — The Common Gateway Interface (CGI/1.1)](https://www.rfc-editor.org/rfc/rfc3875)
-- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
+- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/html/index-wide.html)
 - [NGINX Documentation](https://nginx.org/en/docs/)
 - [epoll(7) — Linux manual page](https://man7.org/linux/man-pages/man7/epoll.7.html)
+
+AI was used to deepen our understanding of networking concepts. The testing infrasturcture was also set up by AI.
