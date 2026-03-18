@@ -1,5 +1,4 @@
-name: webserv_tester
-
+name: stresstest
 services:
   tester:
     container_name: tester
@@ -12,13 +11,14 @@ services:
   server:
     container_name: server
     ports:
-      - 9090:9090
+      - "9090:9090"
     build: ./server
     volumes:
-      - /home/mturgeon/rank5/webserv:/webserv
+      - /Users/maximeturgeon/42_cursus/webserv:/webserv/ressources
     networks:
       - test-network
-    
+
+
 networks:
   test-network:
     driver: bridge

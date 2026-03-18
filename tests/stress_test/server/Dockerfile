@@ -14,4 +14,9 @@ RUN apt-get update && apt-get install -y \
 
 EXPOSE 9090
 
-ENTRYPOINT [ "./tests/stress_test/server/startup.sh" ]
+RUN mkdir ressources
+
+COPY startup.sh .
+RUN chmod +x startup.sh
+
+ENTRYPOINT [ "./startup.sh" ]

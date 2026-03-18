@@ -4,7 +4,7 @@ bool	isToken(std::string &str)
 {
 	for (std::string::iterator it = str.begin(); it != str.end(); it++)
 	{
-		if ((*it >= 0 && *it <= 31)
+		if ((*it <= 31)
 			|| *it == 127
 			|| isspace(*it)
 			|| *it == 34
@@ -33,7 +33,7 @@ bool	isTokenOrQuoted(std::string &str)
 				return (false);
 			inQuotes = true;
 		}
-		if ((*it >= 0 && *it <= 31)
+		if ((*it <= 31)
 			|| *it == 127
 			|| isspace(*it)
 			|| *it == 34
@@ -249,7 +249,7 @@ bool	isValidForHeaders(std::string &str)
 	for (std::string::iterator it = str.begin(); it != str.end(); it++)
 	{
 		if (!isascii(*it)
-			|| (*it >= 0 && *it < 32)
+			|| (*it < 32)
 			|| *it > 126)
 			throw(Request::ErrorNum("invalid char in some header body", 400));
 	}

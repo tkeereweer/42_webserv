@@ -6,7 +6,7 @@
 #    By: mturgeon <maxime.p.turgeon@gmail.com>      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/02/11 09:56:12 by sravizza          #+#    #+#              #
-#    Updated: 2026/03/13 11:26:53 by mturgeon         ###   ########.fr        #
+#    Updated: 2026/03/18 16:57:24 by mturgeon         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -83,7 +83,7 @@ SRC				= 	$(SRC_MAIN) \
 
 
 NAME	= webserv
-CC		= c++
+CC		= g++
 CFLAGS	= -Wall -Werror -Wextra -I$(INCL_DIR) -g
 OBJ		= $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o))
 RM		= rm -f
