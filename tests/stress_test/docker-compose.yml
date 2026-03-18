@@ -1,0 +1,24 @@
+name: webserv_tester
+
+services:
+  tester:
+    container_name: tester
+    build: ./tester
+    volumes:
+      - ./tester:/data
+    networks:
+      - test-network
+  
+  server:
+    container_name: server
+    ports:
+      - 9090:9090
+    build: ./server
+    volumes:
+      - /home/mturgeon/rank5/webserv:/webserv
+    networks:
+      - test-network
+    
+networks:
+  test-network:
+    driver: bridge

@@ -1,5 +1,5 @@
 FROM debian:12
-WORKDIR /webserv
+WORKDIR /data
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -9,7 +9,13 @@ RUN apt-get update && apt-get install -y \
     python3 \
     php-cgi \
     vim \
-    valgrind \
+    siege \
     && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 9090
+
+RUN ls
+
+# RUN chmod 0744 flood_test.sh && chmod 0744 random_urls_get_test_test.sh && chmod 0744 simple_test.sh
+
+CMD ["/bin/bash"]
